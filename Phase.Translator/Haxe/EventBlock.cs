@@ -8,8 +8,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly IEventSymbol _eventSymbol;
 
-        public EventBlock(HaxeEmitter emitter, IEventSymbol eventSymbol)
-            : base(emitter)
+        public EventBlock(HaxeEmitterContext context, IEventSymbol eventSymbol)
+            : base(context)
         {
             _eventSymbol = eventSymbol;
         }

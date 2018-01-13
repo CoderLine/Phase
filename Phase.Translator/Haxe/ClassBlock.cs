@@ -19,7 +19,7 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseType _type;
 
-        public ClassBlock(HaxeEmitter emitter, PhaseType type)
+        public ClassBlock(HaxeEmitterContext emitter, PhaseType type)
             : base(emitter)
         {
             _type = type;
@@ -121,22 +121,22 @@ namespace Phase.Translator.Haxe
             {
                 if (member.Kind == SymbolKind.Field)
                 {
-                    var fieldBlock = new FieldBlock(Emitter, (IFieldSymbol) member);
+                    var fieldBlock = new FieldBlock(EmitterContext, (IFieldSymbol) member);
                     await fieldBlock.EmitAsync(cancellationToken);
                 }
                 else if (member.Kind == SymbolKind.Property)
                 {
-                    var propertyBlock = new PropertyBlock(Emitter, (IPropertySymbol) member);
+                    var propertyBlock = new PropertyBlock(EmitterContext, (IPropertySymbol) member);
                     await propertyBlock.EmitAsync(cancellationToken);
                 }
                 else if (member.Kind == SymbolKind.Method)
                 {
-                    var methodBlock = new MethodBlock(Emitter, (IMethodSymbol) member);
+                    var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol) member);
                     await methodBlock.EmitAsync(cancellationToken);
                 }
                 else if (member.Kind == SymbolKind.Event)
                 {
-                    var eventBlock = new EventBlock(Emitter, (IEventSymbol) member);
+                    var eventBlock = new EventBlock(EmitterContext, (IEventSymbol) member);
                     await eventBlock.EmitAsync(cancellationToken);
                 }
             }

@@ -1,6 +1,5 @@
 package alphaTab.collections;
 import system.FixedArray;
-#if js
 abstract FastList<T>(Array<T>) from Array<T> to Array<T>
 {
 	public function new() this = new Array<T>();
@@ -19,4 +18,3 @@ abstract FastList<T>(Array<T>) from Array<T> to Array<T>
 	public inline function Sort(f:T->T->Int) this.sort(f);
 	public inline function Reverse() this.reverse();
 }
-#end

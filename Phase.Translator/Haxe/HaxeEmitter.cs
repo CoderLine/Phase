@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -35,12 +36,7 @@ namespace Phase.Translator.Haxe
 
 
         public PhaseCompiler Compiler { get; set; }
-        public PhaseType CurrentType { get; set; }
-        public SyntaxNode CurrentNode { get; set; }
-        public IWriter Writer { get; set; }
-        public int ThisRefCounter { get; set; }
 
-        public bool IsMethodInvocation { get; set; }
 
         public HaxeEmitter(PhaseCompiler compiler)
         {
@@ -54,43 +50,30 @@ namespace Phase.Translator.Haxe
         {
             var result = new EmitResult();
 
-            BuildTypeNameCache(types);
+            var typeArray = types.ToArray();
 
-            foreach (var type in types)
-            {
-                CurrentType = type;
-                if (IsExternal(type.TypeSymbol)) continue;
+            BuildTypeNameCache(typeArray);
 
-                Log.Trace($"\tEmitting Type {type.TypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}");
-                Init();
-
-                switch (type.Kind)
+            var emitBlock = new ActionBlock<HaxeEmitterContext>(
+                async context =>
                 {
-                    case PhaseTypeKind.Class:
-                        var classBlock = new ClassBlock(this, (PhaseClass)type);
-                        await classBlock.EmitAsync(cancellationToken);
-                        break;
-                    case PhaseTypeKind.Struct:
-                        var structBlock = new ClassBlock(this, (PhaseStruct)type);
-                        await structBlock.EmitAsync(cancellationToken);
-                        break;
-                    case PhaseTypeKind.Interface:
-                        var interfaceBlock = new InterfaceBlock(this, (PhaseInterface)type);
-                        await interfaceBlock.EmitAsync(cancellationToken);
-                        break;
-                    case PhaseTypeKind.Enum:
-                        var enumBlock = new EnumBlock(this, (PhaseEnum)type);
-                        await enumBlock.EmitAsync(cancellationToken);
-                        break;
-                    case PhaseTypeKind.Delegate:
-                        var delegateBlock = new DelegateBlock(this, (PhaseDelegate)type);
-                        await delegateBlock.EmitAsync(cancellationToken);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                    await context.EmitAsync(cancellationToken);
+                }, new ExecutionDataflowBlockOptions
+                {
+                    MaxDegreeOfParallelism = Environment.ProcessorCount
+                });
 
-                result.Results[type] = new PhaseTypeResult(GetFileName(type), Writer.ToString());
+            var contexts = typeArray.Select(t => new HaxeEmitterContext(this, t)).ToArray();
+            foreach (var type in contexts)
+            {
+                emitBlock.Post(type);
+            }
+            emitBlock.Complete();
+            await emitBlock.Completion;
+          
+            foreach (var context in contexts)
+            {
+                result.Results[context.CurrentType] = new PhaseTypeResult(GetFileName(context.CurrentType), context.Writer.ToString());
             }
 
             return result;
@@ -127,8 +110,6 @@ namespace Phase.Translator.Haxe
 
         public void Init()
         {
-            ThisRefCounter = 0;
-            Writer = new InMemoryWriter(this);
         }
 
         public string GetTypeName(PhaseType type)
@@ -350,7 +331,7 @@ namespace Phase.Translator.Haxe
             method = method.OriginalDefinition;
 
             var meta = GetOrCreateMeta(method);
-            if(meta.OutputName != null)
+            if (meta.OutputName != null)
             {
                 return meta.OutputName;
             }
@@ -367,7 +348,7 @@ namespace Phase.Translator.Haxe
             type = type.OriginalDefinition;
 
             var meta = GetOrCreateMeta(type);
-            if (meta.HasConstructorOverloads== null)
+            if (meta.HasConstructorOverloads == null)
             {
                 ComputeConstructorOverloads(type, meta);
             }
@@ -394,7 +375,7 @@ namespace Phase.Translator.Haxe
         private void ComputeConstructorOverloads(ITypeSymbol type, SymbolMetaData meta)
         {
             meta.ConstructorCount = type.GetMembers().Count(t =>
-                t.Kind == SymbolKind.Method && ((IMethodSymbol) t).MethodKind == MethodKind.Constructor && !t.IsStatic);
+                t.Kind == SymbolKind.Method && ((IMethodSymbol)t).MethodKind == MethodKind.Constructor && !t.IsStatic);
             meta.HasConstructorOverloads = meta.ConstructorCount > 1;
 
             if (meta.ConstructorCount < 2 && type.BaseType != null && type.BaseType.SpecialType != SpecialType.System_Object)
@@ -415,7 +396,7 @@ namespace Phase.Translator.Haxe
                 var impl = method.ExplicitInterfaceImplementations[0];
                 return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl);
             }
-            
+
             var attributeName = GetNameFromAttribute(method);
             if (!string.IsNullOrEmpty(attributeName))
             {
@@ -533,21 +514,14 @@ namespace Phase.Translator.Haxe
         public SymbolInfo GetSymbolInfo(OrderingSyntax node,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            try
-            {
-                return CurrentType.SemanticModel.GetSymbolInfo(node, cancellationToken);
-            }
-            catch
-            {
-                return Compiler.Translator.Compilation.GetSemanticModel(node.SyntaxTree).GetSymbolInfo(node, cancellationToken); throw;
-            }
+            return GetSemanticModel(node).GetSymbolInfo(node, cancellationToken);
         }
 
         private SemanticModel GetSemanticModel(SyntaxNode node)
         {
             if (!_semanticModelLookup.TryGetValue(node.SyntaxTree, out var model))
             {
-                _semanticModelLookup[node.SyntaxTree] = model = 
+                _semanticModelLookup[node.SyntaxTree] = model =
                     Compiler.Translator.Compilation.GetSemanticModel(node.SyntaxTree);
             }
 
@@ -654,7 +628,7 @@ namespace Phase.Translator.Haxe
             }
             if (type == null)
             {
-                type = CurrentType.SemanticModel.Compilation.GetTypeByMetadataName(syntax.ToString());
+                type = Compiler.Translator.Compilation.GetTypeByMetadataName(syntax.ToString());
             }
             if (type == null)
             {
@@ -846,7 +820,7 @@ namespace Phase.Translator.Haxe
 
         public ITypeSymbol GetSpecialType(SpecialType specialType)
         {
-            return CurrentType.SemanticModel.Compilation.GetSpecialType(specialType);
+            return Compiler.Translator.Compilation.GetSpecialType(specialType);
         }
 
         public bool IsAutoProperty(IPropertySymbol property)
@@ -875,7 +849,7 @@ namespace Phase.Translator.Haxe
                 return false;
             }
 
-            if(IsInterfaceImplementation(property))
+            if (IsInterfaceImplementation(property))
             {
                 return false;
             }

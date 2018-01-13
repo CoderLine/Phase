@@ -59,7 +59,7 @@ namespace Phase.Translator.Haxe
                             Write(variable);
                             WriteColon();
                             WriteType(
-                                Emitter.CurrentType.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Exception)
+                                EmitterContext.CurrentType.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Exception)
                                     .FullName));
                             WriteCloseParentheses();
                         }

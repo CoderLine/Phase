@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -17,7 +18,7 @@ namespace Phase.Translator.Utils
             return GetId(obj).GetHashCode();
         }
 
-        private Dictionary<ISymbol, string> _idCache = new Dictionary<ISymbol, string>();
+        private ConcurrentDictionary<ISymbol, string> _idCache = new ConcurrentDictionary<ISymbol, string>();
         private string GetId(ISymbol symbol)
         {
             switch (symbol.Kind)

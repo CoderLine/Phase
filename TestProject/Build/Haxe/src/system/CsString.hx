@@ -1,5 +1,4 @@
 package system;
-import alphaTab.collections.FastDictionary;
 
 abstract CsString(String) from String to String
 {

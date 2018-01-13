@@ -10,8 +10,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseInterface _type;
 
-        public InterfaceBlock(HaxeEmitter emitter, PhaseInterface type)
-            : base(emitter)
+        public InterfaceBlock(HaxeEmitterContext context, PhaseInterface type)
+            : base(context)
         {
             _type = type;
         }
@@ -71,19 +71,19 @@ namespace Phase.Translator.Haxe
                 switch (member.Kind)
                 {
                     case SymbolKind.Field:
-                        var fieldBlock = new FieldBlock(Emitter, (IFieldSymbol)member);
+                        var fieldBlock = new FieldBlock(EmitterContext, (IFieldSymbol)member);
                         await fieldBlock.EmitAsync(cancellationToken);
                         break;
                     case SymbolKind.Property:
-                        var propertyBlock = new PropertyBlock(Emitter, (IPropertySymbol)member);
+                        var propertyBlock = new PropertyBlock(EmitterContext, (IPropertySymbol)member);
                         await propertyBlock.EmitAsync(cancellationToken);
                         break;
                     case SymbolKind.Method:
-                        var methodBlock = new MethodBlock(Emitter, (IMethodSymbol)member);
+                        var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol)member);
                         await methodBlock.EmitAsync(cancellationToken);
                         break;
                     case SymbolKind.Event:
-                        var eventBlock = new EventBlock(Emitter, (IEventSymbol)member);
+                        var eventBlock = new EventBlock(EmitterContext, (IEventSymbol)member);
                         await eventBlock.EmitAsync(cancellationToken);
                         break;
                 }

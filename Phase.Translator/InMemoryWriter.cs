@@ -8,13 +8,11 @@ namespace Phase.Translator
 {
     public class InMemoryWriter : IWriter
     {
-        private readonly IEmitter _emitter;
         private readonly StringBuilder _output;
         private int _level;
 
-        public InMemoryWriter(IEmitter emitter)
+        public InMemoryWriter()
         {
-            _emitter = emitter;
             _output = new StringBuilder();
         }
 
@@ -118,7 +116,6 @@ namespace Phase.Translator
         public void WriteThis()
         {
             Write("this");
-            _emitter.ThisRefCounter++;
         }
 
         public void WriteSpace()

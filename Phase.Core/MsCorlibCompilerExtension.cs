@@ -4,6 +4,7 @@ using Phase.CompilerServices;
 
 namespace Phase
 {
+    [External]
     public class MsCorlibCompilerExtension
     {
         [CompilerExtension]

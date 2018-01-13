@@ -8,8 +8,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly IFieldSymbol _field;
 
-        public EnumMemberBlock(HaxeEmitter emitter, IFieldSymbol field)
-            : base(emitter)
+        public EnumMemberBlock(HaxeEmitterContext context, IFieldSymbol field)
+            : base(context)
         {
             _field = field;
         }

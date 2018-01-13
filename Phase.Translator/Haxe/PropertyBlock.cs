@@ -9,8 +9,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly IPropertySymbol _property;
 
-        public PropertyBlock(HaxeEmitter emitter, IPropertySymbol property)
-            : base(emitter)
+        public PropertyBlock(HaxeEmitterContext context, IPropertySymbol property)
+            : base(context)
         {
             _property = property;
         }

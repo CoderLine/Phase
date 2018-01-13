@@ -25,7 +25,7 @@ namespace Phase.Translator.Haxe.Expressions
                 else
                 {
                     if (resolve.Symbol.IsStatic &&
-                        !resolve.Symbol.ContainingType.Equals(Emitter.CurrentType.TypeSymbol))
+                        !resolve.Symbol.ContainingType.Equals(EmitterContext.CurrentType.TypeSymbol))
                     {
                         WriteType(resolve.Symbol.ContainingType);
                         WriteDot();
@@ -33,7 +33,7 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(resolve.Symbol.Name);
                 }
 
-                if (!Emitter.IsMethodInvocation && (
+                if (!EmitterContext.IsMethodInvocation && (
                     (resolve.Symbol.Kind == SymbolKind.Local && Emitter.IsRefVariable((ILocalSymbol)resolve.Symbol)) ||
                     (resolve.Symbol.Kind == SymbolKind.Parameter && ((IParameterSymbol)resolve.Symbol).RefKind != RefKind.None)
                 ))

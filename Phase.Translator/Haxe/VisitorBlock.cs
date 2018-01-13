@@ -12,29 +12,29 @@ namespace Phase.Translator.Haxe
         private readonly SyntaxNode _node;
         public AbstractHaxeScriptEmitterBlock FirstBlock { get; set; }
 
-        public VisitorBlock(HaxeEmitter emitter, SyntaxNode node)
-            : base(emitter)
+        public VisitorBlock(HaxeEmitterContext context, SyntaxNode node)
+            : base(context)
         {
             _node = node;
         }
 
         protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
         {
-            var visitor = new Visitor(Emitter, cancellationToken);
+            var visitor = new Visitor(EmitterContext, cancellationToken);
             visitor.Visit(_node);
             FirstBlock = visitor.FirstBlock;
         }
 
         private class Visitor : CSharpSyntaxWalker
         {
-            private readonly HaxeEmitter _emitter;
+            private readonly HaxeEmitterContext _context;
             private readonly CancellationToken _cancellationToken;
 
             public AbstractHaxeScriptEmitterBlock FirstBlock { get; set; }
 
-            public Visitor(HaxeEmitter emitter, CancellationToken cancellationToken)
+            public Visitor(HaxeEmitterContext context, CancellationToken cancellationToken)
             {
-                _emitter = emitter;
+                _context = context;
                 _cancellationToken = cancellationToken;
             }
 
@@ -44,7 +44,7 @@ namespace Phase.Translator.Haxe
             {
                 var block = new TBlock();
                 if (FirstBlock == null) FirstBlock = block;
-                block.EmitAsync(_emitter, syntax, _cancellationToken).Wait(_cancellationToken);
+                block.EmitAsync(_context, syntax, _cancellationToken).Wait(_cancellationToken);
             }
 
             #region Statements

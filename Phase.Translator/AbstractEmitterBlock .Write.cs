@@ -7,247 +7,247 @@ namespace Phase.Translator
     {
         public bool IsNewLine
         {
-            get { return Emitter.Writer.IsNewLine; }
-            set { Emitter.Writer.IsNewLine = value; }
+            get { return Writer.IsNewLine; }
+            set { Writer.IsNewLine = value; }
         }
         public void Indent()
         {
-            Emitter.Writer.Indent();
+            Writer.Indent();
         }
 
         public void Outdent()
         {
-            Emitter.Writer.Outdent();
+            Writer.Outdent();
         }
 
         public void WriteIndent()
         {
-            Emitter.Writer.WriteIndent();
+            Writer.WriteIndent();
         }
 
         public void WriteNewLine()
         {
-            Emitter.Writer.WriteNewLine();
+            Writer.WriteNewLine();
         }
 
         public void BeginBlock()
         {
-            Emitter.Writer.BeginBlock();
+            Writer.BeginBlock();
         }
 
         public void EndBlock()
         {
-            Emitter.Writer.EndBlock();
+            Writer.EndBlock();
         }
 
         public void Write(object value)
         {
-            Emitter.Writer.Write(value);
+            Writer.Write(value);
         }
 
         public void Write(params object[] values)
         {
-            Emitter.Writer.Write(values);
+            Writer.Write(values);
         }
 
         public void WriteLines(IEnumerable<string> lines)
         {
-            Emitter.Writer.WriteLines(lines);
+            Writer.WriteLines(lines);
         }
 
         public void WriteLines(params string[] lines)
         {
-            Emitter.Writer.WriteLines(lines);
+            Writer.WriteLines(lines);
         }
 
         public void WriteComma()
         {
-            Emitter.Writer.WriteComma();
+            Writer.WriteComma();
         }
 
         public void WriteComma(bool newLine)
         {
-            Emitter.Writer.WriteComma(newLine);
+            Writer.WriteComma(newLine);
         }
 
         public void WriteThis()
         {
-            Emitter.Writer.WriteThis();
+            Writer.WriteThis();
         }
 
         public void WriteSpace()
         {
-            Emitter.Writer.WriteSpace();
+            Writer.WriteSpace();
         }
 
         public void WriteSpace(bool addSpace)
         {
-            Emitter.Writer.WriteSpace(addSpace);
+            Writer.WriteSpace(addSpace);
         }
 
         public void WriteDot()
         {
-            Emitter.Writer.WriteDot();
+            Writer.WriteDot();
         }
 
         public void WriteColon()
         {
-            Emitter.Writer.WriteColon();
+            Writer.WriteColon();
         }
 
         public void WriteSemiColon()
         {
-            Emitter.Writer.WriteSemiColon();
+            Writer.WriteSemiColon();
         }
 
         public void WriteSemiColon(bool newLine)
         {
-            Emitter.Writer.WriteSemiColon(newLine);
+            Writer.WriteSemiColon(newLine);
         }
 
         public void WriteNew()
         {
-            Emitter.Writer.WriteNew();
+            Writer.WriteNew();
         }
 
         public void WriteVar()
         {
-            Emitter.Writer.WriteVar();
+            Writer.WriteVar();
         }
 
         public void WriteIf()
         {
-            Emitter.Writer.WriteIf();
+            Writer.WriteIf();
         }
 
         public void WriteElse()
         {
-            Emitter.Writer.WriteElse();
+            Writer.WriteElse();
         }
 
         public void WriteWhile()
         {
-            Emitter.Writer.WriteWhile();
+            Writer.WriteWhile();
         }
 
         public void WriteFor()
         {
-            Emitter.Writer.WriteFor();
+            Writer.WriteFor();
         }
 
         public void WriteThrow()
         {
-            Emitter.Writer.WriteThrow();
+            Writer.WriteThrow();
         }
 
         public void WriteTry()
         {
-            Emitter.Writer.WriteTry();
+            Writer.WriteTry();
         }
 
         public void WriteCatch()
         {
-            Emitter.Writer.WriteCatch();
+            Writer.WriteCatch();
         }
 
         public void WriteFinally()
         {
-            Emitter.Writer.WriteFinally();
+            Writer.WriteFinally();
         }
 
         public void WriteDo()
         {
-            Emitter.Writer.WriteDo();
+            Writer.WriteDo();
         }
 
         public void WriteSwitch()
         {
-            Emitter.Writer.WriteSwitch();
+            Writer.WriteSwitch();
         }
 
         public void WriteReturn(bool addSpace)
         {
-            Emitter.Writer.WriteReturn(addSpace);
+            Writer.WriteReturn(addSpace);
         }
 
         public void WriteOpenBracket()
         {
-            Emitter.Writer.WriteOpenBracket();
+            Writer.WriteOpenBracket();
         }
 
         public void WriteOpenBracket(bool addSpace)
         {
-            Emitter.Writer.WriteOpenBracket(addSpace);
+            Writer.WriteOpenBracket(addSpace);
         }
 
         public void WriteCloseBracket()
         {
-            Emitter.Writer.WriteCloseBracket();
+            Writer.WriteCloseBracket();
         }
 
         public void WriteCloseBracket(bool addSpace)
         {
-            Emitter.Writer.WriteCloseBracket(addSpace);
+            Writer.WriteCloseBracket(addSpace);
         }
 
         public void WriteOpenParentheses()
         {
-            Emitter.Writer.WriteOpenParentheses();
+            Writer.WriteOpenParentheses();
         }
 
         public void WriteOpenParentheses(bool addSpace)
         {
-            Emitter.Writer.WriteOpenParentheses(addSpace);
+            Writer.WriteOpenParentheses(addSpace);
         }
 
         public void WriteCloseParentheses()
         {
-            Emitter.Writer.WriteCloseParentheses();
+            Writer.WriteCloseParentheses();
         }
 
         public void WriteCloseParentheses(bool addSpace)
         {
-            Emitter.Writer.WriteCloseParentheses(addSpace);
+            Writer.WriteCloseParentheses(addSpace);
         }
 
         public void WriteOpenCloseParentheses()
         {
-            Emitter.Writer.WriteOpenCloseParentheses();
+            Writer.WriteOpenCloseParentheses();
         }
 
         public void WriteOpenCloseParentheses(bool addSpace)
         {
-            Emitter.Writer.WriteOpenCloseParentheses(addSpace);
+            Writer.WriteOpenCloseParentheses(addSpace);
         }
 
         public void WriteOpenBrace()
         {
-            Emitter.Writer.WriteOpenBrace();
+            Writer.WriteOpenBrace();
         }
 
         public void WriteOpenBrace(bool addSpace)
         {
-            Emitter.Writer.WriteOpenBrace(addSpace);
+            Writer.WriteOpenBrace(addSpace);
         }
 
         public void WriteCloseBrace()
         {
-            Emitter.Writer.WriteCloseBrace();
+            Writer.WriteCloseBrace();
         }
 
         public void WriteCloseBrace(bool addSpace)
         {
-            Emitter.Writer.WriteCloseBrace(addSpace);
+            Writer.WriteCloseBrace(addSpace);
         }
 
         public void WriteOpenCloseBrace()
         {
-            Emitter.Writer.WriteOpenCloseBrace();
+            Writer.WriteOpenCloseBrace();
         }
 
         public void WriteFunction()
         {
-            Emitter.Writer.WriteFunction();
+            Writer.WriteFunction();
         }
     }
 }

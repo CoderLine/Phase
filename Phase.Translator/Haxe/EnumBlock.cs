@@ -9,8 +9,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseEnum _type;
 
-        public EnumBlock(HaxeEmitter emitter, PhaseEnum type)
-            : base(emitter)
+        public EnumBlock(HaxeEmitterContext context, PhaseEnum type)
+            : base(context)
         {
             _type = type;
         }
@@ -55,7 +55,7 @@ namespace Phase.Translator.Haxe
 
             foreach (var enumMember in _type.TypeSymbol.GetMembers().OfType<IFieldSymbol>())
             {
-                var enumMemberBlock = new EnumMemberBlock(Emitter, enumMember);
+                var enumMemberBlock = new EnumMemberBlock(EmitterContext, enumMember);
                 await enumMemberBlock.EmitAsync(cancellationToken);
             }
 

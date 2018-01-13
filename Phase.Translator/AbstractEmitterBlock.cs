@@ -1,16 +1,12 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using Phase.Translator.Haxe;
 
 namespace Phase.Translator
 {
     public abstract partial class AbstractEmitterBlock
     {
-        public IEmitter Emitter { get; set; }
-
-        protected AbstractEmitterBlock(IEmitter emitter)
-        {
-            Emitter = emitter;
-        }
+        protected IWriter Writer;
 
         public virtual async Task EmitAsync(CancellationToken cancellationToken = default(CancellationToken))
         {

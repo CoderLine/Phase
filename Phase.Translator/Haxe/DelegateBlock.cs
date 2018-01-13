@@ -8,8 +8,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseDelegate _type;
 
-        public DelegateBlock(HaxeEmitter emitter, PhaseDelegate type)
-            : base(emitter)
+        public DelegateBlock(HaxeEmitterContext context, PhaseDelegate type)
+            : base(context)
         {
             _type = type;
         }

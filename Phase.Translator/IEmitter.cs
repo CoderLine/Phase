@@ -33,9 +33,6 @@ namespace Phase.Translator
     public interface IEmitter
     {
         PhaseCompiler Compiler { get; }
-        PhaseType CurrentType { get; set; }
-        IWriter Writer { get; set; }
-        int ThisRefCounter { get; set; }
         Task<EmitResult> EmitAsync(CSharpCompilation compilation, IEnumerable<PhaseType> types, CancellationToken cancellationToken);
     }
 }

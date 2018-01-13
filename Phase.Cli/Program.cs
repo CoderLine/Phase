@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Threading;
 using Phase.Translator;
 
 namespace Phase.Cli
@@ -21,6 +23,9 @@ namespace Phase.Cli
 
         static void Main(string[] args)
         {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
+
             if (args.Length != 3)
             {
                 Console.WriteLine("Phase.Cli.exe ProjectFile Configuration Platform");

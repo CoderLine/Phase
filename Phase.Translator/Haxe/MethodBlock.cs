@@ -15,8 +15,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly IMethodSymbol _method;
 
-        public MethodBlock(HaxeEmitter emitter, IMethodSymbol method)
-            : base(emitter)
+        public MethodBlock(HaxeEmitterContext context, IMethodSymbol method)
+            : base(context)
         {
             _method = method;
         }

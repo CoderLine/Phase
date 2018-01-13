@@ -10,8 +10,8 @@ namespace Phase.Translator.Haxe
     {
         private readonly IFieldSymbol _field;
 
-        public FieldBlock(HaxeEmitter emitter, IFieldSymbol field)
-            : base(emitter)
+        public FieldBlock(HaxeEmitterContext context, IFieldSymbol field)
+            : base(context)
         {
             _field = field;
         }

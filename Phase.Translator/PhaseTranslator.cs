@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using NLog;
 using Phase.Translator.Haxe;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator
 {
@@ -19,7 +20,6 @@ namespace Phase.Translator
         public PhaseCompiler Compiler { get; set; }
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-        public Project Project { get; private set; }
         public CSharpCompilation Compilation { get; private set; }
         public List<Tuple<ITypeSymbol, SemanticModel>> Types { get; private set; }
         public EmitResult Result { get; set; }
@@ -32,7 +32,6 @@ namespace Phase.Translator
 
         public async Task TranslateAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await ReadProjectFileAsync(cancellationToken);
             if (await PrecompileAsync(cancellationToken))
             {
                 if (await PreprocessAsync(cancellationToken))
@@ -196,7 +195,12 @@ namespace Phase.Translator
             var hasError = false;
             try
             {
-                Compilation = (CSharpCompilation)await Project.GetCompilationAsync(cancellationToken);
+                var compiler = new MSBuildProjectCompiler(new Dictionary<string, string>
+                {
+                    ["Configuration"] = Compiler.Input.Configuration,
+                    ["Platform"] = Compiler.Input.Platform,
+                });
+                Compilation = (CSharpCompilation)await compiler.BuildAsync(Compiler.Input.ProjectFile, cancellationToken);
                 Log.Trace("Project compiled");
 
                 var diagnostics = Compilation.GetDiagnostics();
@@ -220,13 +224,6 @@ namespace Phase.Translator
                             throw new ArgumentOutOfRangeException();
                     }
                 }
-
-                foreach (var reference in Compilation.References)
-                {
-                    if (reference is PortableExecutableReference peReference)
-                    {
-                    }
-                }
             }
             catch (Exception e)
             {
@@ -237,37 +234,6 @@ namespace Phase.Translator
             Log.Trace("Finished project compilation");
 
             return !hasError;
-        }
-
-        private async Task ReadProjectFileAsync(CancellationToken cancellationToken = default(CancellationToken))
-        {
-            Log.Trace("Begin reading project file");
-
-            try
-            {
-                var workspace = MSBuildWorkspace.Create(new Dictionary<string, string>
-                {
-                    ["Configuration"] = Compiler.Input.Configuration,
-                    ["Platform"] = Compiler.Input.Platform
-                });
-                workspace.WorkspaceFailed += (sender, args) => {; };
-                Project = await workspace.OpenProjectAsync(Compiler.Input.ProjectFile, cancellationToken);
-                if (!Project.SupportsCompilation)
-                {
-                    throw new PhaseCompilerException("Unsupported project type, does not support compilation");
-                }
-            }
-            catch (PhaseCompilerException)
-            {
-                throw;
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Failed to open project");
-                throw new PhaseCompilerException("Failed to open project", e);
-            }
-
-            Log.Trace("Finished reading project file");
         }
     }
 }

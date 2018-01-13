@@ -11,27 +11,35 @@ namespace Phase.Translator.Haxe
 {
     public abstract class AbstractHaxeScriptEmitterBlock : AbstractEmitterBlock
     {
-        private HaxeEmitter _emitter;
+        private HaxeEmitterContext _emitterContext;
 
-        public new HaxeEmitter Emitter
+        public HaxeEmitterContext EmitterContext
         {
-            get { return _emitter; }
+            get => _emitterContext;
             set
             {
-                _emitter = value;
-                base.Emitter = value;
+                _emitterContext = value;
+                if (value != null)
+                {
+                    Writer = value.Writer;
+                }
+                else
+                {
+                    Writer = null;
+                }
             }
         }
 
-        protected AbstractHaxeScriptEmitterBlock(HaxeEmitter emitter)
-            :base(emitter)
+        public HaxeEmitter Emitter => EmitterContext.Emitter;
+
+        protected AbstractHaxeScriptEmitterBlock(HaxeEmitterContext context)
         {
-            Emitter = emitter;
+            EmitterContext = context;
         }
 
         protected async Task<AbstractHaxeScriptEmitterBlock> EmitTreeAsync(SyntaxNode value, CancellationToken cancellationToken = default(CancellationToken))
         {
-            var expressionBlock = new VisitorBlock(Emitter, value);
+            var expressionBlock = new VisitorBlock(EmitterContext, value);
             await expressionBlock.DoEmitAsync(cancellationToken);
             return expressionBlock.FirstBlock;
         }
@@ -70,7 +78,7 @@ namespace Phase.Translator.Haxe
 
         protected async Task WriteMethodInvocation(IMethodSymbol method, ArgumentListSyntax argumentList, ExpressionSyntax extensionThis = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Emitter.IsMethodInvocation = true;
+            EmitterContext.IsMethodInvocation = true;
             WriteOpenParentheses();
             if (extensionThis != null)
             {
@@ -180,7 +188,7 @@ namespace Phase.Translator.Haxe
 
             WriteCloseParentheses();
 
-            Emitter.IsMethodInvocation = false;
+            EmitterContext.IsMethodInvocation = false;
         }
 
         protected async Task WriteParameterDeclarations(ImmutableArray<IParameterSymbol> methodParameters, CancellationToken cancellationToken)
@@ -227,9 +235,9 @@ namespace Phase.Translator.Haxe
         {
         }
 
-        public virtual async Task EmitAsync(HaxeEmitter emitter, T node, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual async Task EmitAsync(HaxeEmitterContext context, T node, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Emitter = emitter;
+            EmitterContext = context;
             Node = node;
             await EmitAsync(cancellationToken);
         }

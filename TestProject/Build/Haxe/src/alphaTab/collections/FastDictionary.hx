@@ -1,5 +1,5 @@
 package alphaTab.collections;
-#if js
+
 abstract FastDictionary<TKey, TValue>(Dynamic)
 {
 	public function new() this = alphaTab.platform.Platform.NewObject();
@@ -13,5 +13,3 @@ abstract FastDictionary<TKey, TValue>(Dynamic)
 	
 	public inline function GetEnumerator() : Array<TKey> return untyped alphaTab.platform.Platform.JsonKeys(this);
 }
-
-#end
