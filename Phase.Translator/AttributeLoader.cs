@@ -107,12 +107,6 @@ namespace Phase.Translator
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
-            var hasAttributes = node.AttributeLists.Select(a => a.Attributes).Any();
-            if (!hasAttributes)
-            {
-                return;
-            }
-
             var type = _semanticModel.GetDeclaredSymbol(node, _cancellationToken);
             var isExtension = type.Interfaces.Any(i => i.Equals(_compilerExtensionType));
             if (isExtension)
@@ -139,14 +133,6 @@ namespace Phase.Translator
                         !method.Parameters[0].Type.Equals(_compilerContextType))
                     {
                         Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH001,
-                            node.ParameterList.GetLocation(),
-                            method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
-                        return;
-                    }
-
-                    if (!method.IsStatic)
-                    {
-                        Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH002,
                             node.ParameterList.GetLocation(),
                             method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
                         return;

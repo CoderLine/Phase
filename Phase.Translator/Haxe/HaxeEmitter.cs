@@ -60,7 +60,7 @@ namespace Phase.Translator.Haxe
                     await context.EmitAsync(cancellationToken);
                 }, new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = Environment.ProcessorCount
+                    MaxDegreeOfParallelism = 1
                 });
 
             var contexts = typeArray.Select(t => new HaxeEmitterContext(this, t)).ToArray();

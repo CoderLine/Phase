@@ -4,6 +4,7 @@ using Phase.CompilerServices;
 
 namespace AlphaTab
 {
+    [External]
     class PhaseExtension : ICompilerExtension
     {
         public void Run(ICompilerContext compilerContext)
