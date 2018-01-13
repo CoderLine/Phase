@@ -21,7 +21,7 @@ namespace Phase.Translator.Haxe
             _method = method;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Emitter.IsExternal(_method)
                 || Emitter.IsCompilerExtension(_method)
@@ -144,7 +144,7 @@ namespace Phase.Translator.Haxe
             }
 
             WriteOpenParentheses();
-            await WriteParameterDeclarations(_method.Parameters, cancellationToken);
+            WriteParameterDeclarations(_method.Parameters, cancellationToken);
             WriteCloseParentheses();
             WriteSpace();
 
@@ -194,7 +194,7 @@ namespace Phase.Translator.Haxe
                 {
                     foreach (var reference in _method.DeclaringSyntaxReferences)
                     {
-                        var node = await reference.GetSyntaxAsync(cancellationToken);
+                        var node = reference.GetSyntax(cancellationToken);
                         var methodDeclarationSyntax = node as MethodDeclarationSyntax;
                         var constructorDeclarationSyntax = node as ConstructorDeclarationSyntax;
                         var accessorDeclarationSyntax = node as AccessorDeclarationSyntax;
@@ -205,14 +205,14 @@ namespace Phase.Translator.Haxe
                         {
                             if (methodDeclarationSyntax.ExpressionBody != null)
                             {
-                                await EmitTreeAsync(methodDeclarationSyntax.ExpressionBody.Expression,
+                                EmitTree(methodDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
                             }
                             else if (methodDeclarationSyntax.Body != null)
                             {
                                 foreach (var statement in methodDeclarationSyntax.Body.Statements)
                                 {
-                                    await EmitTreeAsync(statement, cancellationToken);
+                                    EmitTree(statement, cancellationToken);
                                 }
                             }
                             else if (_method.IsAbstract)
@@ -225,14 +225,14 @@ namespace Phase.Translator.Haxe
                         {
                             if (conversionOperatorDeclarationSyntax.ExpressionBody != null)
                             {
-                                await EmitTreeAsync(conversionOperatorDeclarationSyntax.ExpressionBody.Expression,
+                                EmitTree(conversionOperatorDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
                             }
                             else if (conversionOperatorDeclarationSyntax.Body != null)
                             {
                                 foreach (var statement in conversionOperatorDeclarationSyntax.Body.Statements)
                                 {
-                                    await EmitTreeAsync(statement, cancellationToken);
+                                    EmitTree(statement, cancellationToken);
                                 }
                             }
                             else if (_method.IsAbstract)
@@ -245,14 +245,14 @@ namespace Phase.Translator.Haxe
                         {
                             if (operatorDeclarationSyntax.ExpressionBody != null)
                             {
-                                await EmitTreeAsync(operatorDeclarationSyntax.ExpressionBody.Expression,
+                                EmitTree(operatorDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
                             }
                             else if (operatorDeclarationSyntax.Body != null)
                             {
                                 foreach (var statement in operatorDeclarationSyntax.Body.Statements)
                                 {
-                                    await EmitTreeAsync(statement, cancellationToken);
+                                    EmitTree(statement, cancellationToken);
                                 }
                             }
                             else if (_method.IsAbstract)
@@ -265,13 +265,13 @@ namespace Phase.Translator.Haxe
                         {
                             if (_method.ReturnsVoid)
                             {
-                                await EmitTreeAsync(arrowExpressionClauseSyntax.Expression,
+                                EmitTree(arrowExpressionClauseSyntax.Expression,
                                     cancellationToken);
                             }
                             else
                             {
                                 WriteReturn(true);
-                                await EmitTreeAsync(arrowExpressionClauseSyntax.Expression,
+                                EmitTree(arrowExpressionClauseSyntax.Expression,
                                     cancellationToken);
                                 WriteSemiColon(true);
                             }
@@ -296,7 +296,7 @@ namespace Phase.Translator.Haxe
                                         Write(x);
                                     }
 
-                                    await WriteMethodInvocation(ctor,
+                                    WriteMethodInvocation(ctor,
                                         constructorDeclarationSyntax.Initializer.ArgumentList,
                                         null, cancellationToken);
                                     WriteSemiColon(true);
@@ -331,7 +331,7 @@ namespace Phase.Translator.Haxe
                             {
                                 foreach (var statement in constructorDeclarationSyntax.Body.Statements)
                                 {
-                                    await EmitTreeAsync(statement, cancellationToken);
+                                    EmitTree(statement, cancellationToken);
                                 }
                             }
                         }
@@ -341,7 +341,7 @@ namespace Phase.Translator.Haxe
                             {
                                 foreach (var statement in accessorDeclarationSyntax.Body.Statements)
                                 {
-                                    await EmitTreeAsync(statement, cancellationToken);
+                                    EmitTree(statement, cancellationToken);
                                 }
 
                                 if (_method.MethodKind == MethodKind.PropertySet)

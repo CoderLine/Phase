@@ -8,7 +8,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     class ParenthesizedLambdaExpressionBlock : AbstractHaxeScriptEmitterBlock<ParenthesizedLambdaExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteFunction();
             WriteOpenParentheses();
@@ -32,7 +32,7 @@ namespace Phase.Translator.Haxe.Expressions
 
             if (Node.Body.Kind() == SyntaxKind.Block)
             {
-                await EmitTreeAsync(Node.Body, cancellationToken);
+                EmitTree(Node.Body, cancellationToken);
             }
             else
             {
@@ -43,7 +43,7 @@ namespace Phase.Translator.Haxe.Expressions
                 {
                     Write("return ");
                 }
-                await EmitTreeAsync(Node.Body, cancellationToken);
+                EmitTree(Node.Body, cancellationToken);
 
                 WriteSemiColon(true);
                 EndBlock();

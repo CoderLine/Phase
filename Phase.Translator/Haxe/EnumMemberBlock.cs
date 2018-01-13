@@ -14,7 +14,7 @@ namespace Phase.Translator.Haxe
             _field = field;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteVar();
             Write(_field.Name);

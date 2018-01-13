@@ -15,7 +15,7 @@ namespace Phase.Translator.Haxe
             _property = property;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Emitter.IsExternal(_property))
             {

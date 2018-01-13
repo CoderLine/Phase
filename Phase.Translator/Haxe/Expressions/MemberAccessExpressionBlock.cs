@@ -10,7 +10,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class MemberAccessExpressionBlock : AbstractHaxeScriptEmitterBlock<MemberAccessExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             var expression = Node.Expression;
             var leftHandSide = Emitter.GetSymbolInfo(expression);
@@ -50,7 +50,7 @@ namespace Phase.Translator.Haxe.Expressions
 
             if (leftHandSide.Symbol == null)
             {
-                await EmitTreeAsync(expression, cancellationToken);
+                EmitTree(expression, cancellationToken);
             }
             else
             {
@@ -78,7 +78,7 @@ namespace Phase.Translator.Haxe.Expressions
                         Write(Emitter.GetTypeName((INamedTypeSymbol) leftHandSide.Symbol, false, true));
                         break;
                     default:
-                        await EmitTreeAsync(expression, cancellationToken);
+                        EmitTree(expression, cancellationToken);
                         break;
                 }
             }

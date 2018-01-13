@@ -7,10 +7,10 @@ namespace Phase.Translator.Haxe
 {
     public class DoWhileBlock : AbstractHaxeScriptEmitterBlock<DoStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteDo();
-            await EmitTreeAsync(Node.Statement, cancellationToken);
+            EmitTree(Node.Statement, cancellationToken);
             if (Node.Statement.Kind() == SyntaxKind.Block)
             {
                 WriteSpace();
@@ -18,7 +18,7 @@ namespace Phase.Translator.Haxe
 
             WriteWhile();
             WriteOpenParentheses();
-            await EmitTreeAsync(Node.Condition, cancellationToken);
+            EmitTree(Node.Condition, cancellationToken);
             WriteCloseParentheses();
             WriteSemiColon(true);
         }

@@ -16,7 +16,7 @@ namespace Phase.Translator.Haxe
             _field = field;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_field.AssociatedSymbol is IPropertySymbol property && Emitter.IsAutoProperty(property))
             {
@@ -47,7 +47,7 @@ namespace Phase.Translator.Haxe
             ExpressionSyntax initializer = null;
             foreach (var reference in _field.DeclaringSyntaxReferences)
             {
-                var node = await reference.GetSyntaxAsync(cancellationToken);
+                var node = reference.GetSyntax(cancellationToken);
                 var variable = node as VariableDeclaratorSyntax;
                 if (variable != null)
                 {
@@ -62,7 +62,7 @@ namespace Phase.Translator.Haxe
             if (initializer != null)
             {
                 Write(" = ");
-                await EmitTreeAsync(initializer, cancellationToken);
+                EmitTree(initializer, cancellationToken);
             }
 
             WriteSemiColon(true);

@@ -8,14 +8,14 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class ObjectCreationExpressionBlock : AbstractHaxeScriptEmitterBlock<ObjectCreationExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             var type = (ITypeSymbol) Emitter.GetSymbolInfo(Node.Type).Symbol;
             if (type.TypeKind == TypeKind.Delegate)
             {
                 if (Node.ArgumentList.Arguments.Count == 1)
                 {
-                    await EmitTreeAsync(Node.ArgumentList.Arguments[0], cancellationToken);
+                    EmitTree(Node.ArgumentList.Arguments[0], cancellationToken);
                 }
             }
             else if(Emitter.HasNativeConstructors(type) || !Emitter.HasConstructorOverloads(type))
@@ -23,7 +23,7 @@ namespace Phase.Translator.Haxe.Expressions
                 WriteNew();
                 WriteType(Node.Type);
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
-                await WriteMethodInvocation(ctor, Node.ArgumentList, null, cancellationToken);
+                WriteMethodInvocation(ctor, Node.ArgumentList, null, cancellationToken);
             }
             else
             {
@@ -33,7 +33,7 @@ namespace Phase.Translator.Haxe.Expressions
                 WriteDot();
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
                 Write(Emitter.GetMethodName(ctor));
-                await WriteMethodInvocation(ctor, Node.ArgumentList, null, cancellationToken);
+                WriteMethodInvocation(ctor, Node.ArgumentList, null, cancellationToken);
             }
         }
     }

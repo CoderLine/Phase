@@ -7,7 +7,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     class CastExpressionBlock : AbstractHaxeScriptEmitterBlock<CastExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             var sourceType = Emitter.GetTypeInfo(Node.Expression);
             var targetType = Emitter.GetTypeInfo(Node);
@@ -31,14 +31,14 @@ namespace Phase.Translator.Haxe.Expressions
                         case SpecialType.System_Decimal:
                             Write("Std.int");
                             WriteOpenParentheses();
-                            await EmitTreeAsync(Node.Expression, cancellationToken);
+                            EmitTree(Node.Expression, cancellationToken);
                             WriteCloseParentheses();
                             return;
 
                         default:
                             Write("cast");
                             WriteOpenParentheses();
-                            await EmitTreeAsync(Node.Expression, cancellationToken);
+                            EmitTree(Node.Expression, cancellationToken);
                             WriteCloseParentheses();
                             return;
                     }
@@ -46,13 +46,13 @@ namespace Phase.Translator.Haxe.Expressions
 
             if (targetType.Type.TypeKind == TypeKind.Delegate)
             {
-                await EmitTreeAsync(Node.Expression, cancellationToken);
+                EmitTree(Node.Expression, cancellationToken);
             }
             else
             {
                 Write("cast");
                 WriteOpenParentheses();
-                await EmitTreeAsync(Node.Expression, cancellationToken);
+                EmitTree(Node.Expression, cancellationToken);
                 if (sourceType.Type.SpecialType != SpecialType.System_Object &&
                     targetType.Type != null && targetType.Type.TypeKind != TypeKind.TypeParameter && !IsSpecialArray(targetType.Type))
                 {

@@ -6,7 +6,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class InitializerExpressionBlock : AbstractHaxeScriptEmitterBlock<InitializerExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteOpenBracket();
 
@@ -16,7 +16,7 @@ namespace Phase.Translator.Haxe.Expressions
                 {
                     WriteComma();
                 }
-                await EmitTreeAsync(Node.Expressions[i], cancellationToken);
+                EmitTree(Node.Expressions[i], cancellationToken);
             }
 
             WriteCloseBracket();

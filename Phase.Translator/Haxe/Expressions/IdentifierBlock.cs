@@ -9,7 +9,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class IdentifierBlock : AbstractHaxeScriptEmitterBlock<IdentifierNameSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             var resolve = Emitter.GetSymbolInfo(Node);
             if (resolve.Symbol == null)

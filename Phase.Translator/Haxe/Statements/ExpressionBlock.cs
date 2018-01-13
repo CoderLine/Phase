@@ -7,9 +7,9 @@ namespace Phase.Translator.Haxe
 {
     public class ExpressionBlock : AbstractHaxeScriptEmitterBlock<ExpressionStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            var emit = await EmitTreeAsync(Node.Expression, cancellationToken) as InvocationExpressionBlock;
+            var emit = EmitTree(Node.Expression, cancellationToken) as InvocationExpressionBlock;
             if (emit == null || !emit.SkipSemicolonOnStatement)
             {
                 WriteSemiColon(true);

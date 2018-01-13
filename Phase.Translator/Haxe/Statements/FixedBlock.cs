@@ -6,11 +6,11 @@ namespace Phase.Translator.Haxe
 {
     public class FixedBlock : AbstractHaxeScriptEmitterBlock<FixedStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            await EmitTreeAsync(Node.Declaration, cancellationToken);
+            EmitTree(Node.Declaration, cancellationToken);
             WriteSemiColon(true);
-            await EmitTreeAsync(Node.Statement, cancellationToken);
+            EmitTree(Node.Statement, cancellationToken);
         }
     }
 }

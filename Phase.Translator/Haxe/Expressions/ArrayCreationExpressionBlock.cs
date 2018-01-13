@@ -7,7 +7,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class ArrayCreationExpressionBlock : AbstractHaxeScriptEmitterBlock<ArrayCreationExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             if (Node.Initializer != null)
             {
@@ -19,7 +19,7 @@ namespace Phase.Translator.Haxe.Expressions
                     {
                         WriteComma();
                     }
-                    await EmitTreeAsync(Node.Initializer.Expressions[i], cancellationToken);
+                    EmitTree(Node.Initializer.Expressions[i], cancellationToken);
                 }
 
                 WriteCloseBracket();
@@ -58,7 +58,7 @@ namespace Phase.Translator.Haxe.Expressions
                     }
                     for (int j = 0; j < Node.Type.RankSpecifiers[i].Sizes.Count; j++)
                     {
-                        await EmitTreeAsync(Node.Type.RankSpecifiers[i].Sizes[j], cancellationToken);
+                        EmitTree(Node.Type.RankSpecifiers[i].Sizes[j], cancellationToken);
                         x++;
                     }
                 }

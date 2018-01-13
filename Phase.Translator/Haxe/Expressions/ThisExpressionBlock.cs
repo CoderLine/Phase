@@ -6,7 +6,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     class ThisExpressionBlock : AbstractHaxeScriptEmitterBlock<ThisExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             Write("this");
         }

@@ -8,7 +8,7 @@ namespace Phase.Translator.Haxe
     public class UsingBlock : AbstractHaxeScriptEmitterBlock<UsingStatementSyntax>
     {
         private static int _recursiveUsing = 0;
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             BeginBlock();
 
@@ -17,14 +17,14 @@ namespace Phase.Translator.Haxe
             {
                 resourceName = "__usingResource" + _recursiveUsing;
                 Write("var ", resourceName, " = ");
-                await EmitTreeAsync(Node.Expression, cancellationToken);
+                EmitTree(Node.Expression, cancellationToken);
                 _recursiveUsing++;
                 WriteSemiColon(true);
             }
             else
             {
                 resourceName = Node.Declaration.Variables.First().Identifier.Text;
-                await EmitTreeAsync(Node.Declaration, cancellationToken);
+                EmitTree(Node.Declaration, cancellationToken);
             }
 
             Write(PhaseConstants.Phase);
@@ -39,12 +39,12 @@ namespace Phase.Translator.Haxe
 
             if (Node.Kind() == SyntaxKind.Block)
             {
-                await EmitTreeAsync(Node.Statement, cancellationToken);
+                EmitTree(Node.Statement, cancellationToken);
             }
             else
             {
                 BeginBlock();
-                await EmitTreeAsync(Node.Statement, cancellationToken);
+                EmitTree(Node.Statement, cancellationToken);
                 EndBlock();
             }
 

@@ -15,7 +15,7 @@ namespace Phase.Translator.Haxe
             _type = type;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Emitter.IsExternal(_type.TypeSymbol))
             {
@@ -56,7 +56,7 @@ namespace Phase.Translator.Haxe
             foreach (var enumMember in _type.TypeSymbol.GetMembers().OfType<IFieldSymbol>())
             {
                 var enumMemberBlock = new EnumMemberBlock(EmitterContext, enumMember);
-                await enumMemberBlock.EmitAsync(cancellationToken);
+                enumMemberBlock.Emit(cancellationToken);
             }
 
             Write("@:to public inline function toInt():Int return this;");

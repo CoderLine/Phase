@@ -8,7 +8,7 @@ namespace Phase.Translator.Haxe
 {
     public class BreakBlock : AbstractHaxeScriptEmitterBlock<BreakStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Node.Parent.Kind() != SyntaxKind.SwitchSection)
             {

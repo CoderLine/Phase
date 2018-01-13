@@ -6,7 +6,7 @@ namespace Phase.Translator.Haxe
 {
     public class ContinueBlock : AbstractHaxeScriptEmitterBlock<ContinueStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             Write("continue");
             WriteSemiColon(true);

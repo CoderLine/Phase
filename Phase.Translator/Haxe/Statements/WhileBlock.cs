@@ -6,14 +6,14 @@ namespace Phase.Translator.Haxe
 {
     public class WhileBlock : AbstractHaxeScriptEmitterBlock<WhileStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteWhile();
             WriteOpenParentheses();
-            await EmitTreeAsync(Node.Condition, cancellationToken);
+            EmitTree(Node.Condition, cancellationToken);
             WriteCloseParentheses();
             WriteNewLine();
-            await EmitTreeAsync(Node.Statement, cancellationToken);
+            EmitTree(Node.Statement, cancellationToken);
         }
     }
 }

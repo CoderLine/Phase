@@ -668,6 +668,8 @@ namespace Phase.Translator.Haxe
 
         public bool IsRefVariable(VariableDeclaratorSyntax variable)
         {
+            return false; 
+            // TODO: support for ref
             SyntaxNode node = variable;
             BlockSyntax scope;
             do
@@ -684,6 +686,9 @@ namespace Phase.Translator.Haxe
 
         public bool IsRefVariable(ILocalSymbol symbol)
         {
+            return false;
+            // TODO: support for ref
+
             var variable = symbol.DeclaringSyntaxReferences.Select(f => f.GetSyntax()).First(f => f != null);
             SyntaxNode node = variable;
             BlockSyntax scope;

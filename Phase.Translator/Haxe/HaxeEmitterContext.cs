@@ -27,28 +27,28 @@ namespace Phase.Translator.Haxe
 
         public async Task<HaxeEmitterContext> EmitAsync(CancellationToken cancellationToken)
         {
-            Log.Trace($"\tEmitting Type {CurrentType.TypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}");
+            //Log.Trace($"\tEmitting Type {CurrentType.TypeSymbol.ToDisplayString(SymbolDisplayFormat.FullyQualifiedFormat)}");
             switch (CurrentType.Kind)
             {
                 case PhaseTypeKind.Class:
                     var classBlock = new ClassBlock(this, (PhaseClass)CurrentType);
-                    await classBlock.EmitAsync(cancellationToken);
+                    classBlock.Emit(cancellationToken);
                     break;
                 case PhaseTypeKind.Struct:
                     var structBlock = new ClassBlock(this, (PhaseStruct)CurrentType);
-                    await structBlock.EmitAsync(cancellationToken);
+                    structBlock.Emit(cancellationToken);
                     break;
                 case PhaseTypeKind.Interface:
                     var interfaceBlock = new InterfaceBlock(this, (PhaseInterface)CurrentType);
-                    await interfaceBlock.EmitAsync(cancellationToken);
+                    interfaceBlock.Emit(cancellationToken);
                     break;
                 case PhaseTypeKind.Enum:
                     var enumBlock = new EnumBlock(this, (PhaseEnum)CurrentType);
-                    await enumBlock.EmitAsync(cancellationToken);
+                    enumBlock.Emit(cancellationToken);
                     break;
                 case PhaseTypeKind.Delegate:
                     var delegateBlock = new DelegateBlock(this, (PhaseDelegate)CurrentType);
-                    await delegateBlock.EmitAsync(cancellationToken);
+                    delegateBlock.Emit(cancellationToken);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

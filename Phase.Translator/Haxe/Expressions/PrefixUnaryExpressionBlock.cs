@@ -6,10 +6,10 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class PrefixUnaryExpressionBlock : AbstractHaxeScriptEmitterBlock<PrefixUnaryExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             Write(Node.OperatorToken.Text);
-            await EmitTreeAsync(Node.Operand, cancellationToken);
+            EmitTree(Node.Operand, cancellationToken);
         }
     }
 }

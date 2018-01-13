@@ -7,7 +7,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class VariableDeclarationBlock : AbstractHaxeScriptEmitterBlock<VariableDeclarationSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             for (int i = 0; i < Node.Variables.Count; i++)
             {
@@ -21,7 +21,7 @@ namespace Phase.Translator.Haxe.Expressions
                 if (variable.Initializer != null)
                 {
                     Write(" = ");
-                    await EmitTreeAsync(variable.Initializer.Value, cancellationToken);
+                    EmitTree(variable.Initializer.Value, cancellationToken);
                 }
 
                 WriteSemiColon(true);

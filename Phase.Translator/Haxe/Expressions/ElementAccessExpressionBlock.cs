@@ -12,7 +12,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     class ElementAccessExpressionBlock : AbstractHaxeScriptEmitterBlock<ElementAccessExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             var type = Emitter.GetTypeInfo(Node, cancellationToken);
             if (type.Type.TypeKind == TypeKind.Dynamic)
@@ -20,7 +20,7 @@ namespace Phase.Translator.Haxe.Expressions
                 Write("untyped ");
             }
 
-            await EmitTreeAsync(Node.Expression, cancellationToken);
+            EmitTree(Node.Expression, cancellationToken);
 
             var symbol = Emitter.GetSymbolInfo(Node);
             if (symbol.Symbol != null && symbol.Symbol.Kind == SymbolKind.Property &&
@@ -70,7 +70,7 @@ namespace Phase.Translator.Haxe.Expressions
                     {
                         WriteComma();
                     }
-                    await EmitTreeAsync(Node.ArgumentList.Arguments[i], cancellationToken);
+                    EmitTree(Node.ArgumentList.Arguments[i], cancellationToken);
                 }
 
                 if (writeCloseParenthesis)
@@ -83,7 +83,7 @@ namespace Phase.Translator.Haxe.Expressions
                 for (int i = 0; i < Node.ArgumentList.Arguments.Count; i++)
                 {
                     WriteOpenBracket();
-                    await EmitTreeAsync(Node.ArgumentList.Arguments[i], cancellationToken);
+                    EmitTree(Node.ArgumentList.Arguments[i], cancellationToken);
                     WriteCloseBracket();
                 }
                

@@ -7,7 +7,7 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class BaseExpressionBlock : AbstractHaxeScriptEmitterBlock<BaseExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             Write("super");
         }

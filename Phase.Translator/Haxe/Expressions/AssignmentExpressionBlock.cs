@@ -8,12 +8,12 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class AssignmentExpressionBlock : AbstractHaxeScriptEmitterBlock<AssignmentExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             var leftSymbol = Emitter.GetSymbolInfo(Node.Left);
             if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property && ((IPropertySymbol)leftSymbol.Symbol).IsIndexer)
             {
-                await EmitTreeAsync(Node.Left, cancellationToken);
+                EmitTree(Node.Left, cancellationToken);
 
                 WriteComma();
 
@@ -54,7 +54,7 @@ namespace Phase.Translator.Haxe.Expressions
                 if (!string.IsNullOrEmpty(op))
                 {
                     var property = ((IPropertySymbol) leftSymbol.Symbol);
-                    await EmitTreeAsync(Node.Left, cancellationToken);
+                    EmitTree(Node.Left, cancellationToken);
                     WriteDot();
                     Write(Emitter.GetMethodName(property.GetMethod));
                     WriteOpenCloseParentheses();
@@ -64,13 +64,13 @@ namespace Phase.Translator.Haxe.Expressions
                     WriteSpace();
                 }
 
-                await EmitTreeAsync(Node.Right, cancellationToken);
+                EmitTree(Node.Right, cancellationToken);
 
                 WriteCloseParentheses();
             }
             else
             {
-                await EmitTreeAsync(Node.Left, cancellationToken);
+                EmitTree(Node.Left, cancellationToken);
 
                 Write(" ");
                 switch (Node.Kind())
@@ -110,7 +110,7 @@ namespace Phase.Translator.Haxe.Expressions
                         break;
                 }
                 Write(" ");
-                await EmitTreeAsync(Node.Right, cancellationToken);
+                EmitTree(Node.Right, cancellationToken);
             }
         }
     }

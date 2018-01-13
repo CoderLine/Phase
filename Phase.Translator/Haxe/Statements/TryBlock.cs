@@ -8,7 +8,7 @@ namespace Phase.Translator.Haxe
     public class TryBlock : AbstractHaxeScriptEmitterBlock<TryStatementSyntax>
     {
         private static int _recursiveCatch;
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Node.Finally != null)
             {
@@ -24,12 +24,12 @@ namespace Phase.Translator.Haxe
 
             if (Node.Catches.Count == 0)
             {
-                await EmitTreeAsync(Node.Block, cancellationToken);
+                EmitTree(Node.Block, cancellationToken);
             }
             else
             {
                 Write("try");
-                await EmitTreeAsync(Node.Block, cancellationToken);
+                EmitTree(Node.Block, cancellationToken);
 
                 foreach (var catchClauseSyntax in Node.Catches)
                 {
@@ -63,7 +63,7 @@ namespace Phase.Translator.Haxe
                                     .FullName));
                             WriteCloseParentheses();
                         }
-                        await EmitTreeAsync(catchClauseSyntax.Block, cancellationToken);
+                        EmitTree(catchClauseSyntax.Block, cancellationToken);
                     }
                     finally
                     {
@@ -78,7 +78,7 @@ namespace Phase.Translator.Haxe
                 WriteComma();
                 WriteFunction();
                 WriteOpenCloseParentheses();
-                await EmitTreeAsync(Node.Finally.Block, cancellationToken);
+                EmitTree(Node.Finally.Block, cancellationToken);
                 WriteCloseParentheses();
                 WriteSemiColon(true);
             }

@@ -6,9 +6,9 @@ namespace Phase.Translator.Haxe
 {
     public class LabeledBlock : AbstractHaxeScriptEmitterBlock<LabeledStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            await EmitTreeAsync(Node.Statement, cancellationToken);
+            EmitTree(Node.Statement, cancellationToken);
         }
     }
 }

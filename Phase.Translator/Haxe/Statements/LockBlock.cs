@@ -7,14 +7,14 @@ namespace Phase.Translator.Haxe
 {
     public class LockBlock : AbstractHaxeScriptEmitterBlock<LockStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             Write(PhaseConstants.Phase);
             WriteDot();
             Write("Lock");
             WriteOpenParentheses();
 
-            await EmitTreeAsync(Node.Expression, cancellationToken);
+            EmitTree(Node.Expression, cancellationToken);
             WriteComma();
 
             WriteFunction();
@@ -22,12 +22,12 @@ namespace Phase.Translator.Haxe
 
             if (Node.Kind() == SyntaxKind.Block)
             {
-                await EmitTreeAsync(Node.Statement, cancellationToken);
+                EmitTree(Node.Statement, cancellationToken);
             }
             else
             {
                 BeginBlock();
-                await EmitTreeAsync(Node.Statement, cancellationToken);
+                EmitTree(Node.Statement, cancellationToken);
                 EndBlock();
             }
 

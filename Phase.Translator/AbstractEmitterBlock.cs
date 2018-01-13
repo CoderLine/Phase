@@ -8,20 +8,20 @@ namespace Phase.Translator
     {
         protected IWriter Writer;
 
-        public virtual async Task EmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public virtual void Emit(CancellationToken cancellationToken = default(CancellationToken))
         {
-            await BeginEmitAsync(cancellationToken);
-            await DoEmitAsync(cancellationToken);
-            await EndEmitAsync(cancellationToken);
+            BeginEmit(cancellationToken);
+            DoEmit(cancellationToken);
+            EndEmit(cancellationToken);
         }
 
-        protected virtual async Task BeginEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected virtual void BeginEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
         }
 
-        protected abstract Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken));
+        protected abstract void DoEmit(CancellationToken cancellationToken = default(CancellationToken));
 
-        protected virtual async Task EndEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected virtual void EndEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
         }
     }

@@ -6,17 +6,17 @@ namespace Phase.Translator.Haxe
 {
     public class ForEachBlock : AbstractHaxeScriptEmitterBlock<ForEachStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteFor();
             WriteOpenParentheses();
             Write(Node.Identifier.ValueText);
             Write(" in (");
-            await EmitTreeAsync(Node.Expression, cancellationToken);
+            EmitTree(Node.Expression, cancellationToken);
             Write(").GetEnumerator()");
             WriteCloseParentheses();
             WriteNewLine();
-            await EmitTreeAsync(Node.Statement, cancellationToken);
+            EmitTree(Node.Statement, cancellationToken);
         }
     }
 }

@@ -18,7 +18,7 @@ namespace Phase.Translator.Haxe
             _node = node;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             var visitor = new Visitor(EmitterContext, cancellationToken);
             visitor.Visit(_node);
@@ -44,7 +44,7 @@ namespace Phase.Translator.Haxe
             {
                 var block = new TBlock();
                 if (FirstBlock == null) FirstBlock = block;
-                block.EmitAsync(_context, syntax, _cancellationToken).Wait(_cancellationToken);
+                block.Emit(_context, syntax, _cancellationToken);
             }
 
             #region Statements

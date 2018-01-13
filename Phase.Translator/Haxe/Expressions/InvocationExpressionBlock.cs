@@ -12,7 +12,7 @@ namespace Phase.Translator.Haxe.Expressions
     {
         public bool SkipSemicolonOnStatement { get; set; }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             if (Node.Expression is IdentifierNameSyntax)
             {
@@ -85,7 +85,7 @@ namespace Phase.Translator.Haxe.Expressions
                             switch (Node.Expression.Kind())
                             {
                                 case SyntaxKind.SimpleMemberAccessExpression:
-                                    await EmitTreeAsync(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
+                                    EmitTree(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
                                     break;
                                 default:
                                     // TODO: report compilation error or warning
@@ -104,12 +104,12 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(Emitter.GetMethodName(methodSymbol));
                     if (methodSymbol.IsStatic)
                     {
-                        await WriteMethodInvocation(methodSymbol, Node.ArgumentList, null,
+                        WriteMethodInvocation(methodSymbol, Node.ArgumentList, null,
                             cancellationToken);
                     }
                     else
                     {
-                        await WriteMethodInvocation(methodSymbol, Node.ArgumentList, GetInvokeExpression(Node.Expression),
+                        WriteMethodInvocation(methodSymbol, Node.ArgumentList, GetInvokeExpression(Node.Expression),
                             cancellationToken);
                     }
                 }
@@ -118,7 +118,7 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     WriteDot();
                     Write(Emitter.GetMethodName(methodSymbol));
-                    await WriteMethodInvocation(methodSymbol, Node.ArgumentList, GetInvokeExpression(Node.Expression),
+                    WriteMethodInvocation(methodSymbol, Node.ArgumentList, GetInvokeExpression(Node.Expression),
                         cancellationToken);
                 }
                 else if (methodSymbol.IsStatic)
@@ -126,25 +126,25 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     WriteDot();
                     Write(Emitter.GetMethodName(methodSymbol));
-                    await WriteMethodInvocation(methodSymbol, Node.ArgumentList, null,
+                    WriteMethodInvocation(methodSymbol, Node.ArgumentList, null,
                         cancellationToken);
                 }
                 else
                 {
                     if (methodSymbol.MethodKind == MethodKind.DelegateInvoke)
                     {
-                        await EmitTreeAsync(Node.Expression, cancellationToken);
+                        EmitTree(Node.Expression, cancellationToken);
                     }
                     else
                     {
                         switch (Node.Expression.Kind())
                         {
                             case SyntaxKind.SimpleMemberAccessExpression:
-                                await EmitTreeAsync(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
+                                EmitTree(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
                                 WriteDot();
                                 break;
                             case SyntaxKind.ElementAccessExpression:
-                                await EmitTreeAsync(Node.Expression, cancellationToken);
+                                EmitTree(Node.Expression, cancellationToken);
                                 WriteDot();
                                 break;
                             case SyntaxKind.IdentifierName:
@@ -158,7 +158,7 @@ namespace Phase.Translator.Haxe.Expressions
                         Write(Emitter.GetMethodName(methodSymbol));
                     }
                   
-                    await WriteMethodInvocation(methodSymbol, Node.ArgumentList, null, cancellationToken);
+                    WriteMethodInvocation(methodSymbol, Node.ArgumentList, null, cancellationToken);
                 }
             }
             else
@@ -166,12 +166,12 @@ namespace Phase.Translator.Haxe.Expressions
                 switch (Node.Expression.Kind())
                 {
                     case SyntaxKind.SimpleMemberAccessExpression:
-                        await EmitTreeAsync(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
+                        EmitTree(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
                         WriteDot();
                         Write(((MemberAccessExpressionSyntax)Node.Expression).Name.Identifier.ValueText);
                         break;
                     case SyntaxKind.ElementAccessExpression:
-                        await EmitTreeAsync(Node.Expression, cancellationToken);
+                        EmitTree(Node.Expression, cancellationToken);
                         WriteDot();
                         break;
                     case SyntaxKind.IdentifierName:
@@ -181,7 +181,7 @@ namespace Phase.Translator.Haxe.Expressions
                         Debug.Fail("Unknown ezxpression for method invocation");
                         break;
                 }
-                await WriteMethodInvocation(null, Node.ArgumentList, null, cancellationToken);
+                WriteMethodInvocation(null, Node.ArgumentList, null, cancellationToken);
             }
         }
 

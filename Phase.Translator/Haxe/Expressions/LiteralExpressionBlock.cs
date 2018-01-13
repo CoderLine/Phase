@@ -9,7 +9,7 @@ namespace Phase.Translator.Haxe.Expressions
     public class LiteralExpressionBlock : AbstractHaxeScriptEmitterBlock<LiteralExpressionSyntax>
     {
         private static readonly Regex NewLine = new Regex("(\r\n?)", RegexOptions.Compiled);
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             var value = Node.Token.Value;
             switch (Node.Kind())

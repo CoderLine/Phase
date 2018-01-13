@@ -9,18 +9,18 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class BinaryExpressionBlock : AbstractHaxeScriptEmitterBlock<BinaryExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             switch (Node.Kind())
             {
                 case SyntaxKind.AddExpression:
-                    await DoEmitAsync("+", cancellationToken);
+                    DoEmit("+", cancellationToken);
                     break;
                 case SyntaxKind.SubtractExpression:
-                    await DoEmitAsync("-", cancellationToken);
+                    DoEmit("-", cancellationToken);
                     break;
                 case SyntaxKind.MultiplyExpression:
-                    await DoEmitAsync("*", cancellationToken);
+                    DoEmit("*", cancellationToken);
                     break;
                 case SyntaxKind.DivideExpression:
 
@@ -72,96 +72,96 @@ namespace Phase.Translator.Haxe.Expressions
                     {
                         Write("Std.int");
                         WriteOpenParentheses();
-                        await DoEmitAsync("/", cancellationToken);
+                        DoEmit("/", cancellationToken);
                         WriteCloseParentheses();
                     }
                     else
                     {
-                        await DoEmitAsync("/", cancellationToken);
+                        DoEmit("/", cancellationToken);
                     }
 
 
                     break;
                 case SyntaxKind.ModuloExpression:
-                    await DoEmitAsync("%", cancellationToken);
+                    DoEmit("%", cancellationToken);
                     break;
                 case SyntaxKind.LeftShiftExpression:
-                    await DoEmitAsync("<<", cancellationToken);
+                    DoEmit("<<", cancellationToken);
                     break;
                 case SyntaxKind.RightShiftExpression:
-                    await DoEmitAsync(">>", cancellationToken);
+                    DoEmit(">>", cancellationToken);
                     break;
                 case SyntaxKind.LogicalOrExpression:
-                    await DoEmitAsync("||", cancellationToken);
+                    DoEmit("||", cancellationToken);
                     break;
                 case SyntaxKind.LogicalAndExpression:
-                    await DoEmitAsync("&&", cancellationToken);
+                    DoEmit("&&", cancellationToken);
                     break;
                 case SyntaxKind.BitwiseOrExpression:
-                    await DoEmitAsync("|", cancellationToken);
+                    DoEmit("|", cancellationToken);
                     break;
                 case SyntaxKind.BitwiseAndExpression:
-                    await DoEmitAsync("&", cancellationToken);
+                    DoEmit("&", cancellationToken);
                     break;
                 case SyntaxKind.ExclusiveOrExpression:
-                    await DoEmitAsync("^", cancellationToken);
+                    DoEmit("^", cancellationToken);
                     break;
                 case SyntaxKind.EqualsExpression:
-                    await DoEmitAsync("==", cancellationToken);
+                    DoEmit("==", cancellationToken);
                     break;
                 case SyntaxKind.NotEqualsExpression:
-                    await DoEmitAsync("!=", cancellationToken);
+                    DoEmit("!=", cancellationToken);
                     break;
                 case SyntaxKind.LessThanExpression:
-                    await DoEmitAsync("<", cancellationToken);
+                    DoEmit("<", cancellationToken);
                     break;
                 case SyntaxKind.LessThanOrEqualExpression:
-                    await DoEmitAsync("<=", cancellationToken);
+                    DoEmit("<=", cancellationToken);
                     break;
                 case SyntaxKind.GreaterThanExpression:
-                    await DoEmitAsync(">", cancellationToken);
+                    DoEmit(">", cancellationToken);
                     break;
                 case SyntaxKind.GreaterThanOrEqualExpression:
-                    await DoEmitAsync(">=", cancellationToken);
+                    DoEmit(">=", cancellationToken);
                     break;
                 case SyntaxKind.AsExpression:
                     Write(PhaseConstants.Phase, ".As(");
-                    await EmitTreeAsync(Node.Left, cancellationToken);
+                    EmitTree(Node.Left, cancellationToken);
                     Write(",");
-                    await EmitTreeAsync(Node.Right, cancellationToken);
+                    EmitTree(Node.Right, cancellationToken);
                     Write(")");
                     break;
                 case SyntaxKind.IsExpression:
                     Write("Std.is(");
-                    await EmitTreeAsync(Node.Left, cancellationToken);
+                    EmitTree(Node.Left, cancellationToken);
                     Write(",");
-                    await EmitTreeAsync(Node.Right, cancellationToken);
+                    EmitTree(Node.Right, cancellationToken);
                     Write(")");
                     break;
                 case SyntaxKind.CoalesceExpression:
                     // TODO: this way the left expression is executed twice, 
-                    await EmitTreeAsync(Node.Left, cancellationToken);
+                    EmitTree(Node.Left, cancellationToken);
                     Write(" ? ");
-                    await EmitTreeAsync(Node.Left, cancellationToken);
+                    EmitTree(Node.Left, cancellationToken);
                     Write(" : ");
-                    await EmitTreeAsync(Node.Right, cancellationToken);
+                    EmitTree(Node.Right, cancellationToken);
                     break;
                 case SyntaxKind.SimpleMemberAccessExpression:
                 case SyntaxKind.PointerMemberAccessExpression:
-                    await DoEmitAsync(".", cancellationToken);
+                    DoEmit(".", cancellationToken);
                     break;
                 default:
                     throw new Exception("unexpected Type given");
             }
         }
 
-        protected async Task DoEmitAsync(string op, CancellationToken cancellationToken = default(CancellationToken))
+        protected void DoEmit(string op, CancellationToken cancellationToken = default(CancellationToken))
         {
-            await EmitTreeAsync(Node.Left, cancellationToken);
+            EmitTree(Node.Left, cancellationToken);
             Write(" ");
             Write(op);
             Write(" ");
-            await EmitTreeAsync(Node.Right, cancellationToken);
+            EmitTree(Node.Right, cancellationToken);
         }
     }
 }

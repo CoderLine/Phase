@@ -192,7 +192,6 @@ namespace Phase.Translator
         private async Task<bool> PrecompileAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             Log.Trace("Start project compilation");
-            var hasError = false;
             try
             {
                 var compiler = new MSBuildProjectCompiler(new Dictionary<string, string>
@@ -202,28 +201,6 @@ namespace Phase.Translator
                 });
                 Compilation = (CSharpCompilation)await compiler.BuildAsync(Compiler.Input.ProjectFile, cancellationToken);
                 Log.Trace("Project compiled");
-
-                var diagnostics = Compilation.GetDiagnostics();
-                foreach (var diagnostic in diagnostics)
-                {
-                    switch (diagnostic.Severity)
-                    {
-                        case DiagnosticSeverity.Hidden:
-                            break;
-                        case DiagnosticSeverity.Info:
-                            Log.Info(diagnostic.GetMessage(CultureInfo.InvariantCulture));
-                            break;
-                        case DiagnosticSeverity.Warning:
-                            Log.Warn(diagnostic.GetMessage(CultureInfo.InvariantCulture));
-                            break;
-                        case DiagnosticSeverity.Error:
-                            Log.Error(diagnostic.GetMessage(CultureInfo.InvariantCulture));
-                            hasError = true;
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-                }
             }
             catch (Exception e)
             {
@@ -233,7 +210,7 @@ namespace Phase.Translator
 
             Log.Trace("Finished project compilation");
 
-            return !hasError;
+            return true;
         }
     }
 }

@@ -9,11 +9,11 @@ namespace Phase.Translator.Haxe
 {
     public class SwitchBlock : AbstractHaxeScriptEmitterBlock<SwitchStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteSwitch();
             WriteOpenParentheses();
-            await EmitTreeAsync(Node.Expression, cancellationToken);
+            EmitTree(Node.Expression, cancellationToken);
             WriteCloseParentheses();
             WriteNewLine();
             BeginBlock();
@@ -40,7 +40,7 @@ namespace Phase.Translator.Haxe
                         {
                             case SyntaxKind.CaseSwitchLabel:
                                 var caseLabel = (CaseSwitchLabelSyntax) label;
-                                await EmitTreeAsync(caseLabel.Value, cancellationToken);
+                                EmitTree(caseLabel.Value, cancellationToken);
                                 break;
                             default:
                                 Debugger.Break();
@@ -54,7 +54,7 @@ namespace Phase.Translator.Haxe
                 Indent();
                 foreach (var statement in section.Statements)
                 {
-                    await EmitTreeAsync(statement, cancellationToken);
+                    EmitTree(statement, cancellationToken);
                 }
                 Outdent();
             }

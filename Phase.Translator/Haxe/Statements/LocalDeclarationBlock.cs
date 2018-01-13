@@ -8,7 +8,7 @@ namespace Phase.Translator.Haxe
 {
     public class LocalDeclarationBlock : AbstractHaxeScriptEmitterBlock<LocalDeclarationStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             foreach (var var in Node.Declaration.Variables)
             {
@@ -38,7 +38,7 @@ namespace Phase.Translator.Haxe
                     {
                         Write("new CsRef(");
                     }
-                    await EmitTreeAsync(var.Initializer, cancellationToken);
+                    EmitTree(var.Initializer, cancellationToken);
                     if (isRef)
                     {
                         Write(")");

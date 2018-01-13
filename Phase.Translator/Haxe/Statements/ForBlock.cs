@@ -7,19 +7,19 @@ namespace Phase.Translator.Haxe
 {
     public class ForBlock : AbstractHaxeScriptEmitterBlock<ForStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             BeginBlock();
 
             if (Node.Declaration != null)
             {
-                await EmitTreeAsync(Node.Declaration, cancellationToken);
+                EmitTree(Node.Declaration, cancellationToken);
             }
             else if (Node.Initializers.Count > 0)
             {
                 foreach (var initializer in Node.Initializers)
                 {
-                    await EmitTreeAsync(initializer, cancellationToken);
+                    EmitTree(initializer, cancellationToken);
                     WriteSemiColon(true);
                 }
             }
@@ -27,7 +27,7 @@ namespace Phase.Translator.Haxe
 
             WriteWhile();
             WriteOpenParentheses();
-            await EmitTreeAsync(Node.Condition, cancellationToken);
+            EmitTree(Node.Condition, cancellationToken);
             WriteCloseParentheses();
 
             WriteNewLine();
@@ -37,17 +37,17 @@ namespace Phase.Translator.Haxe
             {
                 foreach (var statement in ((BlockSyntax)Node.Statement).Statements)
                 {
-                    await EmitTreeAsync(statement, cancellationToken);
+                    EmitTree(statement, cancellationToken);
                 }
             }
             else
             {
-                await EmitTreeAsync(Node.Statement, cancellationToken);
+                EmitTree(Node.Statement, cancellationToken);
             }
 
             foreach (var incrementor in Node.Incrementors)
             {
-                await EmitTreeAsync(incrementor, cancellationToken);
+                EmitTree(incrementor, cancellationToken);
                 WriteSemiColon(true);
             }
 

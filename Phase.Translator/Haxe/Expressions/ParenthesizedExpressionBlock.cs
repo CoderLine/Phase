@@ -6,10 +6,10 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class ParenthesizedExpressionBlock : AbstractHaxeScriptEmitterBlock<ParenthesizedExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             WriteOpenParentheses();
-            await EmitTreeAsync(Node.Expression, cancellationToken);
+            EmitTree(Node.Expression, cancellationToken);
             WriteCloseParentheses();
         }
     }

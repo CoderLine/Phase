@@ -37,10 +37,10 @@ namespace Phase.Translator.Haxe
             EmitterContext = context;
         }
 
-        protected async Task<AbstractHaxeScriptEmitterBlock> EmitTreeAsync(SyntaxNode value, CancellationToken cancellationToken = default(CancellationToken))
+        protected AbstractHaxeScriptEmitterBlock EmitTree(SyntaxNode value, CancellationToken cancellationToken = default(CancellationToken))
         {
             var expressionBlock = new VisitorBlock(EmitterContext, value);
-            await expressionBlock.DoEmitAsync(cancellationToken);
+            expressionBlock.DoEmit(cancellationToken);
             return expressionBlock.FirstBlock;
         }
 
@@ -76,13 +76,13 @@ namespace Phase.Translator.Haxe
         }
 
 
-        protected async Task WriteMethodInvocation(IMethodSymbol method, ArgumentListSyntax argumentList, ExpressionSyntax extensionThis = null, CancellationToken cancellationToken = default(CancellationToken))
+        protected void WriteMethodInvocation(IMethodSymbol method, ArgumentListSyntax argumentList, ExpressionSyntax extensionThis = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             EmitterContext.IsMethodInvocation = true;
             WriteOpenParentheses();
             if (extensionThis != null)
             {
-                await EmitTreeAsync(extensionThis, cancellationToken);
+                EmitTree(extensionThis, cancellationToken);
             }
 
             if (method == null)
@@ -90,7 +90,7 @@ namespace Phase.Translator.Haxe
                 for (int i = 0; i < argumentList.Arguments.Count; i++)
                 {
                     if (i > 0 || extensionThis != null) WriteComma();
-                    await EmitTreeAsync(argumentList.Arguments[i], cancellationToken);
+                    EmitTree(argumentList.Arguments[i], cancellationToken);
                 }
             }
             else if (method.Parameters.Length > 0)
@@ -98,8 +98,7 @@ namespace Phase.Translator.Haxe
                 BaseMethodDeclarationSyntax methodDeclaration = null;
                 foreach (var reference in method.DeclaringSyntaxReferences)
                 {
-                    methodDeclaration =
-                        (await reference.GetSyntaxAsync(cancellationToken)) as BaseMethodDeclarationSyntax;
+                    methodDeclaration = reference.GetSyntax(cancellationToken) as BaseMethodDeclarationSyntax;
                     if (methodDeclaration != null)
                     {
                         break;
@@ -155,7 +154,7 @@ namespace Phase.Translator.Haxe
                         for (int j = 0; j < varArgs.Count; j++)
                         {
                             if (j > 0) WriteComma();
-                            await EmitTreeAsync(varArgs[j], cancellationToken);
+                            EmitTree(varArgs[j], cancellationToken);
                         }
                         Write("]");
                     }
@@ -164,14 +163,14 @@ namespace Phase.Translator.Haxe
                         var value = arguments[param.Name];
                         if (value != null)
                         {
-                            await EmitTreeAsync(value, cancellationToken);
+                            EmitTree(value, cancellationToken);
                         }
                         else if (param.IsOptional)
                         {
                             if (methodDeclaration != null)
                             {
                                 var parameterDeclaration = methodDeclaration.ParameterList.Parameters[i].Default.Value;
-                                await EmitTreeAsync(parameterDeclaration, cancellationToken);
+                                EmitTree(parameterDeclaration, cancellationToken);
                             }
                             else if (param.HasExplicitDefaultValue)
                             {
@@ -207,6 +206,7 @@ namespace Phase.Translator.Haxe
                 WriteColon();
                 if (param.RefKind != RefKind.None)
                 {
+                    throw new PhaseCompilerException("ref parameters are not supported");
                     Write("CsRef<");
                 }
                 WriteType(methodParameters[i].Type);
@@ -220,7 +220,7 @@ namespace Phase.Translator.Haxe
                     Write(" = ");
 
                     var parameterSyntax = (ParameterSyntax)await methodParameters[i].DeclaringSyntaxReferences.First().GetSyntaxAsync(cancellationToken);
-                    await EmitTreeAsync(parameterSyntax.Default.Value, cancellationToken);
+                    EmitTree(parameterSyntax.Default.Value, cancellationToken);
                 }
             }
         }
@@ -235,11 +235,11 @@ namespace Phase.Translator.Haxe
         {
         }
 
-        public virtual async Task EmitAsync(HaxeEmitterContext context, T node, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual void Emit(HaxeEmitterContext context, T node, CancellationToken cancellationToken = default(CancellationToken))
         {
             EmitterContext = context;
             Node = node;
-            await EmitAsync(cancellationToken);
+            Emit(cancellationToken);
         }
     }
 }

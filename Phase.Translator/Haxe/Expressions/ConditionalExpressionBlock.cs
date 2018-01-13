@@ -6,13 +6,13 @@ namespace Phase.Translator.Haxe.Expressions
 {
     class ConditionalExpressionBlock : AbstractHaxeScriptEmitterBlock<ConditionalExpressionSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            await EmitTreeAsync(Node.Condition, cancellationToken);
+            EmitTree(Node.Condition, cancellationToken);
             Write(" ? ");
-            await EmitTreeAsync(Node.WhenTrue, cancellationToken);
+            EmitTree(Node.WhenTrue, cancellationToken);
             Write(" : ");
-            await EmitTreeAsync(Node.WhenFalse, cancellationToken);
+            EmitTree(Node.WhenFalse, cancellationToken);
         }
     }
 }

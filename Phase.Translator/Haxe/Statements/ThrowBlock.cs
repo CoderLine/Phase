@@ -6,10 +6,10 @@ namespace Phase.Translator.Haxe
 {
     public class ThrowBlock : AbstractHaxeScriptEmitterBlock<ThrowStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteThrow();
-            await EmitTreeAsync(Node.Expression, cancellationToken);
+            EmitTree(Node.Expression, cancellationToken);
             WriteSemiColon(true);
         }
     }

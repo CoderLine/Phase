@@ -16,7 +16,7 @@ namespace Phase.Translator.Haxe
             _type = type;
         }
 
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Emitter.IsExternal(_type.TypeSymbol))
             {
@@ -72,19 +72,19 @@ namespace Phase.Translator.Haxe
                 {
                     case SymbolKind.Field:
                         var fieldBlock = new FieldBlock(EmitterContext, (IFieldSymbol)member);
-                        await fieldBlock.EmitAsync(cancellationToken);
+                        fieldBlock.Emit(cancellationToken);
                         break;
                     case SymbolKind.Property:
                         var propertyBlock = new PropertyBlock(EmitterContext, (IPropertySymbol)member);
-                        await propertyBlock.EmitAsync(cancellationToken);
+                        propertyBlock.Emit(cancellationToken);
                         break;
                     case SymbolKind.Method:
                         var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol)member);
-                        await methodBlock.EmitAsync(cancellationToken);
+                        methodBlock.Emit(cancellationToken);
                         break;
                     case SymbolKind.Event:
                         var eventBlock = new EventBlock(EmitterContext, (IEventSymbol)member);
-                        await eventBlock.EmitAsync(cancellationToken);
+                        eventBlock.Emit(cancellationToken);
                         break;
                 }
             }

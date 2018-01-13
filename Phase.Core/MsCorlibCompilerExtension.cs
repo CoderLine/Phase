@@ -5,10 +5,9 @@ using Phase.CompilerServices;
 namespace Phase
 {
     [External]
-    public class MsCorlibCompilerExtension
+    public class MsCorlibCompilerExtension : ICompilerExtension
     {
-        [CompilerExtension]
-        public static void RegisterAttributes(ICompilerContext context)
+        public void Run(ICompilerContext context)
         {
             context.Attributes.Type<string>()
                 .Add(new NameAttribute("system.CsString"));

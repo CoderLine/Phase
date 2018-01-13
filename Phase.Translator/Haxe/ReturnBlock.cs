@@ -6,12 +6,12 @@ namespace Phase.Translator.Haxe
 {
     public class ReturnBlock : AbstractHaxeScriptEmitterBlock<ReturnStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             if (Node.Expression != null)
             {
                 WriteReturn(true);
-                await EmitTreeAsync(Node.Expression, cancellationToken);
+                EmitTree(Node.Expression, cancellationToken);
             }
             else
             {

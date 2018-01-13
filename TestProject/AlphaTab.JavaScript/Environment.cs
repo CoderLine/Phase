@@ -40,17 +40,6 @@ namespace AlphaTab
         public static string ScriptFile { get; set; }
         public static bool IsFontLoaded { get; set; }
 
-        [CompilerExtension]
-        public static void CompilerInit(ICompilerContext compilerContext)
-        {
-            var attr = compilerContext.Attributes;
-            attr.Type<FastDictionary<int,int>>().Add(new ExternalAttribute(), new NativeConstructorsAttribute());
-            attr.Member((FastDictionary<int, int> x) => x[0]).Add(new NativeIndexerAttribute());
-            attr.Type<FastList<int>>().Add(new ExternalAttribute(), new NativeConstructorsAttribute());
-            attr.Member((FastList<int> x) => x[0]).Add(new NativeIndexerAttribute());
-            attr.Member((FastList<int> x) => x.IndexOf(0)).Add(new NameAttribute("IndexOf"));
-        }
-
         static void PlatformInit()
         {
             RenderEngines["svg"] = () => new CssFontSvgCanvas();

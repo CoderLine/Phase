@@ -33,7 +33,7 @@ namespace Phase.Translator
         public AttributeLoader(CSharpCompilation compilation)
         {
             Compilation = compilation;
-            _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.Attributes.CompilerExtensionAttribute");
+            _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerExtension");
             _compilerContextType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerContext");
         }
 
@@ -105,7 +105,7 @@ namespace Phase.Translator
             }
         }
 
-        public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+        public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
             var hasAttributes = node.AttributeLists.Select(a => a.Attributes).Any();
             if (!hasAttributes)
@@ -113,32 +113,56 @@ namespace Phase.Translator
                 return;
             }
 
-            var method = _semanticModel.GetDeclaredSymbol(node, _cancellationToken);
-            var isCompilerExtension = method.GetAttributes().Any(a => a.AttributeClass.Equals(_compilerExtensionType));
-            if (isCompilerExtension)
+            var type = _semanticModel.GetDeclaredSymbol(node, _cancellationToken);
+            var isExtension = type.Interfaces.Any(i => i.Equals(_compilerExtensionType));
+            if (isExtension)
             {
-                if (method.Parameters.Length != 1 ||
-                    !method.Parameters[0].Type.Equals(_compilerContextType))
-                {
-                    Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH001, node.ParameterList.GetLocation(),
-                        method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
-                    return;
-                }
-                if (!method.IsStatic)
-                {
-                    Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH002, node.ParameterList.GetLocation(),
-                        method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
-                    return;
-                }
-                if (node.Body == null)
-                {
-                    Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH003, node.ParameterList.GetLocation(),
-                        method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
-                    return;
-                }
+                base.VisitClassDeclaration(node);
+            }
+        }
 
-                var interpreter = new CompilerExtensionInterpreter(Attributes, _semanticModel, node.Body);
-                interpreter.Execute();
+        public override void VisitInterfaceDeclaration(InterfaceDeclarationSyntax node)
+        {
+        }
+
+        public override void VisitStructDeclaration(StructDeclarationSyntax node)
+        {
+        }
+
+        public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
+        {
+            if (node.Identifier.ValueText == "Run" || node.Identifier.ValueText == "ICompilerExtension.Run")
+            {
+                var method = _semanticModel.GetDeclaredSymbol(node, _cancellationToken);
+                {
+                    if (method.Parameters.Length != 1 ||
+                        !method.Parameters[0].Type.Equals(_compilerContextType))
+                    {
+                        Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH001,
+                            node.ParameterList.GetLocation(),
+                            method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
+                        return;
+                    }
+
+                    if (!method.IsStatic)
+                    {
+                        Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH002,
+                            node.ParameterList.GetLocation(),
+                            method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
+                        return;
+                    }
+
+                    if (node.Body == null)
+                    {
+                        Compilation.GetDiagnostics().Add(Diagnostic.Create(PhaseErrors.PH003,
+                            node.ParameterList.GetLocation(),
+                            method.ToDisplayString(SymbolDisplayFormat.CSharpErrorMessageFormat)));
+                        return;
+                    }
+
+                    var interpreter = new CompilerExtensionInterpreter(Attributes, _semanticModel, node.Body);
+                    interpreter.Execute();
+                }
             }
         }
     }
@@ -297,7 +321,7 @@ namespace Phase.Translator
                                         invocation.ArgumentList.Arguments[0].GetLocation()
                                     ));
                                 }
-                                type = _semanticModel.GetTypeInfo(((TypeOfExpressionSyntax) typeofExpr.Expression).Type).Type;
+                                type = _semanticModel.GetTypeInfo(((TypeOfExpressionSyntax)typeofExpr.Expression).Type).Type;
                             }
 
                             return new AttributeBuilderDetails

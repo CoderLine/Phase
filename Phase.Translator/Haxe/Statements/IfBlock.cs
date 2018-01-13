@@ -6,20 +6,20 @@ namespace Phase.Translator.Haxe
 {
     public class IfBlock : AbstractHaxeScriptEmitterBlock<IfStatementSyntax>
     {
-        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteIf();
             WriteOpenParentheses();
-            await EmitTreeAsync(Node.Condition, cancellationToken);
+            EmitTree(Node.Condition, cancellationToken);
             WriteCloseParentheses();
             WriteNewLine();
 
-            await EmitTreeAsync(Node.Statement, cancellationToken);
+            EmitTree(Node.Statement, cancellationToken);
 
             if (Node.Else != null)
             {
                 WriteElse();
-                await EmitTreeAsync(Node.Else.Statement, cancellationToken);
+                EmitTree(Node.Else.Statement, cancellationToken);
             }
         }
     }

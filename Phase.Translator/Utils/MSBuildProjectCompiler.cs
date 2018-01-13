@@ -83,7 +83,7 @@ namespace Phase.Translator.Utils
                 throw result.Exception ?? new InvalidOperationException("Error during project compilation");
             }
 
-            return await compilationHost.CompileAsync(cancellationToken);
+            return compilationHost.Compile(cancellationToken);
         }
 
         private static readonly SemaphoreSlim BuildManagerLock = new SemaphoreSlim(initialCount: 1);
@@ -222,11 +222,13 @@ namespace Phase.Translator.Utils
         {
             string TaskName { get; }
 
-            Task<Compilation> CompileAsync(CancellationToken cancellationToken);
+            Compilation Compile(CancellationToken cancellationToken);
         }
 
         public class CSharpCompilationHost : ICompilationHost, ICscHostObject4
         {
+            private static readonly NLog.Logger Log = LogManager.GetCurrentClassLogger();
+
             private readonly string _baseDirectory;
 
             private bool _emitDebugInfo;
@@ -252,11 +254,12 @@ namespace Phase.Translator.Utils
             public bool IsDesignTime() => true;
             public bool IsUpToDate() => false;
 
-            public async Task<Compilation> CompileAsync(CancellationToken cancellationToken)
+            public Compilation Compile(CancellationToken cancellationToken)
             {
                 var args = CSharpCommandLineParser.Default.Parse(CommandLineArgs, _baseDirectory,
                     RuntimeEnvironment.GetRuntimeDirectory());
 
+                Log.Trace("Parsing Source Files");
                 var trees = new SyntaxTree[Sources.Length];
                 var parseErrors = new ConcurrentBag<Exception>();
                 Parallel.For(0, Sources.Length, i =>
@@ -276,6 +279,9 @@ namespace Phase.Translator.Utils
                         parseErrors.Add(e);
                     }
                 });
+
+                Log.Trace("Parsing Source Files completed");
+
                 if (parseErrors.Count > 0)
                 {
                     throw new AggregateException(parseErrors);
