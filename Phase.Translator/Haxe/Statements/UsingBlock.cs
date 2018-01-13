@@ -1,0 +1,62 @@
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+namespace Phase.Translator.Haxe
+{
+    public class UsingBlock : AbstractHaxeScriptEmitterBlock<UsingStatementSyntax>
+    {
+        private static int _recursiveUsing = 0;
+        protected override async Task DoEmitAsync(CancellationToken cancellationToken = new CancellationToken())
+        {
+            BeginBlock();
+
+            string resourceName;
+            if (Node.Declaration == null)
+            {
+                resourceName = "__usingResource" + _recursiveUsing;
+                Write("var ", resourceName, " = ");
+                await EmitTreeAsync(Node.Expression, cancellationToken);
+                _recursiveUsing++;
+                WriteSemiColon(true);
+            }
+            else
+            {
+                resourceName = Node.Declaration.Variables.First().Identifier.Text;
+                await EmitTreeAsync(Node.Declaration, cancellationToken);
+            }
+
+            Write(PhaseConstants.Phase);
+            WriteDot();
+            Write("Using");
+            WriteOpenParentheses();
+            Write(resourceName);
+            WriteComma();
+
+            WriteFunction();
+            WriteOpenCloseParentheses();
+
+            if (Node.Kind() == SyntaxKind.Block)
+            {
+                await EmitTreeAsync(Node.Statement, cancellationToken);
+            }
+            else
+            {
+                BeginBlock();
+                await EmitTreeAsync(Node.Statement, cancellationToken);
+                EndBlock();
+            }
+
+            WriteCloseParentheses();
+            WriteSemiColon();
+
+            if (Node.Declaration == null)
+            {
+                _recursiveUsing--;
+            }
+
+            EndBlock();
+        }
+    }
+}

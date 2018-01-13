@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+    <CompilerResponseFile>AdditionalCompilerOptions.txt</CompilerResponseFile>
+  </PropertyGroup>
+
+</Project>

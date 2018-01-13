@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Phase.Cli": {
+      "commandName": "Project",
+      "commandLineArgs": "\"D:\\Dev\\C#\\Projects\\Phase.netstandard\\TestProject\\AlphaTab.JavaScript\\AlphaTab.JavaScript.csproj\" Debug \"Any CPU\""
+    }
+  }
+}
