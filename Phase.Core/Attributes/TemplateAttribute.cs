@@ -1,0 +1,16 @@
+﻿using System;
+
+namespace Phase.Attributes
+{
+    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+    sealed class TemplateAttribute : Attribute
+    {
+        public string Template { get; }
+        public bool SkipSemicolonOnStatements { get; set; }
+
+        public TemplateAttribute(string template)
+        {
+            Template = template;
+        }
+    }
+}

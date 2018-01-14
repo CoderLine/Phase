@@ -11,26 +11,20 @@ namespace Phase.Translator.Haxe
 {
     public abstract class AbstractHaxeScriptEmitterBlock : AbstractEmitterBlock
     {
-        private HaxeEmitterContext _emitterContext;
+        public HaxeEmitterContext EmitterContext { get; set; }
 
-        public HaxeEmitterContext EmitterContext
+        protected override IWriter Writer => EmitterContext.Writer;
+        public HaxeEmitter Emitter => EmitterContext.Emitter;
+
+        public void PushWriter()
         {
-            get => _emitterContext;
-            set
-            {
-                _emitterContext = value;
-                if (value != null)
-                {
-                    Writer = value.Writer;
-                }
-                else
-                {
-                    Writer = null;
-                }
-            }
+            EmitterContext.PushWriter();
         }
 
-        public HaxeEmitter Emitter => EmitterContext.Emitter;
+        public string PopWriter()
+        {
+            return EmitterContext.PopWriter();
+        }
 
         protected AbstractHaxeScriptEmitterBlock(HaxeEmitterContext context)
         {
@@ -76,109 +70,91 @@ namespace Phase.Translator.Haxe
         }
 
 
-        protected void WriteMethodInvocation(IMethodSymbol method, ArgumentListSyntax argumentList, ExpressionSyntax extensionThis = null, CancellationToken cancellationToken = default(CancellationToken))
+        protected void WriteMethodInvocation(IMethodSymbol method,
+            ArgumentListSyntax argumentList,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            WriteMethodInvocation(method, argumentList?.Arguments.Select(a => new ParameterInvocationInfo(a)), cancellationToken);
+        }
+
+        protected void WriteMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList, CancellationToken cancellationToken = default(CancellationToken))
         {
             EmitterContext.IsMethodInvocation = true;
             WriteOpenParentheses();
-            if (extensionThis != null)
-            {
-                EmitTree(extensionThis, cancellationToken);
-            }
 
-            if (method == null)
+            if (argumentList != null)
             {
-                for (int i = 0; i < argumentList.Arguments.Count; i++)
+                if (method == null)
                 {
-                    if (i > 0 || extensionThis != null) WriteComma();
-                    EmitTree(argumentList.Arguments[i], cancellationToken);
-                }
-            }
-            else if (method.Parameters.Length > 0)
-            {
-                BaseMethodDeclarationSyntax methodDeclaration = null;
-                foreach (var reference in method.DeclaringSyntaxReferences)
-                {
-                    methodDeclaration = reference.GetSyntax(cancellationToken) as BaseMethodDeclarationSyntax;
-                    if (methodDeclaration != null)
+                    var args = argumentList.ToArray();
+                    for (int i = 0; i < args.Length; i++)
                     {
-                        break;
+                        if (i > 0) WriteComma();
+                        EmitTree(args[i].Expression, cancellationToken);
                     }
                 }
-
-                var arguments = new Dictionary<string, ExpressionSyntax>();
-                var varArgs = new List<ExpressionSyntax>();
-                // fill expected parameters
-                foreach (var param in method.Parameters)
+                else
                 {
-                    arguments[param.Name] = null;
-                }
+                    BaseMethodDeclarationSyntax methodDeclaration = null;
+                    foreach (var reference in method.DeclaringSyntaxReferences)
+                    {
+                        methodDeclaration = reference.GetSyntax(cancellationToken) as BaseMethodDeclarationSyntax;
+                        if (methodDeclaration != null)
+                        {
+                            break;
+                        }
+                    }
 
-                // iterate all actual parameters and fit the into the arguments lookup
-                var parameterIndex = 0;
-                var isVarArgs = false;
-                foreach (var argument in argumentList.Arguments)
-                {
-                    if (argument.NameColon != null)
+                    var arguments = BuildMethodInvocation(method, argumentList);
+                    var isFirstParam = true;
+                    foreach (var argument in argumentList.Where(a => a.InjectAtBeginning))
                     {
-                        arguments[argument.NameColon.Name.Identifier.Text] = argument.Expression;
+                        if (!isFirstParam) WriteComma();
+                        isFirstParam = false;
+                        EmitTree(argument.Expression, cancellationToken);
                     }
-                    if (isVarArgs)
+
+                    // print expressions
+                    for (int i = 0; i < method.Parameters.Length; i++)
                     {
-                        varArgs.Add(argument.Expression);
-                    }
-                    else if (parameterIndex < method.Parameters.Length)
-                    {
-                        var param = method.Parameters[parameterIndex];
+                        if (!isFirstParam) WriteComma();
+                        isFirstParam = false;
+
+                        var param = method.Parameters[i];
+                        var value = arguments[param.Name].ToArray();
                         if (param.IsParams)
                         {
-                            isVarArgs = true;
-                            varArgs.Add(argument.Expression);
+                            Write("[");
+                            for (var j = 0; j < value.Length; j++)
+                            {
+                                if (j > 0) WriteComma();
+                                EmitTree(value[j], cancellationToken);
+                            }
+
+                            Write("]");
                         }
                         else
                         {
-                            arguments[param.Name] = argument.Expression;
-                            parameterIndex++;
-                        }
-                    }
-                }
-
-                // print expressions
-                for (int i = 0; i < method.Parameters.Length; i++)
-                {
-                    if (i > 0 || extensionThis != null) WriteComma();
-
-                    var param = method.Parameters[i];
-                    if (param.IsParams)
-                    {
-                        Write("[");
-                        for (int j = 0; j < varArgs.Count; j++)
-                        {
-                            if (j > 0) WriteComma();
-                            EmitTree(varArgs[j], cancellationToken);
-                        }
-                        Write("]");
-                    }
-                    else
-                    {
-                        var value = arguments[param.Name];
-                        if (value != null)
-                        {
-                            EmitTree(value, cancellationToken);
-                        }
-                        else if (param.IsOptional)
-                        {
-                            if (methodDeclaration != null)
+                            if (value.Length == 1)
                             {
-                                var parameterDeclaration = methodDeclaration.ParameterList.Parameters[i].Default.Value;
-                                EmitTree(parameterDeclaration, cancellationToken);
+                                EmitTree(value[0], cancellationToken);
                             }
-                            else if (param.HasExplicitDefaultValue)
+                            else if (param.IsOptional)
                             {
-                                Write(param.ExplicitDefaultValue);
-                            }
-                            else
-                            {
-                                Write("null");
+                                if (methodDeclaration != null)
+                                {
+                                    var parameterDeclaration =
+                                        methodDeclaration.ParameterList.Parameters[i].Default.Value;
+                                    EmitTree(parameterDeclaration, cancellationToken);
+                                }
+                                else if (param.HasExplicitDefaultValue)
+                                {
+                                    Write(param.ExplicitDefaultValue);
+                                }
+                                else
+                                {
+                                    Write("null");
+                                }
                             }
                         }
                     }
@@ -188,6 +164,57 @@ namespace Phase.Translator.Haxe
             WriteCloseParentheses();
 
             EmitterContext.IsMethodInvocation = false;
+        }
+
+        protected static Dictionary<string, IEnumerable<ExpressionSyntax>> BuildMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList)
+        {
+            var arguments = new Dictionary<string, IEnumerable<ExpressionSyntax>>();
+            var varArgs = new List<ExpressionSyntax>();
+            var varArgsName = string.Empty;
+            // fill expected parameters
+            foreach (var param in method.Parameters)
+            {
+                arguments[param.Name] = Enumerable.Empty<ExpressionSyntax>();
+            }
+
+            // iterate all actual parameters and fit the into the arguments lookup
+            var parameterIndex = 0;
+            var isVarArgs = false;
+            foreach (var argument in argumentList)
+            {
+                if (argument.InjectAtBeginning)
+                {
+                    continue;
+                }
+
+                if (argument.Name != null && argument.Name != varArgsName)
+                {
+                    arguments[argument.Name] = new[] { argument.Expression };
+                }
+
+                if (isVarArgs)
+                {
+                    varArgs.Add(argument.Expression);
+                }
+                else if (parameterIndex < method.Parameters.Length)
+                {
+                    var param = method.Parameters[parameterIndex];
+                    if (param.IsParams)
+                    {
+                        isVarArgs = true;
+                        varArgsName = param.Name;
+                        arguments[param.Name] = varArgs;
+                        varArgs.Add(argument.Expression);
+                    }
+                    else
+                    {
+                        arguments[param.Name] = new[] { argument.Expression };
+                        parameterIndex++;
+                    }
+                }
+            }
+
+            return arguments;
         }
 
         protected async Task WriteParameterDeclarations(ImmutableArray<IParameterSymbol> methodParameters, CancellationToken cancellationToken)
@@ -225,6 +252,27 @@ namespace Phase.Translator.Haxe
             }
         }
 
+    }
+
+    public class ParameterInvocationInfo
+    {
+        public bool InjectAtBeginning { get; set; }
+        public string Name { get; set; }
+        public ExpressionSyntax Expression { get; set; }
+
+        public ParameterInvocationInfo(ArgumentSyntax syntax)
+        {
+            if (syntax.NameColon != null)
+            {
+                Name = syntax.NameColon.Name.Identifier.ValueText;
+            }
+            Expression = syntax.Expression;
+        }
+        public ParameterInvocationInfo(ExpressionSyntax expression, bool injected = false)
+        {
+            Expression = expression;
+            InjectAtBeginning = injected;
+        }
     }
 
     public abstract class AbstractHaxeScriptEmitterBlock<T> : AbstractHaxeScriptEmitterBlock where T : SyntaxNode

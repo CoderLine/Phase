@@ -1,6 +1,8 @@
-﻿using System.Text.RegularExpressions;
+﻿using System;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -15,7 +17,7 @@ namespace Phase.Translator.Haxe.Expressions
             switch (Node.Kind())
             {
                 case SyntaxKind.NumericLiteralExpression:
-                    Write(value);
+                    Write(Node.Token.Text.TrimEnd('f'));
                     break;
                 case SyntaxKind.StringLiteralExpression:
                     if (Node.Token.Text.StartsWith("@"))
@@ -33,7 +35,30 @@ namespace Phase.Translator.Haxe.Expressions
                     }
                     break;
                 case SyntaxKind.CharacterLiteralExpression:
+                    var cast = Emitter.GetTypeInfo(Node, cancellationToken);
+                    if (cast.ConvertedType != null)
+                    {
+                        switch (cast.ConvertedType.SpecialType)
+                        {
+                            case SpecialType.System_SByte:
+                            case SpecialType.System_Byte:
+                            case SpecialType.System_Int16:
+                            case SpecialType.System_UInt16:
+                            case SpecialType.System_Int32:
+                            case SpecialType.System_UInt32:
+                            case SpecialType.System_Int64:
+                            case SpecialType.System_UInt64:
+                            case SpecialType.System_Decimal:
+                            case SpecialType.System_Single:
+                            case SpecialType.System_Double:
+                                Write((int)(char)value);
+                                return;
+                        }
+                    }
+
+                    Write("system.Char.fromCode(");
                     Write((int)(char)value);
+                    WriteCloseParentheses();
                     break;
                 case SyntaxKind.TrueLiteralExpression:
                     Write("true");

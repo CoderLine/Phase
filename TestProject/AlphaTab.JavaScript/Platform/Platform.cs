@@ -90,7 +90,7 @@ namespace AlphaTab.Platform
         public static int ParseInt(string s)
         {
             var val = Script.Write<int>("untyped parseInt(s)");
-            return Script.Write<bool>("Math.isNaN(val)") ? int.MinValue : (int)val;
+            return Script.Write<bool>("Math.isNaN(untyped val)") ? int.MinValue : (int)val;
         }
 
         [Inline]
@@ -102,13 +102,13 @@ namespace AlphaTab.Platform
         [Inline]
         public static void BlockCopy(byte[] src, int srcOffset, byte[] dst, int dstOffset, int count)
         {
-            Script.Write("untyped dst.set(src.subarray(srcOffset, srcOffset + count), dstOffset);");
+            // Script.Write("untyped dst.set(src.subarray(srcOffset, srcOffset + count), dstOffset);");
         }
 
         [Inline]
         public static string StringFromCharCode(int c)
         {
-            return Script.Write<string>("String.fromCharCode(c)");
+            return Script.Write<string>("String.fromCharCode(c.ToHaxeInt())");
         }
 
         public static sbyte ReadSignedByte(this IReadable readable)
@@ -190,7 +190,7 @@ namespace AlphaTab.Platform
         [Inline]
         public static bool IsNaN(float v)
         {
-            return Script.Write<bool>("Math.isNaN(v)");
+            return Script.Write<bool>("Math.isNaN(v.ToHaxeFloat())");
         }
     }
 }

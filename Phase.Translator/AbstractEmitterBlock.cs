@@ -6,8 +6,6 @@ namespace Phase.Translator
 {
     public abstract partial class AbstractEmitterBlock
     {
-        protected IWriter Writer;
-
         public virtual void Emit(CancellationToken cancellationToken = default(CancellationToken))
         {
             BeginEmit(cancellationToken);

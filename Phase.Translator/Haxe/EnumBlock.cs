@@ -59,34 +59,44 @@ namespace Phase.Translator.Haxe
                 enumMemberBlock.Emit(cancellationToken);
             }
 
-            Write("@:to public inline function toInt():Int return this;");
+	        Write("public inline function ToBoolean_IFormatProvider(provider:system.IFormatProvider) : system.Boolean return system.Convert.ToBoolean_Int32(this);");
+	        Write("public inline function ToChar_IFormatProvider(provider:system.IFormatProvider) : system.Char return system.Convert.ToChar_Int32(this);");
+            Write("public inline function ToSByte_IFormatProvider(provider:system.IFormatProvider) : system.SByte return system.Convert.ToSByte_Byte(this);");
+            Write("public inline function ToByte_IFormatProvider(provider:system.IFormatProvider) : system.Byte return system.Convert.ToByte_Int32(this);");
+            Write("public inline function ToInt16_IFormatProvider(provider:system.IFormatProvider) : system.Int16 return system.Convert.ToInt16_Int32(this);");
+            Write("public inline function ToUInt16_IFormatProvider(provider:system.IFormatProvider) : system.UInt16 return system.Convert.ToUInt16_Int32(this);");
+            Write("public inline function ToInt32_IFormatProvider(provider:system.IFormatProvider) : system.Int32 return system.Convert.ToInt32_Int32(this);");
+            Write("public inline function ToUInt32_IFormatProvider(provider:system.IFormatProvider) : system.UInt32 return system.Convert.ToUInt32_Int32(this);");
+            Write("public inline function ToInt64_IFormatProvider(provider:system.IFormatProvider) : system.Int64 return system.Convert.ToInt64_Int32(this);");
+            Write("public inline function ToUInt64_IFormatProvider(provider:system.IFormatProvider) : system.UInt64 return system.Convert.ToUInt64_Int32(this);");
+            Write("public inline function ToSingle_IFormatProvider(provider:system.IFormatProvider) : system.Single return system.Convert.ToSingle_Int32(this);");
+            Write("public inline function ToDouble_IFormatProvider(provider:system.IFormatProvider) : system.Double return system.Convert.ToDouble_Int32(this);");
+
+            Write("@:op(A+B) public static function add1(lhs:", name, ", rhs:system.CsString):system.CsString;");
             WriteNewLine();
 
-            Write("@:op(A+B) public static inline function add1(lhs:", name, ", rhs:String):String return lhs.toString() + rhs;");
+            Write("@:op(A+B) public static function add2(lhs:system.CsString, rhs:", name, "):system.CsString;");
             WriteNewLine();
 
-            Write("@:op(A+B) public static inline function add2(lhs:String, rhs:", name, "):String return lhs + rhs.toString();");
+            Write("@:op(A>B) public static function gt(lhs:", name, ", rhs:", name, "):system.Boolean;");
             WriteNewLine();
 
-            Write("@:op(A>B) public static inline function gt(lhs:", name, ", rhs:", name, "):Bool return lhs.toInt() > rhs.toInt();");
+            Write("@:op(A>=B) public static function gte(lhs:", name, ", rhs:", name, "):system.Boolean;");
             WriteNewLine();
 
-            Write("@:op(A>=B) public static inline function gte(lhs:", name, ", rhs:", name, "):Bool return lhs.toInt() >= rhs.toInt();");
+            Write("@:op(A<B) public static function lt(lhs:", name, ", rhs:", name, "):system.Boolean;");
             WriteNewLine();
 
-            Write("@:op(A<B) public static inline function lt(lhs:", name, ", rhs:", name, "):Bool return lhs.toInt() < rhs.toInt();");
+            Write("@:op(A<=B) public static function lte(lhs:", name, ", rhs:", name, "):system.Boolean;");
             WriteNewLine();
 
-            Write("@:op(A<=B) public static inline function lte(lhs:", name, ", rhs:", name, "):Bool return lhs.toInt() <= rhs.toInt();");
+            Write("@:op(A==B) public static function eq(lhs:", name, ", rhs:", name, "):system.Boolean;");
             WriteNewLine();
 
-            Write("@:op(A==B) public static inline function eq(lhs:", name, ", rhs:", name, "):Bool return lhs.toInt() == rhs.toInt();");
+            Write("@:op(A!=B) public static function neq(lhs:", name, ", rhs:", name, "):system.Boolean;");
             WriteNewLine();
 
-            Write("@:op(A!=B) public static inline function neq(lhs:", name, ", rhs:", name, "):Bool return lhs.toInt() != rhs.toInt();");
-            WriteNewLine();
-
-            Write("@:to public function toString() : String");
+            Write("@:to public function toString() : system.CsString");
             WriteNewLine();
 
             BeginBlock();

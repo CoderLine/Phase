@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -11,6 +13,7 @@ namespace Phase.Translator.Haxe.Expressions
         {
             var sourceType = Emitter.GetTypeInfo(Node.Expression);
             var targetType = Emitter.GetTypeInfo(Node);
+
             switch (targetType.Type.SpecialType)
             {
                 case SpecialType.System_Boolean:
@@ -23,25 +26,25 @@ namespace Phase.Translator.Haxe.Expressions
                 case SpecialType.System_UInt32:
                 case SpecialType.System_Int64:
                 case SpecialType.System_UInt64:
-
-                    switch (sourceType.Type.SpecialType)
+                    if (sourceType.Type.Equals(targetType.Type))
                     {
-                        case SpecialType.System_Single:
-                        case SpecialType.System_Double:
-                        case SpecialType.System_Decimal:
-                            Write("Std.int");
-                            WriteOpenParentheses();
-                            EmitTree(Node.Expression, cancellationToken);
-                            WriteCloseParentheses();
-                            return;
-
-                        default:
-                            Write("cast");
-                            WriteOpenParentheses();
-                            EmitTree(Node.Expression, cancellationToken);
-                            WriteCloseParentheses();
-                            return;
+                        EmitTree(Node.Expression, cancellationToken);
                     }
+                    else if (Emitter.IsIConvertible(sourceType.Type))
+                    {
+                        EmitTree(Node.Expression, cancellationToken);
+                        WriteDot();
+                        Write("To" + targetType.Type.Name + "_IFormatProvider");
+                        WriteOpenParentheses();
+                        Write("null");
+                        WriteCloseParentheses();
+                    }
+                    else
+                    {
+                        Write("untyped ");
+                        EmitTree(Node.Expression, cancellationToken);
+                    }
+                    return;
             }
 
             if (targetType.Type.TypeKind == TypeKind.Delegate)

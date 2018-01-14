@@ -39,7 +39,7 @@ namespace AlphaTab.Collections
         [Inline]
         public void AppendChar(int i)
         {
-            Script.Write("this += String.fromCharCode(i);");
+            Script.Write("this += String.fromCharCode(i.ToHaxeInt());");
         }
 
         [Inline]

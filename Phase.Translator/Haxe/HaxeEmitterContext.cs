@@ -13,16 +13,34 @@ namespace Phase.Translator.Haxe
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
+        private Stack<IWriter> _writerStack;
+
         public HaxeEmitter Emitter { get; }
         public PhaseType CurrentType { get; }
         public bool IsMethodInvocation { get; set; }
         public IWriter Writer { get; set; }
+        public bool IsConstInitializer { get; set; }
 
         public HaxeEmitterContext(HaxeEmitter emitter, PhaseType type)
         {
             Emitter = emitter;
             CurrentType = type;
+            _writerStack = new Stack<IWriter>();
             Writer = new InMemoryWriter();
+        }
+
+        public void PushWriter()
+        {
+            _writerStack.Push(Writer);
+            Writer = new InMemoryWriter();
+        }
+
+
+        public string PopWriter()
+        {
+            var result = Writer.ToString();
+            Writer = _writerStack.Pop();
+            return result;
         }
 
         public async Task<HaxeEmitterContext> EmitAsync(CancellationToken cancellationToken)

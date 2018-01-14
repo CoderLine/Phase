@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net471</TargetFramework>
+    <OutputType>Library</OutputType>
+    <ApplicationIcon />
+    <StartupObject />
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Build" Version="15.5.180" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Phase.Translator\Phase.Translator.csproj" />
+  </ItemGroup>
+  
+</Project>

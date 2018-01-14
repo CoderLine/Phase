@@ -5,11 +5,14 @@ namespace Phase.Translator
 {
     public abstract partial class AbstractEmitterBlock : IWriter
     {
+        protected abstract IWriter Writer { get; }
+
         public bool IsNewLine
         {
             get { return Writer.IsNewLine; }
             set { Writer.IsNewLine = value; }
         }
+
         public void Indent()
         {
             Writer.Indent();

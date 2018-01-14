@@ -9,6 +9,8 @@ namespace Phase
     {
         public void Run(ICompilerContext context)
         {
+            context.Attributes.Type<object>()
+                .Add(new RedirectMethodsToAttribute("system.ObjectExtensions"));
             context.Attributes.Type<string>()
                 .Add(new NameAttribute("system.CsString"));
             context.Attributes.Type<bool>()

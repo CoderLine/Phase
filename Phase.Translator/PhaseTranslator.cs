@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -194,12 +195,25 @@ namespace Phase.Translator
             Log.Trace("Start project compilation");
             try
             {
-                var compiler = new MSBuildProjectCompiler(new Dictionary<string, string>
+                if (Compiler.Input.SourceFiles == null)
                 {
-                    ["Configuration"] = Compiler.Input.Configuration,
-                    ["Platform"] = Compiler.Input.Platform,
-                });
-                Compilation = (CSharpCompilation)await compiler.BuildAsync(Compiler.Input.ProjectFile, cancellationToken);
+                    var compiler = new MSBuildProjectCompiler(new Dictionary<string, string>
+                    {
+                        ["Configuration"] = Compiler.Input.Configuration,
+                        ["Platform"] = Compiler.Input.Platform,
+                    });
+                    Compilation = (CSharpCompilation)await compiler.BuildAsync(Compiler.Input.ProjectFile, cancellationToken);
+                }
+                else
+                {
+                    Compilation = MSBuildProjectCompiler.CSharpCompilationHost.Compile(Path.GetDirectoryName(Compiler.Input.ProjectFile),
+                        Compiler.Input.CompilationOptions,
+                        Compiler.Input.ParseOptions,
+                        Compiler.Input.SourceFiles,
+                        Compiler.Input.ReferencedAssemblies,
+                        cancellationToken);
+                }
+
                 Log.Trace("Project compiled");
             }
             catch (Exception e)

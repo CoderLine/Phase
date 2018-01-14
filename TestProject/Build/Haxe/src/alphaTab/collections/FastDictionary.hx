@@ -3,8 +3,8 @@ package alphaTab.collections;
 abstract FastDictionary<TKey, TValue>(Dynamic)
 {
 	public function new() this = alphaTab.platform.Platform.NewObject();
-	public var Count(get, never):Int;
-	public function get_Count():Int return alphaTab.platform.Platform.JsonKeys(this).Length;
+	public var Count(get, never):system.Int32;
+	public function get_Count():system.Int32 return alphaTab.platform.Platform.JsonKeys(this).Length;
 	
 	public inline function get_Item(index:TKey) :TValue return untyped this[index];
 	public inline function set_Item(index:TKey, value:TValue) :TValue return untyped this[index] = value;

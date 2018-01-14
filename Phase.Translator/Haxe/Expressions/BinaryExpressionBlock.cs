@@ -9,8 +9,14 @@ namespace Phase.Translator.Haxe.Expressions
 {
     public class BinaryExpressionBlock : AbstractHaxeScriptEmitterBlock<BinaryExpressionSyntax>
     {
+        private ITypeSymbol _rightType;
+        private ITypeSymbol _leftType;
+
         protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
+            _leftType = Emitter.GetTypeInfo(Node.Left).Type;
+            _rightType = Emitter.GetTypeInfo(Node.Right).Type;
+
             switch (Node.Kind())
             {
                 case SyntaxKind.AddExpression:
@@ -23,64 +29,65 @@ namespace Phase.Translator.Haxe.Expressions
                     DoEmit("*", cancellationToken);
                     break;
                 case SyntaxKind.DivideExpression:
-
                     // integer division? 
-                    var left = Emitter.GetTypeInfo(Node.Left);
-                    var right = Emitter.GetTypeInfo(Node.Right);
-
-                    var leftIsInt = false;
-                    var rightIsInt = false;
-                    switch (left.Type.SpecialType)
+                    if (IsNumberLiteralOrInlinedConst(Node.Left) && IsNumberLiteralOrInlinedConst(Node.Right))
                     {
-                        case SpecialType.System_Char:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_UInt16:
-                        case SpecialType.System_Int32:
-                        case SpecialType.System_UInt32:
-                        case SpecialType.System_Int64:
-                        case SpecialType.System_UInt64:
+                        var leftIsInt = false;
+                        var rightIsInt = false;
+                        switch (_leftType.SpecialType)
+                        {
+                            case SpecialType.System_Char:
+                            case SpecialType.System_SByte:
+                            case SpecialType.System_Byte:
+                            case SpecialType.System_Int16:
+                            case SpecialType.System_UInt16:
+                            case SpecialType.System_Int32:
+                            case SpecialType.System_UInt32:
+                            case SpecialType.System_Int64:
+                            case SpecialType.System_UInt64:
+                                leftIsInt = true;
+                                break;
+                        }
+                        if (Emitter.GetTypeName(_leftType) == "Int")
+                        {
                             leftIsInt = true;
-                            break;
-                    }
-                    if (Emitter.GetTypeName(left.Type) == "Int")
-                    {
-                        leftIsInt = true;
-                    }
+                        }
 
-                    switch (right.Type.SpecialType)
-                    {
-                        case SpecialType.System_Char:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_UInt16:
-                        case SpecialType.System_Int32:
-                        case SpecialType.System_UInt32:
-                        case SpecialType.System_Int64:
-                        case SpecialType.System_UInt64:
+                        switch (_rightType.SpecialType)
+                        {
+                            case SpecialType.System_Char:
+                            case SpecialType.System_SByte:
+                            case SpecialType.System_Byte:
+                            case SpecialType.System_Int16:
+                            case SpecialType.System_UInt16:
+                            case SpecialType.System_Int32:
+                            case SpecialType.System_UInt32:
+                            case SpecialType.System_Int64:
+                            case SpecialType.System_UInt64:
+                                rightIsInt = true;
+                                break;
+                        }
+                        if (Emitter.GetTypeName(_rightType) == "Int")
+                        {
                             rightIsInt = true;
-                            break;
-                    }
-                    if (Emitter.GetTypeName(right.Type) == "Int")
-                    {
-                        rightIsInt = true;
-                    }
+                        }
 
-                    if (leftIsInt && rightIsInt)
-                    {
-                        Write("Std.int");
-                        WriteOpenParentheses();
-                        DoEmit("/", cancellationToken);
-                        WriteCloseParentheses();
+                        if (leftIsInt && rightIsInt)
+                        {
+                            Write("Std.int");
+                            WriteOpenParentheses();
+                            DoEmit("/", cancellationToken);
+                            WriteCloseParentheses();
+                        }
+                        else
+                        {
+                            DoEmit("/", cancellationToken);
+                        }
                     }
                     else
                     {
                         DoEmit("/", cancellationToken);
                     }
-
-
                     break;
                 case SyntaxKind.ModuloExpression:
                     DoEmit("%", cancellationToken);
@@ -155,13 +162,55 @@ namespace Phase.Translator.Haxe.Expressions
             }
         }
 
+        private bool IsNumberLiteralOrInlinedConst(ExpressionSyntax node)
+        {
+            if (node.Kind() == SyntaxKind.NumericLiteralExpression)
+            {
+                return true;
+            }
+
+            if (node.Kind() == SyntaxKind.SimpleMemberAccessExpression)
+            {
+                var symbol = Emitter.GetSymbolInfo(node);
+                if (symbol.Symbol != null && symbol.Symbol is IFieldSymbol field && field.IsConst &&
+                    field.DeclaringSyntaxReferences.Length == 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         protected void DoEmit(string op, CancellationToken cancellationToken = default(CancellationToken))
         {
-            EmitTree(Node.Left, cancellationToken);
+            if (!EmitterContext.IsConstInitializer && _leftType != null && _leftType.SpecialType == SpecialType.System_Single && Node.Left.Kind() == SyntaxKind.NumericLiteralExpression)
+            {
+                Write("new system.Single");
+                WriteOpenParentheses();
+                EmitTree(Node.Left, cancellationToken);
+                WriteCloseParentheses();
+            }
+            else
+            {
+                EmitTree(Node.Left, cancellationToken);
+            }
+
             Write(" ");
             Write(op);
             Write(" ");
-            EmitTree(Node.Right, cancellationToken);
+
+            if (!EmitterContext.IsConstInitializer && _rightType != null && _rightType.SpecialType == SpecialType.System_Single && Node.Right.Kind() == SyntaxKind.NumericLiteralExpression)
+            {
+                Write("new system.Single");
+                WriteOpenParentheses();
+                EmitTree(Node.Right, cancellationToken);
+                WriteCloseParentheses();
+            }
+            else
+            {
+                EmitTree(Node.Right, cancellationToken);
+            }
         }
     }
 }

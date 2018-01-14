@@ -12,10 +12,12 @@ namespace Phase.Translator.Haxe.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
+        
+
             var expression = Node.Expression;
             var leftHandSide = Emitter.GetSymbolInfo(expression);
             var member = Emitter.GetSymbolInfo(Node);
-            if (member.Symbol != null && member.Symbol is IFieldSymbol constField && constField.IsConst)
+            if (member.Symbol != null && member.Symbol is IFieldSymbol constField && constField.IsConst && constField.DeclaringSyntaxReferences.Length == 0)
             {
                 switch (constField.Type.SpecialType)
                 {
@@ -59,13 +61,6 @@ namespace Phase.Translator.Haxe.Expressions
                 {
                     case SymbolKind.Field:
                         var field = (IFieldSymbol)leftHandSide.Symbol;
-                        //if (field.IsConst)
-                        //{
-                        //    // TODO: use correct value writing 
-                        //    Write(field.ConstantValue);
-                        //}
-                        //else
-                        //{
                         if (field.IsStatic)
                         {
                             WriteType(field.ContainingType);
@@ -106,12 +101,40 @@ namespace Phase.Translator.Haxe.Expressions
                         break;
                     case SymbolKind.Event:
                         WriteDot();
-                        Write(Node.Name.Identifier);
+                        Write(Emitter.GetEventName((IEventSymbol)member.Symbol));
                         break;
                     default:
                         WriteDot();
                         Write(Node.Name.Identifier);
                         break;
+                }
+            }
+
+            var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
+            // implicit cast
+            if (typeInfo.ConvertedType != null && !typeInfo.Type.Equals(typeInfo.ConvertedType))
+            {
+                switch (typeInfo.ConvertedType.SpecialType)
+                {
+                    case SpecialType.System_Boolean:
+                    case SpecialType.System_Char:
+                    case SpecialType.System_SByte:
+                    case SpecialType.System_Byte:
+                    case SpecialType.System_Int16:
+                    case SpecialType.System_UInt16:
+                    case SpecialType.System_Int32:
+                    case SpecialType.System_UInt32:
+                    case SpecialType.System_Int64:
+                    case SpecialType.System_UInt64:
+                        if (Emitter.IsIConvertible(typeInfo.Type))
+                        {
+                            WriteDot();
+                            Write("To" + typeInfo.ConvertedType.Name + "_IFormatProvider");
+                            WriteOpenParentheses();
+                            Write("null");
+                            WriteCloseParentheses();
+                        }
+                        return;
                 }
             }
         }

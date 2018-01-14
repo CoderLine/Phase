@@ -1,7 +1,5 @@
-﻿using System;
-using System.Diagnostics;
+﻿using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -61,142 +59,118 @@ namespace Phase.Translator.Haxe.Expressions
                 }
             }
 
+            var arguments = Node.ArgumentList.Arguments.Select(a => new ParameterInvocationInfo(a)).ToList();
             if (methodSymbol != null)
             {
-                if (Emitter.IsPhaseClass(methodSymbol.ContainingType))
+                if (methodSymbol.IsExtensionMethod)
                 {
-                    switch (methodSymbol.Name)
-                    {
-                        case "Write":
-                            var expr = Node.ArgumentList.Arguments.First().Expression;
-                            switch (expr.Kind())
-                            {
-                                case SyntaxKind.StringLiteralExpression:
-                                    Write(((LiteralExpressionSyntax) expr).Token.Value);
-                                    break;
-                                default:
-                                    // TODO: report compilation error or warning
-                                    break;
-                            }
-                            SkipSemicolonOnStatement = true;
-                            break;
-                        case "As":
-                            Write("cast (");
-                            switch (Node.Expression.Kind())
-                            {
-                                case SyntaxKind.SimpleMemberAccessExpression:
-                                    EmitTree(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
-                                    break;
-                                default:
-                                    // TODO: report compilation error or warning
-                                    Debug.Fail("Unknown expression for extension method");
-                                    break;
-                            }
-                            Write(")");
-                            break;
-                    }
+                    methodSymbol = methodSymbol.ReducedFrom;
+                    arguments.Insert(0, new ParameterInvocationInfo(GetInvokeExpression(Node.Expression)));
                 }
-                else if (NeedsSpecialTypeExtension(methodSymbol))
+
+                var template = Emitter.GetTemplate(methodSymbol);
+                if (template != null)
                 {
-                    Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
-                    Write("Extensions");
+                    SkipSemicolonOnStatement = template.SkipSemicolonOnStatements;
+                    if (template.Variables.TryGetValue("this", out var thisVar))
+                    {
+                        PushWriter();
+                        if (methodSymbol.IsStatic)
+                        {
+                            Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
+                        }
+                        else
+                        {
+                            EmitTree(Node.Expression, cancellationToken);
+                        }
+                        thisVar.RawValue = PopWriter();
+                    }
+
+                    var methodInvocation = BuildMethodInvocation(methodSymbol, arguments);
+                    foreach (var param in methodSymbol.Parameters)
+                    {
+                        if (template.Variables.TryGetValue(param.Name, out var variable))
+                        {
+                            var values = methodInvocation[param.Name].ToArray();
+                            PushWriter();
+                            if (param.IsParams)
+                            {
+                                for (int j = 0; j < values.Length; j++)
+                                {
+                                    if (j > 0) WriteComma();
+                                    EmitTree(Node.Expression, cancellationToken);
+                                }
+                            }
+                            else
+                            {
+                                if (variable.Modifier == "raw")
+                                {
+                                    var constValue = Emitter.GetConstantValue(values[0], cancellationToken);
+                                    if (constValue.HasValue)
+                                    {
+                                        Write(constValue);
+                                    }
+                                    else
+                                    {
+                                        EmitTree(values[0], cancellationToken);
+                                    }
+                                }
+                                else
+                                {
+                                    EmitTree(values[0], cancellationToken);
+                                }
+                            }
+                            var paramOutput = PopWriter();
+                            variable.RawValue = paramOutput;
+                        }
+                    }
+
+                    for (int i = 0; i < methodSymbol.TypeArguments.Length; i++)
+                    {
+                        var argument = methodSymbol.TypeArguments[i];
+                        var param = methodSymbol.TypeParameters[i];
+                        if (template.Variables.TryGetValue(param.Name, out var variable))
+                        {
+                            variable.RawValue = Emitter.GetTypeName(argument);
+                        }
+                    }
+
+                    Write(template.ToString());
+                }
+                else if (Emitter.IsMethodRedirected(methodSymbol, out var targetType))
+                {
+                    Write(targetType);
                     WriteDot();
                     Write(Emitter.GetMethodName(methodSymbol));
                     if (methodSymbol.IsStatic)
                     {
-                        WriteMethodInvocation(methodSymbol, Node.ArgumentList, null,
-                            cancellationToken);
+                        WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
                     }
                     else
                     {
-                        WriteMethodInvocation(methodSymbol, Node.ArgumentList, GetInvokeExpression(Node.Expression),
-                            cancellationToken);
+                        arguments.Insert(0, new ParameterInvocationInfo(GetInvokeExpression(Node.Expression), true));
+                        WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
                     }
-                }
-                else if (methodSymbol.IsExtensionMethod)
-                {
-                    Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
-                    WriteDot();
-                    Write(Emitter.GetMethodName(methodSymbol));
-                    WriteMethodInvocation(methodSymbol, Node.ArgumentList, GetInvokeExpression(Node.Expression),
-                        cancellationToken);
                 }
                 else if (methodSymbol.IsStatic)
                 {
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     WriteDot();
                     Write(Emitter.GetMethodName(methodSymbol));
-                    WriteMethodInvocation(methodSymbol, Node.ArgumentList, null,
-                        cancellationToken);
+                    WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
                 }
                 else
                 {
-                    if (methodSymbol.MethodKind == MethodKind.DelegateInvoke)
-                    {
-                        EmitTree(Node.Expression, cancellationToken);
-                    }
-                    else
-                    {
-                        switch (Node.Expression.Kind())
-                        {
-                            case SyntaxKind.SimpleMemberAccessExpression:
-                                EmitTree(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
-                                WriteDot();
-                                break;
-                            case SyntaxKind.ElementAccessExpression:
-                                EmitTree(Node.Expression, cancellationToken);
-                                WriteDot();
-                                break;
-                            case SyntaxKind.IdentifierName:
-                                break;
-                            default:
-                                Debug.Fail("Unknown ezxpression for method invocation");
-                                break;
-                        }
-
-                        //await EmitTreeAsync(Node.Expression, cancellationToken);
-                        Write(Emitter.GetMethodName(methodSymbol));
-                    }
-                  
-                    WriteMethodInvocation(methodSymbol, Node.ArgumentList, null, cancellationToken);
+                    EmitTree(Node.Expression, cancellationToken);
+                    WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
                 }
             }
             else
             {
-                switch (Node.Expression.Kind())
-                {
-                    case SyntaxKind.SimpleMemberAccessExpression:
-                        EmitTree(((MemberAccessExpressionSyntax)Node.Expression).Expression, cancellationToken);
-                        WriteDot();
-                        Write(((MemberAccessExpressionSyntax)Node.Expression).Name.Identifier.ValueText);
-                        break;
-                    case SyntaxKind.ElementAccessExpression:
-                        EmitTree(Node.Expression, cancellationToken);
-                        WriteDot();
-                        break;
-                    case SyntaxKind.IdentifierName:
-                        Write(((IdentifierNameSyntax)Node.Expression).Identifier.ValueText);
-                        break;
-                    default:
-                        Debug.Fail("Unknown ezxpression for method invocation");
-                        break;
-                }
-                WriteMethodInvocation(null, Node.ArgumentList, null, cancellationToken);
+                EmitTree(Node.Expression, cancellationToken);
+                WriteMethodInvocation(null, arguments, cancellationToken);
             }
         }
-
-        private bool NeedsSpecialTypeExtension(IMethodSymbol methodSymbol)
-        {
-            switch (methodSymbol.ContainingType.SpecialType)
-            {
-                case SpecialType.None:
-                case SpecialType.System_String:
-                    return false;
-                default:
-                    return true;
-            }
-        }
-
 
         private ExpressionSyntax GetInvokeExpression(ExpressionSyntax e)
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using Phase.Translator;
@@ -8,19 +9,6 @@ namespace Phase.Cli
 {
     class Program
     {
-        static IEnumerable<int> Test()
-        {
-            for (int i = 0; i < 10; i++)
-            {
-                yield return i;
-
-                if (i == 7)
-                {
-                    yield break;
-                }
-            }
-        }
-
         static void Main(string[] args)
         {
             CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
@@ -47,6 +35,10 @@ namespace Phase.Cli
             catch (Exception e)
             {
                 Console.WriteLine(e);
+                if (Debugger.IsAttached)
+                {
+                    Debugger.Break();
+                }
             }
         }
     }

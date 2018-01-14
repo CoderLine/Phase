@@ -42,6 +42,34 @@ namespace Phase.Translator.Haxe.Expressions
                     Write("Value");
                 }
             }
+
+            var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
+            // implicit cast
+            if (typeInfo.ConvertedType != null && !typeInfo.Type.Equals(typeInfo.ConvertedType))
+            {
+                switch (typeInfo.ConvertedType.SpecialType)
+                {
+                    case SpecialType.System_Boolean:
+                    case SpecialType.System_Char:
+                    case SpecialType.System_SByte:
+                    case SpecialType.System_Byte:
+                    case SpecialType.System_Int16:
+                    case SpecialType.System_UInt16:
+                    case SpecialType.System_Int32:
+                    case SpecialType.System_UInt32:
+                    case SpecialType.System_Int64:
+                    case SpecialType.System_UInt64:
+                        if (Emitter.IsIConvertible(typeInfo.Type))
+                        {
+                            WriteDot();
+                            Write("To" + typeInfo.ConvertedType.Name + "_IFormatProvider");
+                            WriteOpenParentheses();
+                            Write("null");
+                            WriteCloseParentheses();
+                        }
+                        return;
+                }
+            }
         }
     }
 }

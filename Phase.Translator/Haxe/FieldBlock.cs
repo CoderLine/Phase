@@ -44,6 +44,8 @@ namespace Phase.Translator.Haxe
             WriteColon();
             WriteType(_field.Type);
 
+            EmitterContext.IsConstInitializer = _field.IsConst;
+
             ExpressionSyntax initializer = null;
             foreach (var reference in _field.DeclaringSyntaxReferences)
             {
@@ -64,6 +66,8 @@ namespace Phase.Translator.Haxe
                 Write(" = ");
                 EmitTree(initializer, cancellationToken);
             }
+
+            EmitterContext.IsConstInitializer = false;
 
             WriteSemiColon(true);
         }

@@ -63,14 +63,14 @@ namespace Phase.Translator.Haxe
                     MaxDegreeOfParallelism = 1
                 });
 
-            var contexts = typeArray.Select(t => new HaxeEmitterContext(this, t)).ToArray();
+            var contexts = typeArray.Where(t => !IsExternal(t.TypeSymbol)).Select(t => new HaxeEmitterContext(this, t)).ToArray();
             foreach (var type in contexts)
             {
                 emitBlock.Post(type);
             }
             emitBlock.Complete();
             await emitBlock.Completion;
-          
+
             foreach (var context in contexts)
             {
                 result.Results[context.CurrentType] = new PhaseTypeResult(GetFileName(context.CurrentType), context.Writer.ToString());
@@ -301,6 +301,42 @@ namespace Phase.Translator.Haxe
                 _ignoreAttributeType = GetPhaseType("Phase.Attributes.ExternalAttribute");
             }
             return symbol.IsExtern || GetAttributes(symbol).Any(a => a.AttributeClass.Equals(_ignoreAttributeType));
+        }
+
+        public CodeTemplate GetTemplate(IMethodSymbol methodSymbol)
+        {
+            if (_templateAttributeType == null)
+            {
+                _templateAttributeType = GetPhaseType("Phase.Attributes.TemplateAttribute");
+            }
+            var attribute = GetAttributes(methodSymbol).FirstOrDefault(a => a.AttributeClass.Equals(_templateAttributeType));
+            if (attribute == null)
+            {
+                return null;
+            }
+
+            var skipSemicolonOnStatements = attribute.NamedArguments
+                .Where(arg => arg.Key == "SkipSemicolonOnStatements")
+                .Select(arg => (bool)arg.Value.Value).FirstOrDefault();
+            return new CodeTemplate(attribute.ConstructorArguments[0].Value.ToString(), skipSemicolonOnStatements);
+        }
+
+        public bool IsMethodRedirected(IMethodSymbol methodSymbol, out string typeName)
+        {
+            if (_redirectMethodsToAttribute == null)
+            {
+                _redirectMethodsToAttribute = GetPhaseType("Phase.Attributes.RedirectMethodsToAttribute");
+            }
+
+            var attribute = GetAttributes(methodSymbol.ContainingType).FirstOrDefault(a => a.AttributeClass.Equals(_redirectMethodsToAttribute));
+            if (attribute == null)
+            {
+                typeName = null;
+                return false;
+            }
+
+            typeName = attribute.ConstructorArguments[0].Value.ToString();
+            return true;
         }
 
         public string GetFieldName(IFieldSymbol field)
@@ -668,7 +704,7 @@ namespace Phase.Translator.Haxe
 
         public bool IsRefVariable(VariableDeclaratorSyntax variable)
         {
-            return false; 
+            return false;
             // TODO: support for ref
             SyntaxNode node = variable;
             BlockSyntax scope;
@@ -751,11 +787,14 @@ namespace Phase.Translator.Haxe
         private INamedTypeSymbol _inlineAttributeType;
         private INamedTypeSymbol _nameAttributeType;
         private INamedTypeSymbol _ignoreAttributeType;
+        private INamedTypeSymbol _templateAttributeType;
+        private INamedTypeSymbol _redirectMethodsToAttribute;
         private INamedTypeSymbol _fromAttributeType;
         private INamedTypeSymbol _toAttributeType;
         private INamedTypeSymbol _opAttributeType;
         private INamedTypeSymbol _nativeConstructorsAttributeType;
         private INamedTypeSymbol _compilerExtensionAttributeType;
+        private INamedTypeSymbol _iconvertibleType;
 
         public bool IsInline(IMethodSymbol method)
         {
@@ -897,5 +936,13 @@ namespace Phase.Translator.Haxe
             return false;
         }
 
+        public bool IsIConvertible(ITypeSymbol type)
+        {
+            if (_iconvertibleType == null)
+            {
+                _iconvertibleType = GetPhaseType("System.IConvertible");
+            }
+            return type.AllInterfaces.Any(i => i.Equals(_iconvertibleType));
+        }
     }
 }

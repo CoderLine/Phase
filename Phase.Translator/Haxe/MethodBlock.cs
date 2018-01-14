@@ -298,7 +298,7 @@ namespace Phase.Translator.Haxe
 
                                     WriteMethodInvocation(ctor,
                                         constructorDeclarationSyntax.Initializer.ArgumentList,
-                                        null, cancellationToken);
+                                        cancellationToken);
                                     WriteSemiColon(true);
                                 }
                                 else if (!_method.IsStatic && _method.ContainingType.BaseType != null &&
