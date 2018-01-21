@@ -30,6 +30,7 @@ namespace Phase.Translator
                     await ReadOptionsAsync();
                     await TranslateAsync(cancellationToken);
                     WriteOutput();
+                    ExecutePostBuild(cancellationToken);
                 }
             }
             catch (PhaseCompilerException)
@@ -40,6 +41,60 @@ namespace Phase.Translator
             {
                 Log.Error(e, "Unexpected error during compilation");
                 throw;
+            }
+        }
+
+        private void ExecutePostBuild(CancellationToken cancellationToken)
+        {
+            if (Options.PostBuild == null) return;
+            foreach (var step in Options.PostBuild)
+            {
+                ExecutePostBuildStep(step, cancellationToken);
+            }
+        }
+
+        private void ExecutePostBuildStep(PostBuildStep step, CancellationToken cancellationToken)
+        {
+            using (new LogHelper($"post build step '{step.Name}'", Log))
+            {
+                try
+                {
+                    var cmd = new Process
+                    {
+                        StartInfo =
+                        {
+                            FileName = step.Executable,
+                            Arguments = step.Arguments,
+                            RedirectStandardOutput = true,
+                            RedirectStandardError = true,
+                            CreateNoWindow = true,
+                            UseShellExecute = false,
+                            WorkingDirectory = Path.GetDirectoryName(Input.ProjectFile)
+                        }
+                    };
+
+                    cmd.ErrorDataReceived += (sender, args) => { Log.Error(args.Data); };
+                    cmd.OutputDataReceived += (sender, args) => { Log.Trace(args.Data); };
+
+                    using (cancellationToken.Register(() => { cmd.Kill(); }))
+                    {
+                        cmd.Start();
+
+                        cmd.BeginOutputReadLine();
+                        cmd.BeginErrorReadLine();
+
+                        cmd.WaitForExit();
+
+                        if (cmd.ExitCode != 0)
+                        {
+                            Log.Trace($"Process exited with code {cmd.ExitCode}");
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Error on postbuild execution");
+                }
             }
         }
 

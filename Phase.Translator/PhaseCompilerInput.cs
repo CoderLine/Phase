@@ -17,6 +17,6 @@ namespace Phase.Translator
 
         public CSharpCompilationOptions CompilationOptions { get; set; }
         public CSharpParseOptions ParseOptions { get; set; }
-
     }
+
 }

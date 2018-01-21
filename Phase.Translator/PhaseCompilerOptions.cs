@@ -12,6 +12,8 @@ namespace Phase.Translator
         public string Output { get; set; }
         public PhaseLanguage Language { get; set; }
 
+        public PostBuildStep[] PostBuild { get; set; }
+
         public PhaseCompilerOptions()
         {
             Language = PhaseLanguage.Haxe;
@@ -36,5 +38,13 @@ namespace Phase.Translator
                 return config;
             }
         }
+    }
+
+
+    public class PostBuildStep
+    {
+        public string Name { get; set; }
+        public string Executable { get; set; }
+        public string Arguments { get; set; }
     }
 }
