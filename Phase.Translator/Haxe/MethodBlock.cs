@@ -70,6 +70,8 @@ namespace Phase.Translator.Haxe
                 return;
             }
 
+            WriteComments(_method, cancellationToken);
+
             if (Emitter.IsFrom(_method))
             {
                 Write("@:from ");
@@ -401,6 +403,8 @@ namespace Phase.Translator.Haxe
                 EndBlock();
                 WriteNewLine();
             }
+
+            WriteComments(_method, false, cancellationToken);
         }
 
         private void CollectTypeParameters(List<ITypeSymbol> typeParameters, ITypeSymbol type)

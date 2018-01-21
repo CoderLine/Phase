@@ -4,7 +4,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
 {
-    public class IfBlock : AbstractHaxeScriptEmitterBlock<IfStatementSyntax>
+    public class IfBlock : CommentedNodeEmitBlock<IfStatementSyntax>
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {

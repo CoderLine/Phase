@@ -1,4 +1,5 @@
-﻿using Microsoft.Build.Utilities;
+﻿using Microsoft.Build.Framework;
+using Microsoft.Build.Utilities;
 using NLog;
 using NLog.Targets;
 
@@ -15,30 +16,15 @@ namespace Phase.MsBuild
 
         protected override void Write(LogEventInfo logEvent)
         {
-            var message = RenderLogEvent(Layout, logEvent);
-            if (logEvent.Level == LogLevel.Trace)
+            var formattedMessage = logEvent.FormattedMessage;
+            if (formattedMessage.Contains(".cs") && formattedMessage.Contains("):"))
             {
-                _log.LogMessage(message);
+                _log.LogMessage(MessageImportance.High, formattedMessage);
             }
-            if (logEvent.Level == LogLevel.Debug)
+            else
             {
-                _log.LogMessage(message);
-            }
-            if (logEvent.Level == LogLevel.Info)
-            {
-                _log.LogMessage(message);
-            }
-            if (logEvent.Level == LogLevel.Warn)
-            {
-                _log.LogWarning(message);
-            }
-            if (logEvent.Level == LogLevel.Error)
-            {
-                _log.LogError(message);
-            }
-            if (logEvent.Level == LogLevel.Fatal)
-            {
-                _log.LogError(message);
+                var message = RenderLogEvent(Layout, logEvent);
+                _log.LogMessage(MessageImportance.High, message);
             }
         }
     }

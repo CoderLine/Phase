@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 using Mono.Cecil;
 using NLog;
 using Phase.CompilerServices;
@@ -22,7 +23,7 @@ namespace Phase.Translator
     {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-        private SemanticModel _semanticModel;
+        private ConcurrentDictionary<SyntaxTree, SemanticModel> _semanticModel;
         private readonly INamedTypeSymbol _compilerExtensionType;
         private readonly INamedTypeSymbol _compilerContextType;
         private CancellationToken _cancellationToken;
@@ -59,31 +60,39 @@ namespace Phase.Translator
             });
             Compilation = Compilation.AddSyntaxTrees(trees);
 
+            _semanticModel = new ConcurrentDictionary<SyntaxTree, SemanticModel>(SyntaxTreeComparer.Instance);
+
             Attributes = new AttributeRegistry();
-            foreach (var syntaxTree in Compilation.SyntaxTrees)
-            {
-                var root = await syntaxTree.GetRootAsync(cancellationToken);
-                _semanticModel = Compilation.GetSemanticModel(syntaxTree, true);
-                Visit(root);
-            }
+            LoadAttributes(Compilation, cancellationToken);
 
             foreach (var reference in Compilation.References.OfType<CompilationReference>())
             {
-                foreach (var syntaxTree in reference.Compilation.SyntaxTrees)
-                {
-                    var root = await syntaxTree.GetRootAsync(cancellationToken);
-                    _semanticModel = reference.Compilation.GetSemanticModel(syntaxTree, true);
-                    Visit(root);
-                }
+                LoadAttributes(reference.Compilation, cancellationToken);
             }
 
             Attributes = Attributes;
+        }
+
+        private void LoadAttributes(Compilation compilation, CancellationToken cancellationToken)
+        {
+            Parallel.ForEach(compilation.SyntaxTrees, syntaxTree =>
+            {
+                var root = syntaxTree.GetRoot(cancellationToken);
+                _semanticModel[syntaxTree] = compilation.GetSemanticModel(syntaxTree);
+                Visit(root);
+            });
         }
 
         private IEnumerable<(string name, string source)> LoadCompilerExtensionsFromAssembly(string path)
         {
             try
             {
+                var fileName = Path.GetFileName(path);
+                if (fileName == "mscorlib.dll" || fileName.StartsWith("System."))
+                {
+                    return Enumerable.Empty<(string, string)>();
+                }
+
                 Log.Trace($"Loading resources from {path}");
                 var assembly = AssemblyDefinition.ReadAssembly(path);
                 return assembly.MainModule.Resources.OfType<EmbeddedResource>()
@@ -107,11 +116,17 @@ namespace Phase.Translator
 
         public override void VisitClassDeclaration(ClassDeclarationSyntax node)
         {
-            var type = _semanticModel.GetDeclaredSymbol(node, _cancellationToken);
+            var type = _semanticModel[node.SyntaxTree].GetDeclaredSymbol(node, _cancellationToken);
             var isExtension = type.Interfaces.Any(i => i.Equals(_compilerExtensionType));
             if (isExtension)
             {
-                base.VisitClassDeclaration(node);
+                foreach (var member in node.Members)
+                {
+                    if (member.Kind() == SyntaxKind.MethodDeclaration)
+                    {
+                        VisitMethodDeclaration((MethodDeclarationSyntax)member);
+                    }
+                }
             }
         }
 
@@ -125,9 +140,10 @@ namespace Phase.Translator
 
         public override void VisitMethodDeclaration(MethodDeclarationSyntax node)
         {
+            var semanticModel = _semanticModel[node.SyntaxTree];
             if (node.Identifier.ValueText == "Run" || node.Identifier.ValueText == "ICompilerExtension.Run")
             {
-                var method = _semanticModel.GetDeclaredSymbol(node, _cancellationToken);
+                var method = semanticModel.GetDeclaredSymbol(node, _cancellationToken);
                 {
                     if (method.Parameters.Length != 1 ||
                         !method.Parameters[0].Type.Equals(_compilerContextType))
@@ -146,7 +162,7 @@ namespace Phase.Translator
                         return;
                     }
 
-                    var interpreter = new CompilerExtensionInterpreter(Attributes, _semanticModel, node.Body);
+                    var interpreter = new CompilerExtensionInterpreter(Attributes, semanticModel, node.Body);
                     interpreter.Execute();
                 }
             }
@@ -732,7 +748,80 @@ namespace Phase.Translator
                     break;
             }
         }
+    }
 
+    internal class SyntaxTreeComparer : IEqualityComparer<SyntaxTree>
+    {
+        public static readonly SyntaxTreeComparer Instance = new SyntaxTreeComparer();
+
+        public bool Equals(SyntaxTree x, SyntaxTree y)
+        {
+            if (x == null)
+                return y == null;
+            if (y == null || !string.Equals(x.FilePath, y.FilePath, StringComparison.OrdinalIgnoreCase))
+                return false;
+            return SourceTextComparer.Instance.Equals(x.GetText(new CancellationToken()), y.GetText(new CancellationToken()));
+        }
+
+        public int GetHashCode(SyntaxTree obj)
+        {
+            return Hash.Combine(obj.FilePath.GetHashCode(), SourceTextComparer.Instance.GetHashCode(obj.GetText(new CancellationToken())));
+        }
+    }
+    internal class SourceTextComparer : IEqualityComparer<SourceText>
+    {
+        public static SourceTextComparer Instance = new SourceTextComparer();
+
+        public bool Equals(SourceText x, SourceText y)
+        {
+            if (x == null)
+                return y == null;
+            if (y == null)
+                return false;
+            return x.ContentEquals(y);
+        }
+
+        public int GetHashCode(SourceText obj)
+        {
+            ImmutableArray<byte> checksum = obj.GetChecksum();
+            int newKey1 = !checksum.IsDefault ? Hash.CombineValues<byte>(checksum, int.MaxValue) : 0;
+            int newKey2 = obj.Encoding != null ? obj.Encoding.GetHashCode() : 0;
+            return Hash.Combine(obj.Length, Hash.Combine(newKey1, Hash.Combine(newKey2, obj.ChecksumAlgorithm.GetHashCode())));
+        }
+    }
+
+    internal static class Hash
+    {
+        internal static int Combine(int newKey, int currentKey)
+        {
+            return unchecked((currentKey * (int) 0xA5555529) + newKey);
+        }
+        internal static int CombineValues<T>(IEnumerable<T> values, int maxItemsToHash = int.MaxValue)
+        {
+            if (values == null)
+            {
+                return 0;
+            }
+
+            var hashCode = 0;
+            var count = 0;
+            foreach (var value in values)
+            {
+                if (count++ >= maxItemsToHash)
+                {
+                    break;
+                }
+
+                // Should end up with a constrained virtual call to object.GetHashCode (i.e. avoid boxing where possible).
+                if (value != null)
+                {
+                    hashCode = Hash.Combine(value.GetHashCode(), hashCode);
+                }
+            }
+
+            return hashCode;
+        }
 
     }
 }
+

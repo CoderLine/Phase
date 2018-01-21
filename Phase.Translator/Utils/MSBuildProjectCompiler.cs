@@ -29,6 +29,7 @@ namespace Phase.Translator.Utils
 {
     class MSBuildProjectCompiler
     {
+        private static readonly NLog.Logger Log = LogManager.GetCurrentClassLogger();
         private readonly IDictionary<string, string> _properties;
 
         public MSBuildProjectCompiler(IDictionary<string, string> properties = null)
@@ -78,7 +79,12 @@ namespace Phase.Translator.Utils
             };
 
             var buildRequestData = new BuildRequestData(inputProjectFile, properties, null, new string[] { "Compile" }, hostServices);
+            var sw = new Stopwatch();
+            sw.Start();
+            Log.Trace("Begin MSBuild");
             var result = await BuildAsync(buildParameters, buildRequestData, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+            sw.Stop();
+            Log.Trace($"Finish MSBuild {sw.Elapsed.TotalMilliseconds}ms");
             if (result.OverallResult == BuildResultCode.Failure)
             {
                 throw result.Exception ?? new InvalidOperationException("Error during project compilation");
@@ -93,14 +99,15 @@ namespace Phase.Translator.Utils
             // only allow one build to use the default build manager at a time
             using (await BuildManagerLock.DisposableWaitAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: false))
             {
-                return await BuildAsync(BuildManager.DefaultBuildManager, parameters, requestData, cancellationToken).ConfigureAwait(continueOnCapturedContext: false);
+                return await BuildAsync(BuildManager.DefaultBuildManager, parameters, requestData, cancellationToken);//.ConfigureAwait(continueOnCapturedContext: false);
             }
         }
 
         private static Task<BuildResult> BuildAsync(BuildManager buildManager, BuildParameters parameters, BuildRequestData requestData, CancellationToken cancellationToken)
         {
-            var taskSource = new TaskCompletionSource<BuildResult>();
+            //return buildManager.Build(parameters, requestData);
 
+            var taskSource = new TaskCompletionSource<BuildResult>();
             buildManager.BeginBuild(parameters);
 
             // enable cancellation of build
@@ -157,6 +164,11 @@ namespace Phase.Translator.Utils
             public string Parameters { get; set; }
             public LoggerVerbosity Verbosity { get; set; }
 
+            private Dictionary<string, Stopwatch> _targetTimes;
+            private Dictionary<string, Stopwatch> _taskTimes;
+            private Dictionary<string, Stopwatch> _projectTimes;
+            private Stopwatch _buildStart;
+
             public void Initialize(IEventSource eventSource)
             {
                 _eventSource = eventSource;
@@ -164,39 +176,81 @@ namespace Phase.Translator.Utils
                 _eventSource.ErrorRaised += OnErrorRaised;
                 _eventSource.TargetStarted += OnTargetStarted;
                 _eventSource.TargetFinished += OnTargetFinished;
+                _eventSource.TaskStarted += OnTaskStarted;
+                _eventSource.TaskFinished += OnTaskFinished;
                 _eventSource.BuildFinished += OnBuildFinished;
                 _eventSource.ProjectStarted += OnProjectStarted;
                 _eventSource.ProjectFinished += OnProjectFinished;
+                _eventSource.MessageRaised += OnMessage;
+                _eventSource.StatusEventRaised += OnStatus;
+                _targetTimes = new Dictionary<string, Stopwatch>();
+                _taskTimes = new Dictionary<string, Stopwatch>();
+                _projectTimes = new Dictionary<string, Stopwatch>();
+            }
+
+            private void OnStatus(object sender, BuildStatusEventArgs e)
+            {
+                //Log.Trace($"Status: {e.Message}");
+            }
+
+            private void OnMessage(object sender, BuildMessageEventArgs e)
+            {
+                //Log.Trace($"Message: {e.Message}");
+            }
+
+            private void OnTaskFinished(object sender, TaskFinishedEventArgs e)
+            {
+                //_taskTimes[e.TaskName].Stop();
+                //Log.Trace($"Task '{e.TaskName}' Finished in {_taskTimes[e.TaskName].Elapsed.TotalMilliseconds}ms");
+            }
+
+            private void OnTaskStarted(object sender, TaskStartedEventArgs e)
+            {
+                //Log.Trace($"Task '{e.TaskName}' Started");
+                //var sw = new Stopwatch();
+                //_taskTimes[e.TaskName] = sw;
+                //sw.Start();
             }
 
             private void OnProjectFinished(object sender, ProjectFinishedEventArgs e)
             {
-                Log.Trace($"Preparing project {Path.GetFileName(e.ProjectFile)} finished");
+                //_projectTimes[e.ProjectFile].Stop();
+                //Log.Trace($"Preparing project {Path.GetFileName(e.ProjectFile)} finished in {_projectTimes[e.ProjectFile].Elapsed.TotalMilliseconds}ms");
             }
 
             private void OnProjectStarted(object sender, ProjectStartedEventArgs e)
             {
-                Log.Trace($"Preparing project {Path.GetFileName(e.ProjectFile)} started");
+                //Log.Trace($"Preparing project {Path.GetFileName(e.ProjectFile)} started");
+                //var sw = new Stopwatch();
+                //_projectTimes[e.ProjectFile] = sw;
+                //sw.Start();
             }
 
             private void OnBuildFinished(object sender, BuildFinishedEventArgs e)
             {
-                Log.Trace($"C# compile preparation finished");
+                _buildStart.Stop();
+                Log.Trace($"C# compile preparation finished {_buildStart.Elapsed.TotalMilliseconds}ms");
             }
 
             private void OnBuildStarted(object sender, BuildStartedEventArgs e)
             {
                 Log.Trace($"C# compile preparation started");
+                _buildStart = new Stopwatch();
+                _buildStart.Start();
             }
 
             private void OnTargetFinished(object sender, TargetFinishedEventArgs e)
             {
-                //Log.Trace($"'{e.TargetName}' Finished");
+                //_targetTimes[e.TargetName].Stop();
+                //Log.Trace($"'{e.TargetName}' Finished in {_targetTimes[e.TargetName].Elapsed.TotalMilliseconds}ms");
             }
 
             private void OnTargetStarted(object sender, TargetStartedEventArgs e)
             {
                 //Log.Trace($"'{e.TargetName}' Started");
+                //var sw = new Stopwatch();
+                //_targetTimes[e.TargetName] = sw;
+                //sw.Start();
             }
 
             private void OnErrorRaised(object sender, BuildErrorEventArgs e)
@@ -264,7 +318,7 @@ namespace Phase.Translator.Utils
                 var resolver = new MetadataFileReferenceResolver(_baseDirectory);
                 var references = args.ResolveMetadataReferences(resolver);
 
-                return Compile(_baseDirectory, args.CompilationOptions, args.ParseOptions, Sources, references,
+                return Compile(_baseDirectory, args.CompilationOptions, args.ParseOptions.WithDocumentationMode(DocumentationMode.Parse), Sources, references,
                     cancellationToken);
             }
 
@@ -302,7 +356,7 @@ namespace Phase.Translator.Utils
                     compilationOptions.ModuleName,
                     trees,
                     references,
-                    options:compilationOptions
+                    options: compilationOptions
                 );
             }
 

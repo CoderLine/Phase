@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
 {
-    public class TryBlock : AbstractHaxeScriptEmitterBlock<TryStatementSyntax>
+    public class TryBlock : CommentedNodeEmitBlock<TryStatementSyntax>
     {
         private static int _recursiveCatch;
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())

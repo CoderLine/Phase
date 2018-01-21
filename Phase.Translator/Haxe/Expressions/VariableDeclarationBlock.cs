@@ -24,9 +24,14 @@ namespace Phase.Translator.Haxe.Expressions
                     EmitTree(variable.Initializer.Value, cancellationToken);
                 }
 
-                WriteSemiColon(true);
+                WriteSemiColon();
             }
+        }
 
+        protected override void EndEmit(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            base.EndEmit(cancellationToken);
+            WriteNewLine();
         }
     }
 }

@@ -4,6 +4,9 @@
     <AssemblyName>AlphaTab</AssemblyName>
     <TargetFramework>net471</TargetFramework>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile></DocumentationFile>
+  </PropertyGroup>
 
   <ItemGroup>
     <Folder Include="Properties\" />
@@ -19,5 +22,7 @@
   </ItemGroup>
 
   <Import Project="..\AlphaTab\AlphaTab.projitems" Label="Shared" />
+  
+  <Import Project="..\..\Phase.MsBuild\bin\Debug\net471\Phase.Build.targets" />
 
 </Project>

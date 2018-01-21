@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
 {
-    public class UsingBlock : AbstractHaxeScriptEmitterBlock<UsingStatementSyntax>
+    public class UsingBlock : CommentedNodeEmitBlock<UsingStatementSyntax>
     {
         private static int _recursiveUsing = 0;
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())

@@ -22,6 +22,8 @@ namespace Phase.Translator.Haxe
                 return;
             }
 
+            WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken));
+
             var fullName = Emitter.GetTypeName(_type.TypeSymbol);
             var packageEnd = fullName.LastIndexOf(".", StringComparison.Ordinal);
             string package;
@@ -45,6 +47,8 @@ namespace Phase.Translator.Haxe
                 WriteSemiColon(true);
                 WriteNewLine();
             }
+
+            WriteComments(_type.TypeSymbol, cancellationToken);
 
             Write("@:enum");
             WriteNewLine();
@@ -119,6 +123,8 @@ namespace Phase.Translator.Haxe
             EndBlock();
 
             EndBlock();
+
+            WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);
         }
     }
 }

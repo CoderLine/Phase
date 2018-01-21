@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Phase.Translator;
 
 namespace Phase.Cli
@@ -30,7 +32,7 @@ namespace Phase.Cli
             try
             {
                 var compiler = new PhaseCompiler(input);
-                compiler.Compile().Wait();
+                compiler.CompileAsync().Wait();
             }
             catch (Exception e)
             {

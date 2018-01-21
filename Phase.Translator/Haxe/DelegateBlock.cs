@@ -26,6 +26,8 @@ namespace Phase.Translator.Haxe
             var package = index >= 0 ? fullName.Substring(0, index) : null;
             var name = index >= 0 ? fullName.Substring(index + 1) : fullName;
 
+            WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken));
+
             if (!string.IsNullOrEmpty(package))
             {
                 Write("package ");
@@ -33,6 +35,8 @@ namespace Phase.Translator.Haxe
                 WriteSemiColon(true);
                 WriteNewLine();
             }
+
+            WriteComments(_type.TypeSymbol, cancellationToken);
 
             Write("typedef ", name, " = ");
 
@@ -60,6 +64,8 @@ namespace Phase.Translator.Haxe
             WriteType(method.ReturnType);
 
             WriteSemiColon(true);
+
+            WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);
         }
     }
 }

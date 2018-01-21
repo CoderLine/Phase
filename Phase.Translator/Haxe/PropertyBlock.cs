@@ -27,15 +27,12 @@ namespace Phase.Translator.Haxe
                 return;
             }
 
-            Func<int, int> x = null;
-            x += i => 10;
-            x += i => 20;
-            var y = x(10);
-
-            var isAutoProperty = Emitter.IsAutoProperty(_property);
 
             if (!_property.IsIndexer && _property.OverriddenProperty == null)
             {
+                WriteComments(_property, cancellationToken);
+                var isAutoProperty = Emitter.IsAutoProperty(_property);
+
                 WriteAccessibility(_property.DeclaredAccessibility);
 
                 if (_property.IsStatic)
@@ -73,6 +70,8 @@ namespace Phase.Translator.Haxe
                 WriteType(_property.Type);
                 WriteSemiColon(true);
                 WriteNewLine();
+
+                WriteComments(_property, false, cancellationToken);
             }
         }
     }

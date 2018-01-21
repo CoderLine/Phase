@@ -6,7 +6,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
 {
-    public class BreakBlock : AbstractHaxeScriptEmitterBlock<BreakStatementSyntax>
+    public class BreakBlock : CommentedNodeEmitBlock<BreakStatementSyntax>
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {

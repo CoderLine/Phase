@@ -16,6 +16,7 @@ namespace Phase.Translator.Haxe
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            WriteComments(_eventSymbol, cancellationToken);
 
             WriteAccessibility(_eventSymbol.DeclaredAccessibility);
 
@@ -63,6 +64,8 @@ namespace Phase.Translator.Haxe
 
             WriteSemiColon(true);
             WriteNewLine();
+
+            WriteComments(_eventSymbol, false, cancellationToken);
         }
     }
 }

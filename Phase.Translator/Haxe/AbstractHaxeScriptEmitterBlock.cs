@@ -2,15 +2,21 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Linq;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NLog;
 
 namespace Phase.Translator.Haxe
 {
     public abstract class AbstractHaxeScriptEmitterBlock : AbstractEmitterBlock
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         public HaxeEmitterContext EmitterContext { get; set; }
 
         protected override IWriter Writer => EmitterContext.Writer;
@@ -38,6 +44,344 @@ namespace Phase.Translator.Haxe
             return expressionBlock.FirstBlock;
         }
 
+        private static readonly Regex NewLine = new Regex("\r?\n", RegexOptions.Compiled);
+
+        protected void WriteComments(SyntaxNode node, bool leading = true)
+        {
+            WriteComments(node, null, leading);
+        }
+
+        protected void WriteComments(SyntaxNode node, string documentation, bool leading)
+        {
+            var trivia = leading
+                    ? (node.HasLeadingTrivia ? node.GetLeadingTrivia() : default(SyntaxTriviaList))
+                    : (node.HasTrailingTrivia ? node.GetTrailingTrivia() : default(SyntaxTriviaList))
+                ;
+
+            var documentationWritten = false;
+
+            if (trivia.Any())
+            {
+                foreach (var t in trivia)
+                {
+                    var s = t.ToFullString();
+
+                    if (!string.IsNullOrWhiteSpace(s))
+                    {
+                        var lines = NewLine.Split(s.Trim());
+                        foreach (var line in lines)
+                        {
+                            var trimmed = line.Trim();
+                            if (trimmed.StartsWith("///"))
+                            {
+                                if (!documentationWritten)
+                                {
+                                    WriteDocumentation(node, documentation);
+                                    documentationWritten = true;
+                                }
+                            }
+                            else
+                            {
+                                if (trimmed.StartsWith("#"))
+                                {
+                                    Write("// ");
+                                }
+                                Write(trimmed);
+                                WriteNewLine();
+                            }
+                        }
+                    }
+                }
+                IsNewLine = true;
+            }
+        }
+
+        private void WriteDocumentation(SyntaxNode node, string documentation)
+        {
+            if (string.IsNullOrEmpty(documentation)) return;
+
+            var crefs = new Dictionary<string, ISymbol>();
+            foreach (var crefSyntax in node.DescendantNodes(descendIntoTrivia: true).OfType<CrefSyntax>())
+            {
+                crefs[crefSyntax.ToFullString()] = Emitter.GetSymbolInfo(crefSyntax).Symbol;
+            }
+
+            try
+            {
+                var xml = XDocument.Parse("<doc>" + documentation + "</doc>");
+                var doc = xml.Root.FirstNode;
+
+                Write("/**");
+                WriteNewLine();
+
+                WriteDocumentation(crefs, doc);
+
+                Write(" */");
+                WriteNewLine();
+            }
+            catch (Exception e)
+            {
+                Log.Error(e, $"Failed to process XML documentation '{documentation}'");
+            }
+        }
+
+        private void WriteDocumentation(Dictionary<string, ISymbol> crefs, XNode node)
+        {
+            switch (node.NodeType)
+            {
+                case XmlNodeType.Comment:
+                    Write(((XComment)node).Value);
+                    break;
+                case XmlNodeType.Element:
+                    var element = (XElement) node;
+
+                    void WriteChildren()
+                    {
+                        foreach (var child in element.Nodes())
+                        {
+                            WriteDocumentation(crefs, child);
+                        }
+                        WriteNewLine();
+                    }
+
+                    void WriteDocLines(string text)
+                    {
+                        var lines = NewLine.Split(text.Trim());
+                        for (int i = 0; i < lines.Length; i++)
+                        {
+                            if (i > 0)
+                            {
+                                WriteNewLine();
+                                Write(" * ");
+                            }
+                            Write(lines[i].Trim());
+                        }
+                    }
+
+                    switch (element.Name.LocalName.ToLowerInvariant())
+                    {
+                        case "member":
+                            foreach (var child in element.Elements())
+                            {
+                                WriteDocumentation(crefs, child);
+                            }
+                            break;
+
+                        case "c":
+                            Write("`");
+                            WriteDocLines(element.Value);
+                            Write("`");
+                            break;
+                        case "code":
+                        case "example":
+                            Write("```");
+
+                            WriteNewLine();
+                            WriteDocLines(element.Value);
+                            WriteNewLine();
+
+                            Write("```");
+                            break;
+                        case "exception":
+                            WriteNewLine();
+                            Write(" * @throws ");
+
+                            var exceptionType = element.Attribute("cref")?.Value ?? string.Empty;
+
+                            if (crefs.TryGetValue(exceptionType, out var exceptionTypeCref) && exceptionTypeCref != null)
+                            {
+                                WriteCref(exceptionTypeCref);
+                            }
+                            else
+                            {
+                                Write(exceptionType);
+                            }
+
+                            WriteSpace();
+                            WriteChildren();
+                            WriteNewLine();
+
+                            break;
+                        case "include":
+                            // not supported for now
+                            break;
+                        case "list":
+                            // not supported for now
+                            break;
+                        case "para":
+                            Write("<p>");
+                            WriteChildren();
+                            Write("</p>");
+                            WriteNewLine();
+                            break;
+                        case "param":
+                            Write(" * @param ");
+
+                            var name = element.Attribute("name")?.Value;
+                            Write(name);
+                            WriteSpace();
+
+                            WriteChildren();
+
+                            break;
+                        case "paramref":
+                            Write("{@link ");
+                            WriteDocLines(element.Value);
+                            Write("}");
+                            break;
+                        case "permission":
+                            // not supported for now
+                            break;
+                        case "remarks":
+                            // printed as part of summary
+                            break;
+                        case "returns":
+                            Write(" * @returns ");
+                            WriteDocLines(element.Value);
+                            WriteNewLine();
+                            break;
+                        case "see":
+                            Write("{@link ");
+
+                            var see = element.Attribute("cref")?.Value ?? string.Empty;
+                            if (crefs.TryGetValue(see, out var seeName) && seeName != null)
+                            {
+                                WriteCref(seeName);
+                            }
+                            else
+                            {
+                                WriteDocLines(element.Value);
+                            }
+
+                            Write("}");
+                            break;
+                        case "seealso":
+                            Write(" * @see ");
+
+                            var seeAlso = element.Attribute("cref")?.Value ?? string.Empty;
+                            if (crefs.TryGetValue(seeAlso, out var seeAlsoName) && seeAlsoName != null)
+                            {
+                                Write(seeAlsoName);
+                            }
+                            else
+                            {
+                                WriteDocLines(element.Value);
+                            }
+
+                            WriteNewLine();
+                            break;
+                        case "summary":
+                            Write(" * ");
+                            WriteChildren();
+
+                            var remarks = element.Parent.Elements("remarks");
+                            foreach (var remark in remarks)
+                            {
+                                WriteDocLines(remark.Value);
+                            }
+
+                            WriteNewLine();
+                            break;
+                        case "typeparam":
+
+                            Write(" * @param ");
+
+                            var typeParamName = element.Attribute("name")?.Value;
+                            Write("<");
+                            Write(typeParamName);
+                            Write("> ");
+
+                            WriteChildren();
+                            WriteNewLine();
+
+                            break;
+                        case "typeparamref":
+                            Write("{@link ");
+
+                            var typeparamref = element.Attribute("name")?.Value;
+                            Write(typeparamref);
+
+                            Write("}"); break;
+                        case "value":
+                            break;
+                        default:
+                            Write("<" + element.Name.LocalName + ">");
+                            WriteNewLine();
+                            WriteChildren();
+
+                            Write("</" + element.Name.LocalName + ">");
+                            break;
+                    }
+
+                    break;
+                case XmlNodeType.Text:
+                    WriteDocLines(((XText) node).Value);
+                    break;
+            }
+        }
+
+        private void WriteCref(ISymbol value)
+        {
+            switch (value.Kind)
+            {
+                case SymbolKind.Alias:
+                case SymbolKind.Assembly:
+                case SymbolKind.Label:
+                case SymbolKind.NetModule:
+                case SymbolKind.NamedType:
+                case SymbolKind.Namespace:
+                case SymbolKind.RangeVariable:
+                case SymbolKind.Discard:
+                case SymbolKind.Preprocessing:
+                    break;
+                case SymbolKind.DynamicType:
+                case SymbolKind.ArrayType:
+                case SymbolKind.ErrorType:
+                case SymbolKind.PointerType:
+                    WriteType((ITypeSymbol)value);
+                    break;
+                case SymbolKind.Event:
+                    Write(Emitter.GetEventName((IEventSymbol) value));
+                    break;
+                case SymbolKind.Field:
+                    Write(Emitter.GetFieldName((IFieldSymbol)value));
+                    break;
+                case SymbolKind.Local:
+                    Write(value.Name);
+                    break;
+                case SymbolKind.Method:
+                    Write(Emitter.GetMethodName((IMethodSymbol)value));
+                    break;
+                case SymbolKind.Parameter:
+                    Write(Emitter.GetNameFromAttribute(value) ?? value.Name);
+                    break;
+                case SymbolKind.Property:
+                    Write(Emitter.GetPropertyName((IPropertySymbol)value));
+                    break;
+                case SymbolKind.TypeParameter:
+                    Write("<");
+                    Write(value.Name);
+                    Write(">");
+                    break;
+            }
+        }
+
+        protected void WriteComments(ISymbol node, bool leading, CancellationToken cancellationToken)
+        {
+            var documentation = node.GetDocumentationCommentXml(cancellationToken: cancellationToken);
+
+            foreach (var declaration in node.DeclaringSyntaxReferences)
+            {
+                var syntax = declaration.GetSyntax(cancellationToken);
+                WriteComments(syntax, documentation, leading);
+                documentation = null;
+            }
+        }
+
+        protected void WriteComments(ISymbol node, CancellationToken cancellationToken)
+        {
+            WriteComments(node, true, cancellationToken);
+        }
 
         protected void WriteType(TypeSyntax syntax)
         {

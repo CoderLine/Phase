@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using NLog;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator
 {
@@ -19,18 +21,16 @@ namespace Phase.Translator
             Input = compilerInput;
         }
 
-        public async Task Compile(CancellationToken cancellationToken = default(CancellationToken))
+        public async Task CompileAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
             try
             {
-                Log.Trace("Start compilation");
-
-                await ReadOptionsAsync();
-                await TranslateAsync(cancellationToken);
-                await WriteOutputAsync();
-
-                Log.Trace("Finished compilation");
-
+                using (new LogHelper("compilation", Log))
+                {
+                    await ReadOptionsAsync();
+                    await TranslateAsync(cancellationToken);
+                    WriteOutput();
+                }
             }
             catch (PhaseCompilerException)
             {
@@ -39,6 +39,7 @@ namespace Phase.Translator
             catch (Exception e)
             {
                 Log.Error(e, "Unexpected error during compilation");
+                throw;
             }
         }
 
@@ -61,37 +62,34 @@ namespace Phase.Translator
 
         private async Task TranslateAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Log.Trace("Start translation");
-
             Translator = new PhaseTranslator(this);
             await Translator.TranslateAsync(cancellationToken);
-
-            Log.Trace("Finished translation");
         }
 
-        private async Task WriteOutputAsync()
+        private void WriteOutput()
         {
-            if (Translator.Result != null)
+            using (new LogHelper("writing output", Log, 1))
             {
-                Log.Trace($"Start writing output ({Translator.Result.Results.Count} files) to {Options.Output}");
-
-                if (!Directory.Exists(Options.Output))
+                if (Translator.Result != null)
                 {
-                    Directory.CreateDirectory(Options.Output);
-                }
+                    Log.Trace($"writing ({Translator.Result.Results.Count} files) to {Options.Output}");
 
-                Parallel.ForEach(Translator.Result.Results, results =>
-                {
-                    var fileName = Path.Combine(Options.Output, results.Value.FileName);
-                    var dir = Path.GetDirectoryName(fileName);
-                    if (!Directory.Exists(dir))
+                    if (!Directory.Exists(Options.Output))
                     {
-                        Directory.CreateDirectory(dir);
+                        Directory.CreateDirectory(Options.Output);
                     }
-                    File.WriteAllText(fileName, results.Value.SourceCode);
-                });
-             
-                Log.Trace("Finished writing output");
+
+                    Parallel.ForEach(Translator.Result.Results, results =>
+                    {
+                        var fileName = Path.Combine(Options.Output, results.Value.FileName);
+                        var dir = Path.GetDirectoryName(fileName);
+                        if (!Directory.Exists(dir))
+                        {
+                            Directory.CreateDirectory(dir);
+                        }
+                        File.WriteAllText(fileName, results.Value.SourceCode);
+                    });
+                }
             }
         }
 

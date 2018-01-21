@@ -23,6 +23,8 @@ namespace Phase.Translator.Haxe
                 return;
             }
 
+            WriteComments(_field, cancellationToken);
+
             WriteAccessibility(_field.DeclaredAccessibility);
             if (_field.IsConst)
             {
@@ -70,6 +72,8 @@ namespace Phase.Translator.Haxe
             EmitterContext.IsConstInitializer = false;
 
             WriteSemiColon(true);
+
+            WriteComments(_field, false, cancellationToken);
         }
     }
 }

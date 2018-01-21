@@ -49,6 +49,8 @@ namespace Phase.Translator.Haxe
                 name = fullName.Substring(packageEnd + 1);
             }
 
+            WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken));
+
             if (package.Length > 1)
             {
                 Write("package ");
@@ -56,6 +58,8 @@ namespace Phase.Translator.Haxe
                 WriteSemiColon(true);
                 WriteNewLine();
             }
+
+            WriteComments(_type.TypeSymbol, cancellationToken);
 
             if (abstractType != null)
             {
@@ -160,6 +164,7 @@ namespace Phase.Translator.Haxe
             }
             EndBlock();
 
+            WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);
         }
     }
 }

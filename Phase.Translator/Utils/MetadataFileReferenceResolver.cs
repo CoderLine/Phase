@@ -22,7 +22,8 @@ namespace Phase.Translator.Utils
         public override ImmutableArray<PortableExecutableReference> ResolveReference(string reference, string baseFilePath, MetadataReferenceProperties properties)
         {
             var path = Path.Combine(baseFilePath ?? _baseDir, reference);
-            return ImmutableArray.Create((PortableExecutableReference)_cache.GetReference(path, properties));
+            var pe = (PortableExecutableReference) _cache.GetReference(path, properties);
+            return ImmutableArray.Create(pe);
         }
 
         public bool Equals(MetadataFileReferenceResolver other)

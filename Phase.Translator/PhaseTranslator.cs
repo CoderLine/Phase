@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -33,12 +34,11 @@ namespace Phase.Translator
 
         public async Task TranslateAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (await PrecompileAsync(cancellationToken))
+            using (new LogHelper("translation", Log, 1))
             {
-                if (await PreprocessAsync(cancellationToken))
-                {
-                    await EmitAsync(cancellationToken);
-                }
+                await PrecompileAsync(cancellationToken);
+                await PreprocessAsync(cancellationToken);
+                await EmitAsync(cancellationToken);
             }
         }
 
@@ -46,35 +46,36 @@ namespace Phase.Translator
         {
             var types = LoadTypes();
 
-            IEmitter emitter;
-            switch (Compiler.Options.Language)
+            using (new LogHelper("emitting", Log, 2))
             {
-                case PhaseLanguage.Haxe:
-                    emitter = new HaxeEmitter(Compiler);
-                    break;
-                default:
-                    Log.Error("Invalid compilation language");
-                    throw new PhaseCompilerException("Invalid compilation language");
-            }
+                IEmitter emitter;
+                switch (Compiler.Options.Language)
+                {
+                    case PhaseLanguage.Haxe:
+                        emitter = new HaxeEmitter(Compiler);
+                        break;
+                    default:
+                        Log.Error("Invalid compilation language");
+                        throw new PhaseCompilerException("Invalid compilation language");
+                }
 
-            Log.Trace("Start Emitting");
-            Result = await emitter.EmitAsync(Compilation, types, cancellationToken);
-            Log.Trace("Emitting done");
+                Result = await emitter.EmitAsync(Compilation, types, cancellationToken);
+            }
         }
 
         private IEnumerable<PhaseType> LoadTypes(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Log.Trace("Loading Types");
-
-            var walker = new TypeLoadingWalker(Compilation);
-
-            foreach (var syntaxTree in Compilation.SyntaxTrees)
+            using (new LogHelper("loading types", Log, 2))
             {
-                walker.Visit(syntaxTree, cancellationToken);
-            }
+                var walker = new TypeLoadingWalker(Compilation);
 
-            Log.Trace("Loading Types done");
-            return walker.PhaseTypes.Values;
+                foreach (var syntaxTree in Compilation.SyntaxTrees)
+                {
+                    walker.Visit(syntaxTree, cancellationToken);
+                }
+
+                return walker.PhaseTypes.Values;
+            }
         }
 
         public class TypeLoadingWalker : CSharpSyntaxWalker
@@ -138,93 +139,98 @@ namespace Phase.Translator
             }
         }
 
-        private async Task<bool> PreprocessAsync(CancellationToken cancellationToken = default(CancellationToken))
+        private async Task PreprocessAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Log.Trace("Start project preprocessing");
-
-            var hasError = false;
-            try
+            using (new LogHelper("project preprocessing", Log, 2))
             {
-                Log.Trace("Loading attributes");
-                await RegisterAttributesAsync(cancellationToken);
-            }
-            catch (Exception e)
-            {
-                Log.Error(e, "Attribute loading failed");
-                throw new PhaseCompilerException("Attribute loading failed", e);
-            }
-
-            var diagnostics = Compilation.GetDiagnostics();
-            foreach (var diagnostic in diagnostics)
-            {
-                switch (diagnostic.Severity)
+                var hasError = false;
+                
+                try
                 {
-                    case DiagnosticSeverity.Hidden:
-                        break;
-                    case DiagnosticSeverity.Info:
-                        Log.Info(diagnostic.GetMessage(CultureInfo.InvariantCulture));
-                        break;
-                    case DiagnosticSeverity.Warning:
-                        Log.Warn(diagnostic.GetMessage(CultureInfo.InvariantCulture));
-                        break;
-                    case DiagnosticSeverity.Error:
-                        Log.Error(diagnostic.GetMessage(CultureInfo.InvariantCulture));
-                        hasError = true;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    await RegisterAttributesAsync(cancellationToken);
+                }
+                catch (Exception e)
+                {
+                    Log.Error(e, "Attribute loading failed");
+                    throw new PhaseCompilerException("Attribute loading failed", e);
+                }
+
+                var diagnostics = Compilation.GetDiagnostics();
+                foreach (var diagnostic in diagnostics)
+                {
+                    switch (diagnostic.Severity)
+                    {
+                        case DiagnosticSeverity.Hidden:
+                            break;
+                        case DiagnosticSeverity.Info:
+                            Log.Info(CultureInfo.InvariantCulture, diagnostic);
+                            break;
+                        case DiagnosticSeverity.Warning:
+                            Log.Warn(CultureInfo.InvariantCulture, diagnostic);
+                            break;
+                        case DiagnosticSeverity.Error:
+                            Log.Error(CultureInfo.InvariantCulture, diagnostic);
+                            hasError = true;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException();
+                    }
+                }
+
+                if (hasError)
+                {
+                    throw new PhaseCompilerException("Compilation failed with errors, see output for details");
                 }
             }
-
-            Log.Trace("Finished project preprocessing");
-            return !hasError;
         }
 
         private async Task RegisterAttributesAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Log.Trace("Loading attributes from project");
-            var attributeLoader = new AttributeLoader(Compilation);
-            await attributeLoader.LoadAsync(cancellationToken);
-            Attributes = attributeLoader.Attributes;
-            Compilation = attributeLoader.Compilation;
-            Log.Trace("Attributes from project loaded");
+            using (new LogHelper("loading attributes from project", Log, 3))
+            {
+                var attributeLoader = new AttributeLoader(Compilation);
+                await attributeLoader.LoadAsync(cancellationToken);
+                Attributes = attributeLoader.Attributes;
+                Compilation = attributeLoader.Compilation;
+            }
         }
 
-        private async Task<bool> PrecompileAsync(CancellationToken cancellationToken = default(CancellationToken))
+        private async Task PrecompileAsync(CancellationToken cancellationToken = default(CancellationToken))
         {
-            Log.Trace("Start project compilation");
-            try
+            using (new LogHelper("project compilation", Log, 2))
             {
-                if (Compiler.Input.SourceFiles == null)
+                try
                 {
-                    var compiler = new MSBuildProjectCompiler(new Dictionary<string, string>
+                    if (Compiler.Input.SourceFiles == null)
                     {
-                        ["Configuration"] = Compiler.Input.Configuration,
-                        ["Platform"] = Compiler.Input.Platform,
-                    });
-                    Compilation = (CSharpCompilation)await compiler.BuildAsync(Compiler.Input.ProjectFile, cancellationToken);
+                        var compiler = new MSBuildProjectCompiler(new Dictionary<string, string>
+                        {
+                            ["Configuration"] = Compiler.Input.Configuration,
+                            ["Platform"] = Compiler.Input.Platform,
+                        });
+                        Compilation =
+                            (CSharpCompilation) await compiler.BuildAsync(Compiler.Input.ProjectFile,
+                                cancellationToken);
+                    }
+                    else
+                    {
+                        Compilation = MSBuildProjectCompiler.CSharpCompilationHost.Compile(
+                            Path.GetDirectoryName(Compiler.Input.ProjectFile),
+                            Compiler.Input.CompilationOptions,
+                            Compiler.Input.ParseOptions,
+                            Compiler.Input.SourceFiles,
+                            Compiler.Input.ReferencedAssemblies,
+                            cancellationToken);
+                    }
+
+                    Log.Trace("Project compiled");
                 }
-                else
+                catch (Exception e)
                 {
-                    Compilation = MSBuildProjectCompiler.CSharpCompilationHost.Compile(Path.GetDirectoryName(Compiler.Input.ProjectFile),
-                        Compiler.Input.CompilationOptions,
-                        Compiler.Input.ParseOptions,
-                        Compiler.Input.SourceFiles,
-                        Compiler.Input.ReferencedAssemblies,
-                        cancellationToken);
+                    Log.Error(e, "Project compilation failed");
+                    throw new PhaseCompilerException("Project compilation failed", e);
                 }
-
-                Log.Trace("Project compiled");
             }
-            catch (Exception e)
-            {
-                Log.Error(e, "Project compilation failed");
-                throw new PhaseCompilerException("Project compilation failed", e);
-            }
-
-            Log.Trace("Finished project compilation");
-
-            return true;
         }
     }
 }

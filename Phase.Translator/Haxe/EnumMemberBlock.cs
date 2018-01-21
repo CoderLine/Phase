@@ -16,11 +16,15 @@ namespace Phase.Translator.Haxe
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            WriteComments(_field, cancellationToken);
+
             WriteVar();
             Write(_field.Name);
             Write(" = ");
             Write(_field.ConstantValue);
             WriteSemiColon(true);
+
+            WriteComments(_field, false, cancellationToken);
         }
     }
 }

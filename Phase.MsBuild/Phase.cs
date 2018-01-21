@@ -1,22 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
+using System.Threading;
 using Microsoft.Build.Framework;
+using Microsoft.Build.Logging;
 using Microsoft.Build.Utilities;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using NLog;
 using NLog.Config;
+using NLog.Targets;
 using Phase.Translator;
 using Phase.Translator.Utils;
 
 namespace Phase.MsBuild
 {
-    public class Phase : Task
+    public class Phase : Task, ICancelableTask
     {
         public string DefineConstants
         {
@@ -42,18 +45,28 @@ namespace Phase.MsBuild
             get;
         }
 
+        [Required]
+        public string Configuration
+        {
+            set;
+            get;
+        }
+
+        [Required]
         public string Platform
         {
             set;
             get;
         }
 
+        [Required]
         public ITaskItem[] References
         {
             set;
             get;
         }
 
+        [Required]
         public ITaskItem[] Sources
         {
             set;
@@ -90,18 +103,42 @@ namespace Phase.MsBuild
             get;
         }
 
+        [Required]
+        public string ProjectFile
+        {
+            set;
+            get;
+        }
+
+
+        static Phase()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+            {
+                if (args.Name.StartsWith("System.Collections.Immutable"))
+                {
+                    return typeof(ImmutableArray).Assembly;
+                }
+                return null;
+            };
+        }
+
+        private CancellationTokenSource _cancellationTokenSource;
 
         public override bool Execute()
         {
-            var projectFile = BuildEngine.ProjectFileOfTaskNode;
-            var directory = Path.GetDirectoryName(projectFile);
+            _cancellationTokenSource = new CancellationTokenSource();
+            var directory = Path.GetDirectoryName(ProjectFile);
 
             var arguments = new List<string>();
             arguments.Add("/define:\"" + DefineConstants + "\"");
             arguments.Add("/nowarn:\"" + DisabledWarnings + "\"");
-            arguments.Add("/main:\"" + MainEntryPoint + "\"");
-            arguments.Add("/target:\"" + MainEntryPoint + "\"");
-            arguments.Add("/moduleassemblyname:\"" + TargetType + "\"");
+            if (!string.IsNullOrEmpty(MainEntryPoint))
+            {
+                arguments.Add("/main:\"" + MainEntryPoint + "\"");
+            }
+            arguments.Add("/target:" + TargetType);
+            arguments.Add("/moduleassemblyname:\"" + ModuleAssemblyName + "\"");
             if (TreatWarningsAsErrors)
             {
                 arguments.Add("/warnaserror");
@@ -127,12 +164,17 @@ namespace Phase.MsBuild
                 }
             }
 
-      
+
             try
             {
-                LogManager.Configuration = new LoggingConfiguration();
-                LogManager.Configuration.AddTarget("msbuild", new MSBuildTarget(Log));
-                LogManager.Configuration.AddRule(LogLevel.Trace, LogLevel.Off, "msbuild");
+                ImmutableArray.Create(1, 2, 3);
+                var config = new LoggingConfiguration();
+                config.AddTarget("msbuild", new MSBuildTarget(Log)
+                {
+                    Layout = "${longdate} ${level} ${callsite} - ${message} ${exception:format=ToString}"
+                });
+                config.AddRule(LogLevel.Trace, LogLevel.Fatal, "msbuild");
+                LogManager.Configuration = config;
 
                 var args = CSharpCommandLineParser.Default.Parse(arguments, directory, RuntimeEnvironment.GetRuntimeDirectory());
 
@@ -141,22 +183,33 @@ namespace Phase.MsBuild
 
                 var input = new PhaseCompilerInput
                 {
-                    ProjectFile = projectFile,
+                    ProjectFile = ProjectFile,
                     CompilationOptions = args.CompilationOptions,
-                    ParseOptions = args.ParseOptions,
+                    ParseOptions = args.ParseOptions.WithDocumentationMode(DocumentationMode.Parse),
                     SourceFiles = Sources.Select(s => Path.Combine(directory, s.ItemSpec)).ToArray(),
-                    ReferencedAssemblies = references
+                    ReferencedAssemblies = references,
+                    Platform = Platform,
+                    Configuration = Configuration
                 };
 
                 var compiler = new PhaseCompiler(input);
-                compiler.Compile().Wait();
+                compiler.CompileAsync(_cancellationTokenSource.Token).Wait();
                 return true;
             }
             catch (Exception e)
             {
                 Log.LogErrorFromException(e, true);
+                if (Debugger.IsAttached)
+                {
+                    Debugger.Break();
+                }
                 return false;
             }
+        }
+
+        public void Cancel()
+        {
+            _cancellationTokenSource?.Cancel();
         }
 
         private ImmutableArray<string> GetAliases(ITaskItem item)

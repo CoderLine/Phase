@@ -7,7 +7,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
 {
-    public class SwitchBlock : AbstractHaxeScriptEmitterBlock<SwitchStatementSyntax>
+    public class SwitchBlock : CommentedNodeEmitBlock<SwitchStatementSyntax>
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {

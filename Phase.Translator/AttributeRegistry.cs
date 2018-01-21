@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 
@@ -6,13 +7,13 @@ namespace Phase.Translator
 {
     public class AttributeRegistry
     {
-        private readonly Dictionary<ISymbol, List<AttributeData>> _registeredAttributes;
-        private readonly Dictionary<ISymbol, List<AttributeData>> _registeredReturnAttributes;
+        private readonly ConcurrentDictionary<ISymbol, List<AttributeData>> _registeredAttributes;
+        private readonly ConcurrentDictionary<ISymbol, List<AttributeData>> _registeredReturnAttributes;
 
         public AttributeRegistry()
         {
-            _registeredAttributes = new Dictionary<ISymbol, List<AttributeData>>();
-            _registeredReturnAttributes = new Dictionary<ISymbol, List<AttributeData>>();
+            _registeredAttributes = new ConcurrentDictionary<ISymbol, List<AttributeData>>();
+            _registeredReturnAttributes = new ConcurrentDictionary<ISymbol, List<AttributeData>>();
         }
 
         public void RegisterAttribute(ISymbol symbol, AttributeData attribute)
