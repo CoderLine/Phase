@@ -2,7 +2,7 @@
 
 namespace Phase.Attributes
 {
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface | AttributeTargets.Struct| AttributeTargets.Delegate | AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Field, Inherited = false)]
     [External]
     public sealed class NameAttribute : Attribute
     {

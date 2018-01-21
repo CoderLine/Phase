@@ -60,7 +60,7 @@ namespace Phase.Translator.Haxe
                     await context.EmitAsync(cancellationToken);
                 }, new ExecutionDataflowBlockOptions
                 {
-                    MaxDegreeOfParallelism = 1
+                    MaxDegreeOfParallelism = Compiler.Options.ProcessorCount
                 });
 
             var contexts = typeArray.Where(t => !IsExternal(t.TypeSymbol)).Select(t => new HaxeEmitterContext(this, t)).ToArray();
@@ -513,6 +513,42 @@ namespace Phase.Translator.Haxe
         }
 
 
+        public string GetSymbolName(ISymbol symbol)
+        {
+            switch (symbol.Kind)
+            {
+                case SymbolKind.Alias:
+                case SymbolKind.Assembly:
+                case SymbolKind.Label:
+                case SymbolKind.Local:
+                case SymbolKind.NetModule:
+                case SymbolKind.Namespace:
+                case SymbolKind.Parameter:
+                case SymbolKind.RangeVariable:
+                case SymbolKind.Preprocessing:
+                case SymbolKind.Discard:
+                    return symbol.Name;
+                case SymbolKind.ArrayType:
+                case SymbolKind.DynamicType:
+                case SymbolKind.ErrorType:
+                case SymbolKind.NamedType:
+                case SymbolKind.PointerType:
+                case SymbolKind.TypeParameter:
+                    return GetTypeName((ITypeSymbol) symbol);
+                case SymbolKind.Event:
+                    return GetEventName((IEventSymbol) symbol);
+                case SymbolKind.Field:
+                    return GetFieldName((IFieldSymbol)symbol);
+                case SymbolKind.Method:
+                    return GetMethodName((IMethodSymbol)symbol);
+                case SymbolKind.Property:
+                    return GetPropertyName((IPropertySymbol)symbol);
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+
         public string GetPropertyName(IPropertySymbol property)
         {
             var attributeName = GetNameFromAttribute(property);
@@ -867,6 +903,20 @@ namespace Phase.Translator.Haxe
             return Compiler.Translator.Compilation.GetSpecialType(specialType);
         }
 
+        public bool IsEventField(IEventSymbol evt)
+        {
+            evt = evt.OriginalDefinition;
+
+            var meta = GetOrCreateMeta(evt);
+
+            if (meta.IsAutoProperty.HasValue)
+            {
+                return meta.IsAutoProperty.Value;
+            }
+
+            return (meta.IsAutoProperty = InternalIsEventField(evt)).Value;
+        }
+
         public bool IsAutoProperty(IPropertySymbol property)
         {
             property = property.OriginalDefinition;
@@ -902,6 +952,31 @@ namespace Phase.Translator.Haxe
             if (declaration != null)
             {
                 return IsAutoProperty(declaration);
+            }
+            return false;
+        }
+
+        private bool InternalIsEventField(IEventSymbol evt)
+        {
+            if (evt.ContainingType.TypeKind != TypeKind.Class && evt.ContainingType.TypeKind != TypeKind.Struct)
+            {
+                return false;
+            }
+
+            if (evt.IsAbstract || evt.IsExtern)
+            {
+                return false;
+            }
+
+            if (IsInterfaceImplementation(evt))
+            {
+                return false;
+            }
+
+            var declaration = evt.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+            if (declaration.Kind() == SyntaxKind.EventFieldDeclaration || declaration.Kind() == SyntaxKind.VariableDeclarator)
+            {
+                return true;
             }
             return false;
         }
@@ -944,5 +1019,6 @@ namespace Phase.Translator.Haxe
             }
             return type.AllInterfaces.Any(i => i.Equals(_iconvertibleType));
         }
+
     }
 }

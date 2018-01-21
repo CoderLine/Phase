@@ -29,6 +29,7 @@ namespace Phase.Translator.Haxe
             else
             {
                 Write("try");
+                WriteNewLine();
                 EmitTree(Node.Block, cancellationToken);
 
                 foreach (var catchClauseSyntax in Node.Catches)
@@ -63,6 +64,7 @@ namespace Phase.Translator.Haxe
                                     .FullName));
                             WriteCloseParentheses();
                         }
+                        WriteNewLine();
                         EmitTree(catchClauseSyntax.Block, cancellationToken);
                     }
                     finally

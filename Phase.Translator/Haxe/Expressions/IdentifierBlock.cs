@@ -45,7 +45,7 @@ namespace Phase.Translator.Haxe.Expressions
 
             var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
             // implicit cast
-            if (typeInfo.ConvertedType != null && !typeInfo.Type.Equals(typeInfo.ConvertedType))
+            if (typeInfo.ConvertedType != null && typeInfo.Type != null && !typeInfo.Type.Equals(typeInfo.ConvertedType))
             {
                 switch (typeInfo.ConvertedType.SpecialType)
                 {

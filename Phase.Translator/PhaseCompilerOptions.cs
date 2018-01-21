@@ -13,6 +13,7 @@ namespace Phase.Translator
         public PhaseLanguage Language { get; set; }
 
         public PostBuildStep[] PostBuild { get; set; }
+        public int ProcessorCount { get; set; }
 
         public PhaseCompilerOptions()
         {
@@ -32,6 +33,11 @@ namespace Phase.Translator
 
                 var dir = new DirectoryInfo(config.Output);
                 config.Output = dir.FullName;
+
+                if (config.ProcessorCount == 0)
+                {
+                    config.ProcessorCount = -1;
+                }
 
                 Environment.CurrentDirectory = currentWorkingDirectory;
 

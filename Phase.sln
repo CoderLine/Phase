@@ -11,16 +11,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.Core", "Phase.Core\Ph
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.Haxe.Js", "Phase.Haxe.Js\Phase.Haxe.Js.csproj", "{CCA5F531-A2C5-4FE2-9DA2-CB9FBB96853C}"
 EndProject
-Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "AlphaTab", "TestProject\AlphaTab\AlphaTab.shproj", "{8083B3BC-0681-47F2-9FBF-A5C96107F538}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AlphaTab.JavaScript", "TestProject\AlphaTab.JavaScript\AlphaTab.JavaScript.csproj", "{4729B265-098F-40B5-8672-F03D307257C4}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.MsBuild", "Phase.MsBuild\Phase.MsBuild.csproj", "{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}"
 EndProject
 Global
-	GlobalSection(SharedMSBuildProjectFiles) = preSolution
-		TestProject\AlphaTab\AlphaTab.projitems*{8083b3bc-0681-47f2-9fbf-a5c96107f538}*SharedItemsImports = 13
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
@@ -42,10 +35,6 @@ Global
 		{CCA5F531-A2C5-4FE2-9DA2-CB9FBB96853C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CCA5F531-A2C5-4FE2-9DA2-CB9FBB96853C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CCA5F531-A2C5-4FE2-9DA2-CB9FBB96853C}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4729B265-098F-40B5-8672-F03D307257C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4729B265-098F-40B5-8672-F03D307257C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4729B265-098F-40B5-8672-F03D307257C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4729B265-098F-40B5-8672-F03D307257C4}.Release|Any CPU.Build.0 = Release|Any CPU
 		{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -49,6 +49,14 @@ namespace Phase.Translator.Haxe
                         return;
                     }
                     break;
+                case MethodKind.EventAdd:
+                case MethodKind.EventRemove:
+                case MethodKind.EventRaise:
+                    if (Emitter.IsEventField((IEventSymbol)_method.AssociatedSymbol))
+                    {
+                        return;
+                    }
+                    break;
             }
 
 
@@ -157,6 +165,11 @@ namespace Phase.Translator.Haxe
                     WriteColon();
                     WriteType(((IPropertySymbol)_method.AssociatedSymbol).Type);
                     break;
+                case MethodKind.EventAdd:
+                case MethodKind.EventRemove:
+                    WriteColon();
+                    WriteEventType((INamedTypeSymbol)((IEventSymbol)_method.AssociatedSymbol).Type);
+                    break;
                 case MethodKind.Constructor:
                 case MethodKind.StaticConstructor:
                     break;
@@ -192,7 +205,7 @@ namespace Phase.Translator.Haxe
                     WriteOpenCloseParentheses();
                     WriteSemiColon(true);
                 }
-                else
+                else if (!_method.DeclaringSyntaxReferences.IsEmpty)
                 {
                     foreach (var reference in _method.DeclaringSyntaxReferences)
                     {
@@ -376,14 +389,8 @@ namespace Phase.Translator.Haxe
                             }
                             else
                             {
-                                if (_method.MethodKind == MethodKind.PropertyGet)
-                                {
-                                    WriteAutoPropertyGetter();
-                                }
-                                else if (_method.MethodKind == MethodKind.PropertySet)
-                                {
-                                    WriteAutoPropertySetter();
-                                }
+                                WriteDefaultImplementation(_method);
+                               
                             }
                         }
                         else
@@ -391,6 +398,10 @@ namespace Phase.Translator.Haxe
                             Debug.Fail($"Unhandled syntax node: {node.Kind()}");
                         }
                     }
+                }
+                else
+                {
+                    WriteDefaultImplementation(_method);
                 }
 
                 if (_method.MethodKind == MethodKind.Constructor && !Emitter.HasNativeConstructors(_method.ContainingType) && Emitter.HasConstructorOverloads(_method.ContainingType))
@@ -405,6 +416,67 @@ namespace Phase.Translator.Haxe
             }
 
             WriteComments(_method, false, cancellationToken);
+        }
+
+        private void WriteDefaultImplementation(IMethodSymbol method)
+        {
+            if (_method.MethodKind == MethodKind.PropertyGet)
+            {
+                WriteAutoPropertyGetter();
+            }
+            else if (_method.MethodKind == MethodKind.PropertySet)
+            {
+                WriteAutoPropertySetter();
+            }
+            if (_method.MethodKind == MethodKind.EventAdd)
+            {
+                WriteDefaultEventAdder();
+            }
+            else if (_method.MethodKind == MethodKind.EventRemove)
+            {
+                WriteDefaultEventRemover();
+            }
+        }
+
+        private void WriteDefaultEventRemover()
+        {
+            var property = (IEventSymbol)_method.AssociatedSymbol;
+            if (property.IsAbstract)
+            {
+                Write("throw \"abstract\";");
+                WriteNewLine();
+            }
+            else
+            {
+                Write("return (");
+                Write(Emitter.GetEventName(property));
+                Write(" -= ");
+                Write(_method.Parameters[0].Name);
+                Write(")");
+                WriteSemiColon();
+            }
+            WriteNewLine();
+
+        }
+
+        private void WriteDefaultEventAdder()
+        {
+            var property = (IEventSymbol)_method.AssociatedSymbol;
+            if (property.IsAbstract)
+            {
+                Write("throw \"abstract\";");
+                WriteNewLine();
+            }
+            else
+            {
+                Write("return (");
+                Write(Emitter.GetEventName(property));
+                Write(" += ");
+                Write(_method.Parameters[0].Name);
+                Write(")");
+                WriteSemiColon();
+            }
+            WriteNewLine();
         }
 
         private void CollectTypeParameters(List<ITypeSymbol> typeParameters, ITypeSymbol type)

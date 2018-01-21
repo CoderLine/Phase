@@ -87,7 +87,7 @@ namespace Phase.Translator
 
                         if (cmd.ExitCode != 0)
                         {
-                            Log.Trace($"Process exited with code {cmd.ExitCode}");
+                            throw new PhaseCompilerException($"Post build step faild with code {cmd.ExitCode}");
                         }
                     }
                 }

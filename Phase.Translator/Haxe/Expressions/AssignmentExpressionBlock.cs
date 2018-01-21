@@ -38,6 +38,23 @@ namespace Phase.Translator.Haxe.Expressions
 
                 WriteCloseParentheses();
             }
+            else if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Event)
+            {
+                EmitTree(Node.Left, cancellationToken);
+                switch (Node.Kind())
+                {
+                    case SyntaxKind.SimpleAssignmentExpression:
+                        Write(" = ");
+                        break;
+                    case SyntaxKind.AddAssignmentExpression:
+                        Write(" += ");
+                        break;
+                    case SyntaxKind.SubtractAssignmentExpression:
+                        Write(" -= ");
+                        break;
+                }
+                EmitTree(Node.Right, cancellationToken);
+            }
             else
             {
                 EmitTree(Node.Left, cancellationToken);

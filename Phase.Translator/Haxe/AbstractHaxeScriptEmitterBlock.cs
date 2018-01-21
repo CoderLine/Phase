@@ -393,6 +393,41 @@ namespace Phase.Translator.Haxe
             Write(Emitter.GetTypeName(type));
         }
 
+        protected void WriteEventType(INamedTypeSymbol delegateType)
+        {
+            var delegateMethod = delegateType.DelegateInvokeMethod;
+
+            Write("system.Event");
+            if (delegateMethod.ReturnsVoid)
+            {
+                Write("Action");
+            }
+            else
+            {
+                Write("Func");
+            }
+
+            if (delegateMethod.Parameters.Length > 0 || !delegateMethod.ReturnsVoid)
+            {
+                Write(delegateMethod.Parameters.Length, "<");
+
+                for (int i = 0; i < delegateMethod.Parameters.Length; i++)
+                {
+                    if (i > 0) WriteComma();
+                    WriteType(delegateMethod.Parameters[i].Type);
+                }
+
+                if (!delegateMethod.ReturnsVoid)
+                {
+                    if (delegateMethod.Parameters.Length > 0) WriteComma();
+                    WriteType(delegateMethod.ReturnType);
+                }
+
+                Write(">");
+            }
+        }
+
+
         protected void WriteAccessibility(Accessibility declaredAccessibility)
         {
             switch (declaredAccessibility)

@@ -283,6 +283,11 @@ namespace Phase.Translator.Haxe
                 Emit<TypeOfExpressionBlock, TypeOfExpressionSyntax>(node);
             }
 
+            public override void VisitAnonymousObjectCreationExpression(AnonymousObjectCreationExpressionSyntax node)
+            {
+                Emit<AnonymousObjectCreationExpressionBlock, AnonymousObjectCreationExpressionSyntax>(node);
+            }
+
             #endregion
         }
     }

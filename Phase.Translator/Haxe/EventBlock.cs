@@ -31,36 +31,8 @@ namespace Phase.Translator.Haxe
             WriteSpace();
             WriteColon();
 
-            var delegateMethod = ((INamedTypeSymbol)_eventSymbol.Type).DelegateInvokeMethod;
-
-            Write("system.Event");
-            if (delegateMethod.ReturnsVoid)
-            {
-                Write("Action");
-            }
-            else
-            {
-                Write("Func");
-            }
-
-            if (delegateMethod.Parameters.Length > 0 || !delegateMethod.ReturnsVoid)
-            {
-                Write(delegateMethod.Parameters.Length, "<");
-
-                for (int i = 0; i < delegateMethod.Parameters.Length; i++)
-                {
-                    if (i > 0) WriteComma();
-                    WriteType(delegateMethod.Parameters[i].Type);
-                }
-
-                if (!delegateMethod.ReturnsVoid)
-                {
-                    if (delegateMethod.Parameters.Length > 0) WriteComma();
-                    WriteType(delegateMethod.ReturnType);
-                }
-
-                Write(">");
-            }
+            WriteEventType(((INamedTypeSymbol) _eventSymbol.Type));
+            
 
             WriteSemiColon(true);
             WriteNewLine();
