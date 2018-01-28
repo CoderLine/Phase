@@ -352,7 +352,7 @@ namespace Phase.Translator
                             for (int i = 1; i < invocation.ArgumentList.Arguments.Count; i++)
                             {
                                 var argument = invocation.ArgumentList.Arguments[i];
-                                var type = _semanticModel.GetTypeInfo(argument).Type;
+                                var type = _semanticModel.GetTypeInfo(argument.Expression).Type;
 
                                 var value = _semanticModel.GetConstantValue(argument.Expression);
                                 if (!value.HasValue)

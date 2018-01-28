@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator
 {
@@ -12,8 +13,8 @@ namespace Phase.Translator
 
         public AttributeRegistry()
         {
-            _registeredAttributes = new ConcurrentDictionary<ISymbol, List<AttributeData>>();
-            _registeredReturnAttributes = new ConcurrentDictionary<ISymbol, List<AttributeData>>();
+            _registeredAttributes = new ConcurrentDictionary<ISymbol, List<AttributeData>>(SymbolEquivalenceComparer.Instance);
+            _registeredReturnAttributes = new ConcurrentDictionary<ISymbol, List<AttributeData>>(SymbolEquivalenceComparer.Instance);
         }
 
         public void RegisterAttribute(ISymbol symbol, AttributeData attribute)

@@ -175,7 +175,18 @@ namespace Phase.Translator.Haxe
                     break;
                 default:
                     WriteColon();
-                    WriteType(_method.ReturnType);
+                    if (Emitter.IsGetEnumeratorAsIterator(_method))
+                    {
+                        Write("Iterable<");
+                        var generic = ((INamedTypeSymbol) _method.ReturnType).TypeArguments[0];
+                        WriteType(generic);
+                        Write(">");
+                    }
+                    else
+                    {
+                        WriteType(_method.ReturnType);
+                    }
+
                     Write(" ");
                     break;
             }
@@ -220,8 +231,13 @@ namespace Phase.Translator.Haxe
                         {
                             if (methodDeclarationSyntax.ExpressionBody != null)
                             {
+                                if (!_method.ReturnsVoid)
+                                {
+                                    WriteReturn(true);
+                                }
                                 EmitTree(methodDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
+                                WriteSemiColon(true);
                             }
                             else if (methodDeclarationSyntax.Body != null)
                             {
@@ -240,8 +256,13 @@ namespace Phase.Translator.Haxe
                         {
                             if (conversionOperatorDeclarationSyntax.ExpressionBody != null)
                             {
+                                if (!_method.ReturnsVoid)
+                                {
+                                    WriteReturn(true);
+                                }
                                 EmitTree(conversionOperatorDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
+                                WriteSemiColon(true);
                             }
                             else if (conversionOperatorDeclarationSyntax.Body != null)
                             {
@@ -260,8 +281,13 @@ namespace Phase.Translator.Haxe
                         {
                             if (operatorDeclarationSyntax.ExpressionBody != null)
                             {
+                                if (!_method.ReturnsVoid)
+                                {
+                                    WriteReturn(true);
+                                }
                                 EmitTree(operatorDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
+                                WriteSemiColon(true);
                             }
                             else if (operatorDeclarationSyntax.Body != null)
                             {
@@ -278,18 +304,13 @@ namespace Phase.Translator.Haxe
                         }
                         else if (arrowExpressionClauseSyntax != null)
                         {
-                            if (_method.ReturnsVoid)
-                            {
-                                EmitTree(arrowExpressionClauseSyntax.Expression,
-                                    cancellationToken);
-                            }
-                            else
+                            if (!_method.ReturnsVoid)
                             {
                                 WriteReturn(true);
-                                EmitTree(arrowExpressionClauseSyntax.Expression,
-                                    cancellationToken);
-                                WriteSemiColon(true);
                             }
+                            EmitTree(arrowExpressionClauseSyntax.Expression,
+                                cancellationToken);
+                            WriteSemiColon(true);
                         }
                         else if (constructorDeclarationSyntax != null)
                         {
@@ -342,6 +363,11 @@ namespace Phase.Translator.Haxe
                                 }
                             }
 
+                            if (constructorDeclarationSyntax.ExpressionBody != null)
+                            {
+                                EmitTree(constructorDeclarationSyntax.ExpressionBody);
+                                WriteSemiColon(true);
+                            }
                             if (constructorDeclarationSyntax.Body != null)
                             {
                                 foreach (var statement in constructorDeclarationSyntax.Body.Statements)
@@ -352,7 +378,17 @@ namespace Phase.Translator.Haxe
                         }
                         else if (accessorDeclarationSyntax != null)
                         {
-                            if (accessorDeclarationSyntax.Body != null)
+                            if (accessorDeclarationSyntax.ExpressionBody != null)
+                            {
+                                if (!_method.ReturnsVoid || _method.MethodKind == MethodKind.PropertySet)
+                                {
+                                    WriteReturn(true);
+                                }
+                                EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
+                                    cancellationToken);
+                                WriteSemiColon(true);
+                            }
+                            else if (accessorDeclarationSyntax.Body != null)
                             {
                                 foreach (var statement in accessorDeclarationSyntax.Body.Statements)
                                 {

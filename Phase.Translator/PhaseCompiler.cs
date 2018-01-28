@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using NLog;
@@ -73,8 +75,12 @@ namespace Phase.Translator
                         }
                     };
 
-                    cmd.ErrorDataReceived += (sender, args) => { Log.Error(args.Data); };
-                    cmd.OutputDataReceived += (sender, args) => { Log.Trace(args.Data); };
+                    bool translateHaxeOutput =
+                        step.Executable.Equals("haxe.exe", StringComparison.InvariantCultureIgnoreCase) ||
+                        step.Executable.Equals("haxe", StringComparison.InvariantCultureIgnoreCase);
+
+                    cmd.ErrorDataReceived += (sender, args) => { Log.Error(translateHaxeOutput ? TranslateHaxeOutput(args.Data) : args.Data); };
+                    cmd.OutputDataReceived += (sender, args) => { Log.Trace(translateHaxeOutput ? TranslateHaxeOutput(args.Data) : args.Data); };
 
                     using (cancellationToken.Register(() => { cmd.Kill(); }))
                     {
@@ -87,15 +93,36 @@ namespace Phase.Translator
 
                         if (cmd.ExitCode != 0)
                         {
-                            throw new PhaseCompilerException($"Post build step faild with code {cmd.ExitCode}");
+                            throw new PhaseCompilerException($"Post build step failed with code {cmd.ExitCode}");
                         }
                     }
                 }
                 catch (Exception e)
                 {
                     Log.Error(e, "Error on postbuild execution");
+                    throw;
                 }
             }
+        }
+
+        private static readonly Regex HaxeError = new Regex(@"(?<File>.*\.hx):(?<Line>[0-9]+): characters (?<CharStart>[0-9]+)-(?<CharEnd>[0-9]+) : (?<Message>.*)", RegexOptions.Compiled);
+        private string TranslateHaxeOutput(string text)
+        {
+            if (text == null) return string.Empty;
+            return HaxeError.Replace(text, m =>
+            {
+                var errorWarning =
+                    CultureInfo.InvariantCulture.CompareInfo.IndexOf(m.Groups["Message"].Value, "warning",
+                        CompareOptions.IgnoreCase) >= 0
+                        ? "warning PH000"
+                        : "error PH000";
+                var file = m.Groups["File"].Value
+                    .Replace('/', Path.DirectorySeparatorChar)
+                    .Replace('\\', Path.DirectorySeparatorChar)
+                    ;
+                file = Path.Combine(Path.GetDirectoryName(Input.ProjectFile), file);
+                return $"{file}({m.Groups["Line"].Value},{m.Groups["CharStart"].Value},{m.Groups["Line"].Value},{m.Groups["CharEnd"]}): {errorWarning} : {m.Groups["Message"].Value}";
+            });
         }
 
         private async Task ReadOptionsAsync()

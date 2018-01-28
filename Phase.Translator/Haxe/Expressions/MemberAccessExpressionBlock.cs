@@ -2,21 +2,59 @@ using System;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using Haxe;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe.Expressions
 {
     public class MemberAccessExpressionBlock : AbstractHaxeScriptEmitterBlock<MemberAccessExpressionSyntax>
     {
+        public bool SkipSemicolonOnStatement { get; set; }
+
         protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
-        
+            var member = Emitter.GetSymbolInfo(Node);
+
+            if (member.Symbol != null)
+            {
+                CodeTemplate template = null;
+                if (member.Symbol is IPropertySymbol property && property.GetMethod != null)
+                {
+                    template = Emitter.GetTemplate(property.GetMethod);
+                }
+                else
+                {
+                    template = Emitter.GetTemplate(member.Symbol);
+                }
+
+                if (template != null)
+                {
+                    SkipSemicolonOnStatement = template.SkipSemicolonOnStatements;
+                    if (template.Variables.TryGetValue("this", out var thisVar))
+                    {
+                        PushWriter();
+                        if (member.Symbol.IsStatic)
+                        {
+                            Write(Emitter.GetTypeName(member.Symbol.ContainingType, false, true));
+                        }
+                        else
+                        {
+                            EmitTree(Node.Expression, cancellationToken);
+                        }
+
+                        thisVar.RawValue = PopWriter();
+                    }
+
+                    Write(template.ToString());
+                    return;
+                }
+            }
 
             var expression = Node.Expression;
             var leftHandSide = Emitter.GetSymbolInfo(expression);
-            var member = Emitter.GetSymbolInfo(Node);
             if (member.Symbol != null && member.Symbol is IFieldSymbol constField && constField.IsConst && constField.DeclaringSyntaxReferences.Length == 0)
             {
                 switch (constField.Type.SpecialType)
@@ -70,7 +108,7 @@ namespace Phase.Translator.Haxe.Expressions
                         //}
                         break;
                     case SymbolKind.NamedType:
-                        Write(Emitter.GetTypeName((INamedTypeSymbol) leftHandSide.Symbol, false, true));
+                        Write(Emitter.GetTypeName((INamedTypeSymbol)leftHandSide.Symbol, false, true));
                         break;
                     default:
                         EmitTree(expression, cancellationToken);
@@ -135,6 +173,51 @@ namespace Phase.Translator.Haxe.Expressions
                             WriteCloseParentheses();
                         }
                         return;
+                }
+
+                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeInt")))
+                {
+                    switch (typeInfo.Type.SpecialType)
+                    {
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_UInt64:
+                            WriteDot();
+                            Write("ToHaxeInt()");
+                            return;
+                    }
+
+                }
+
+                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeFloat")))
+                {
+                    switch (typeInfo.Type.SpecialType)
+                    {
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_UInt64:
+                        case SpecialType.System_Single:
+                        case SpecialType.System_Double:
+                            WriteDot();
+                            Write("ToHaxeFloat()");
+                            return;
+                    }
+                }
+
+                if (typeInfo.Type.SpecialType == SpecialType.System_String && typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeString")))
+                {
+                    WriteDot();
+                    Write("ToHaxeString()");
                 }
             }
         }

@@ -8,11 +8,13 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Haxe;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
 using NLog.Fluent;
+using Phase.Attributes;
 using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe
@@ -27,6 +29,7 @@ namespace Phase.Translator.Haxe
             public bool? HasConstructorOverloads { get; set; }
             public int? ConstructorCount { get; set; }
             public bool? IsAutoProperty { get; set; }
+            public ForeachMode? ForeachMode { get; set; }
         }
 
         private ConcurrentDictionary<ISymbol, SymbolMetaData> _symbolMetaCache;
@@ -41,7 +44,7 @@ namespace Phase.Translator.Haxe
         public HaxeEmitter(PhaseCompiler compiler)
         {
             Compiler = compiler;
-            _symbolMetaCache = new ConcurrentDictionary<ISymbol, SymbolMetaData>(new SymbolEquivalenceComparer());
+            _symbolMetaCache = new ConcurrentDictionary<ISymbol, SymbolMetaData>(SymbolEquivalenceComparer.Instance);
             _reservedMethodNames = new ConcurrentDictionary<string, IMethodSymbol>();
             _semanticModelLookup = new ConcurrentDictionary<SyntaxTree, SemanticModel>();
         }
@@ -122,15 +125,9 @@ namespace Phase.Translator.Haxe
             return GetTypeName(GetTypeSymbol(type), simple);
         }
 
-        private ITypeSymbol _phaseClass;
-
         public bool IsPhaseClass(ITypeSymbol type)
         {
-            if (_phaseClass == null)
-            {
-                _phaseClass = GetPhaseType("Phase.Script");
-            }
-            return type.Equals(_phaseClass);
+            return type.Equals(GetPhaseType("Phase.Script"));
         }
 
         public string GetTypeName(ITypeSymbol type, bool simple = false, bool noTypeArguments = false)
@@ -207,11 +204,7 @@ namespace Phase.Translator.Haxe
 
         public string GetNameFromAttribute(ISymbol type)
         {
-            if (_nameAttributeType == null)
-            {
-                _nameAttributeType = GetPhaseType("Phase.Attributes.NameAttribute");
-            }
-            var nameAttribute = GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(_nameAttributeType));
+            var nameAttribute = GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NameAttribute")));
             if (nameAttribute != null)
             {
                 return nameAttribute.ConstructorArguments[0].Value.ToString();
@@ -222,11 +215,7 @@ namespace Phase.Translator.Haxe
 
         private Tuple<string, string> GetNamespaceAndTypeName(ITypeSymbol type)
         {
-            if (_nameAttributeType == null)
-            {
-                _nameAttributeType = GetPhaseType("Phase.Attributes.NameAttribute");
-            }
-            var nameAttribute = GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(_nameAttributeType));
+            var nameAttribute = GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NameAttribute")));
             if (nameAttribute != null)
             {
                 var name = nameAttribute.ConstructorArguments[0].Value.ToString();
@@ -247,7 +236,7 @@ namespace Phase.Translator.Haxe
 
         private IEnumerable<AttributeData> GetAttributes(ISymbol type)
         {
-            return Compiler.Translator.Attributes.GetAttributes(type.OriginalDefinition ?? type);
+            return Compiler.Translator.Attributes.GetAttributes(type);
         }
 
         private string BuildTypeName(ITypeSymbol type)
@@ -296,20 +285,12 @@ namespace Phase.Translator.Haxe
 
         public bool IsExternal(ISymbol symbol)
         {
-            if (_ignoreAttributeType == null)
-            {
-                _ignoreAttributeType = GetPhaseType("Phase.Attributes.ExternalAttribute");
-            }
-            return symbol.IsExtern || GetAttributes(symbol).Any(a => a.AttributeClass.Equals(_ignoreAttributeType));
+            return symbol.IsExtern || GetAttributes(symbol).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ExternalAttribute")));
         }
 
-        public CodeTemplate GetTemplate(IMethodSymbol methodSymbol)
+        public CodeTemplate GetTemplate(ISymbol symbol)
         {
-            if (_templateAttributeType == null)
-            {
-                _templateAttributeType = GetPhaseType("Phase.Attributes.TemplateAttribute");
-            }
-            var attribute = GetAttributes(methodSymbol).FirstOrDefault(a => a.AttributeClass.Equals(_templateAttributeType));
+            var attribute = GetAttributes(symbol).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.TemplateAttribute")));
             if (attribute == null)
             {
                 return null;
@@ -323,12 +304,7 @@ namespace Phase.Translator.Haxe
 
         public bool IsMethodRedirected(IMethodSymbol methodSymbol, out string typeName)
         {
-            if (_redirectMethodsToAttribute == null)
-            {
-                _redirectMethodsToAttribute = GetPhaseType("Phase.Attributes.RedirectMethodsToAttribute");
-            }
-
-            var attribute = GetAttributes(methodSymbol.ContainingType).FirstOrDefault(a => a.AttributeClass.Equals(_redirectMethodsToAttribute));
+            var attribute = GetAttributes(methodSymbol.ContainingType).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.RedirectMethodsToAttribute")));
             if (attribute == null)
             {
                 typeName = null;
@@ -364,8 +340,6 @@ namespace Phase.Translator.Haxe
 
         public string GetMethodName(IMethodSymbol method)
         {
-            method = method.OriginalDefinition;
-
             var meta = GetOrCreateMeta(method);
             if (meta.OutputName != null)
             {
@@ -381,8 +355,6 @@ namespace Phase.Translator.Haxe
             {
                 return false;
             }
-            type = type.OriginalDefinition;
-
             var meta = GetOrCreateMeta(type);
             if (meta.HasConstructorOverloads == null)
             {
@@ -398,7 +370,6 @@ namespace Phase.Translator.Haxe
             {
                 return 0;
             }
-            type = type.OriginalDefinition;
 
             var meta = GetOrCreateMeta(type);
             if (meta.ConstructorCount == null)
@@ -534,9 +505,9 @@ namespace Phase.Translator.Haxe
                 case SymbolKind.NamedType:
                 case SymbolKind.PointerType:
                 case SymbolKind.TypeParameter:
-                    return GetTypeName((ITypeSymbol) symbol);
+                    return GetTypeName((ITypeSymbol)symbol);
                 case SymbolKind.Event:
-                    return GetEventName((IEventSymbol) symbol);
+                    return GetEventName((IEventSymbol)symbol);
                 case SymbolKind.Field:
                     return GetFieldName((IFieldSymbol)symbol);
                 case SymbolKind.Method:
@@ -775,111 +746,61 @@ namespace Phase.Translator.Haxe
                 .Any(o => GetSymbolInfo(o.Expression).Symbol.Equals(symbol));
         }
 
-        private INamedTypeSymbol _abstractAttributeType;
-
         public AttributeData GetAbstract(INamedTypeSymbol type)
         {
-            if (_abstractAttributeType == null)
-            {
-                _abstractAttributeType = GetPhaseType("Phase.Attributes.AbstractAttribute");
-            }
-
-            return GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(_abstractAttributeType));
+            return GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.AbstractAttribute")));
         }
 
         public bool IsAbstract(INamedTypeSymbol type)
         {
-            if (_abstractAttributeType == null)
-            {
-                _abstractAttributeType = GetPhaseType("Phase.Attributes.AbstractAttribute");
-            }
-
-            return GetAttributes(type).Any(a => a.AttributeClass.Equals(_abstractAttributeType));
+            return GetAttributes(type).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.AbstractAttribute")));
         }
-
-        private INamedTypeSymbol _nativeIndexerAttributeType;
 
         public bool IsNativeIndexer(ISymbol symbol)
         {
-            if (_nativeIndexerAttributeType == null)
-            {
-                _nativeIndexerAttributeType = GetPhaseType("Phase.Attributes.NativeIndexerAttribute");
-            }
-
-            return GetAttributes(symbol).Any(a => a.AttributeClass.Equals(_abstractAttributeType));
+            return GetAttributes(symbol).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NativeIndexerAttribute")));
         }
 
-        private INamedTypeSymbol GetPhaseType(string name)
+        private ConcurrentDictionary<string, INamedTypeSymbol> _typeCache = new ConcurrentDictionary<string, INamedTypeSymbol>();
+
+        public INamedTypeSymbol GetPhaseType(string name)
         {
-            var type = Compiler.Translator.Compilation.GetTypeByMetadataName(name);
+            if (_typeCache.TryGetValue(name, out var type))
+            {
+                return type;
+            }
+            type = Compiler.Translator.Compilation.GetTypeByMetadataName(name);
             if (type == null)
             {
                 // TODO look in mscorlib
             }
-            return type;
+            return _typeCache[name] = type;
         }
-
-
-        private INamedTypeSymbol _inlineAttributeType;
-        private INamedTypeSymbol _nameAttributeType;
-        private INamedTypeSymbol _ignoreAttributeType;
-        private INamedTypeSymbol _templateAttributeType;
-        private INamedTypeSymbol _redirectMethodsToAttribute;
-        private INamedTypeSymbol _fromAttributeType;
-        private INamedTypeSymbol _toAttributeType;
-        private INamedTypeSymbol _opAttributeType;
-        private INamedTypeSymbol _nativeConstructorsAttributeType;
-        private INamedTypeSymbol _compilerExtensionAttributeType;
-        private INamedTypeSymbol _iconvertibleType;
 
         public bool IsInline(IMethodSymbol method)
         {
-            if (_inlineAttributeType == null)
-            {
-                _inlineAttributeType = GetPhaseType("Phase.Attributes.InlineAttribute");
-            }
-
-            return GetAttributes(method).Any(a => a.AttributeClass.Equals(_inlineAttributeType));
+            return GetAttributes(method).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.InlineAttribute")));
         }
 
         public bool IsCompilerExtension(IMethodSymbol method)
         {
-            if (_compilerExtensionAttributeType == null)
-            {
-                _compilerExtensionAttributeType = GetPhaseType("Phase.Attributes.CompilerExtensionAttribute");
-            }
 
-            return GetAttributes(method).Any(a => a.AttributeClass.Equals(_compilerExtensionAttributeType));
+            return GetAttributes(method).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.CompilerExtensionAttribute")));
         }
 
         public bool IsFrom(IMethodSymbol method)
         {
-            if (_fromAttributeType == null)
-            {
-                _fromAttributeType = GetPhaseType("Phase.Attributes.FromAttribute");
-            }
-
-            return GetAttributes(method).Any(a => a.AttributeClass.Equals(_fromAttributeType));
+            return GetAttributes(method).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.FromAttribute")));
         }
 
         public bool IsTo(IMethodSymbol method)
         {
-            if (_toAttributeType == null)
-            {
-                _toAttributeType = GetPhaseType("Phase.Attributes.ToAttribute");
-            }
-
-            return GetAttributes(method).Any(a => a.AttributeClass.Equals(_toAttributeType));
+            return GetAttributes(method).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ToAttribute")));
         }
 
         public string GetOp(IMethodSymbol method)
         {
-            if (_opAttributeType == null)
-            {
-                _opAttributeType = GetPhaseType("Phase.Attributes.OpAttribute");
-            }
-
-            var attribute = GetAttributes(method).FirstOrDefault(a => a.AttributeClass.Equals(_opAttributeType));
+            var attribute = GetAttributes(method).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.OpAttribute")));
             if (attribute == null)
             {
                 return null;
@@ -890,12 +811,7 @@ namespace Phase.Translator.Haxe
 
         public bool HasNativeConstructors(ISymbol symbol)
         {
-            if (_nativeConstructorsAttributeType == null)
-            {
-                _nativeConstructorsAttributeType = GetPhaseType("Phase.Attributes.NativeConstructorsAttribute");
-            }
-
-            return GetAttributes(symbol).Any(a => a.AttributeClass.Equals(_nativeConstructorsAttributeType));
+            return GetAttributes(symbol).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NativeConstructorsAttribute")));
         }
 
         public ITypeSymbol GetSpecialType(SpecialType specialType)
@@ -905,8 +821,6 @@ namespace Phase.Translator.Haxe
 
         public bool IsEventField(IEventSymbol evt)
         {
-            evt = evt.OriginalDefinition;
-
             var meta = GetOrCreateMeta(evt);
 
             if (meta.IsAutoProperty.HasValue)
@@ -917,10 +831,20 @@ namespace Phase.Translator.Haxe
             return (meta.IsAutoProperty = InternalIsEventField(evt)).Value;
         }
 
+        public ForeachMode GetForeachMode(ITypeSymbol type)
+        {
+            var meta = GetOrCreateMeta(type);
+
+            if (meta.ForeachMode.HasValue)
+            {
+                return meta.ForeachMode.Value;
+            }
+
+            return (meta.ForeachMode = InternalGetForeachMode(type)).Value;
+        }
+
         public bool IsAutoProperty(IPropertySymbol property)
         {
-            property = property.OriginalDefinition;
-
             var meta = GetOrCreateMeta(property);
 
             if (meta.IsAutoProperty.HasValue)
@@ -981,6 +905,22 @@ namespace Phase.Translator.Haxe
             return false;
         }
 
+        private ForeachMode InternalGetForeachMode(ITypeSymbol type)
+        {
+            var attr = type.GetAttributes().FirstOrDefault(t => t.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ForeachModeAttribute")));
+            if (attr == null)
+            {
+                if (type.TypeKind == TypeKind.Array)
+                {
+                    return ForeachMode.Native;
+                }
+
+                return ForeachMode.AsIterable;
+            }
+
+            return (ForeachMode) (int) attr.ConstructorArguments[0].Value;
+        }
+
         private bool IsInterfaceImplementation(ISymbol method)
         {
             return method.ContainingType.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).Any(interfaceMethod => method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod).Equals(method));
@@ -1013,12 +953,30 @@ namespace Phase.Translator.Haxe
 
         public bool IsIConvertible(ITypeSymbol type)
         {
-            if (_iconvertibleType == null)
-            {
-                _iconvertibleType = GetPhaseType("System.IConvertible");
-            }
-            return type.AllInterfaces.Any(i => i.Equals(_iconvertibleType));
+            return type.AllInterfaces.Any(i => i.Equals(GetPhaseType("System.IConvertible")));
         }
 
+        public bool IsGetEnumeratorAsIterator(IMethodSymbol method)
+        {
+            if (method.Name != "GetEnumerator")
+            {
+                return false;
+            }
+
+            var enumerable = method.ContainingType.AllInterfaces.FirstOrDefault(i =>
+                i.OriginalDefinition.Equals(GetPhaseType("System.Collections.Generic.IEnumerable`1")));
+            if (enumerable == null)
+            {
+                return false;
+            }
+            var getEnumerator = enumerable.GetMembers("GetEnumerator")[0];
+            var interfaceMember = method.ContainingType.FindImplementationForInterfaceMember(getEnumerator);
+            if (interfaceMember != null && interfaceMember.Equals(method))
+            {
+                var foreachMode = GetForeachMode(method.ContainingType);
+                return foreachMode == ForeachMode.GetEnumerator;
+            }
+            return false;
+        }
     }
 }

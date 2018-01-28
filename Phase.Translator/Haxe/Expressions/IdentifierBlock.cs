@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Haxe;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -68,6 +69,51 @@ namespace Phase.Translator.Haxe.Expressions
                             WriteCloseParentheses();
                         }
                         return;
+                }
+
+                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeInt")))
+                {
+                    switch (typeInfo.Type.SpecialType)
+                    {
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_UInt64:
+                            WriteDot();
+                            Write("ToHaxeInt()");
+                            return;
+                    }
+
+                }
+
+                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeFloat")))
+                {
+                    switch (typeInfo.Type.SpecialType)
+                    {
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_UInt64:
+                        case SpecialType.System_Single:
+                        case SpecialType.System_Double:
+                            WriteDot();
+                            Write("ToHaxeFloat()");
+                            return;
+                    }
+                }
+
+                if (typeInfo.Type.SpecialType == SpecialType.System_String && typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeString")))
+                {
+                    WriteDot();
+                    Write("ToHaxeString()");
                 }
             }
         }

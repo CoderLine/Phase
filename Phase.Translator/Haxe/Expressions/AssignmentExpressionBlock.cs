@@ -3,6 +3,7 @@ using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe.Expressions
 {
@@ -14,8 +15,42 @@ namespace Phase.Translator.Haxe.Expressions
             var leftType = Emitter.GetTypeInfo(Node.Left);
             var rightType = Emitter.GetTypeInfo(Node.Right);
 
+            if (leftSymbol.Symbol is IPropertySymbol prop && prop.SetMethod != null)
+            {
+                var template = Emitter.GetTemplate(prop.SetMethod);
+                if (template != null)
+                {
+                    if (template.Variables.TryGetValue("this", out var thisVar))
+                    {
+                        PushWriter();
+                        if (leftSymbol.Symbol.IsStatic)
+                        {
+                            Write(Emitter.GetTypeName(leftSymbol.Symbol.ContainingType, false, true));
+                        }
+                        else
+                        {
+                            EmitTree(Node.Left, cancellationToken);
+                        }
+
+                        thisVar.RawValue = PopWriter();
+                    }
+
+                    if (template.Variables.TryGetValue("value", out var variable))
+                    {
+                        PushWriter();
+                        EmitTree(Node.Right, cancellationToken);
+                        variable.RawValue = PopWriter();
+                    }
+
+                    Write(template.ToString());
+                    return;
+                }
+            }
+
+
             var op = GetOperator();
-            if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property && ((IPropertySymbol)leftSymbol.Symbol).IsIndexer)
+            if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property && ((IPropertySymbol)leftSymbol.Symbol).IsIndexer && 
+                !Emitter.IsNativeIndexer(leftSymbol.Symbol))
             {
                 EmitTree(Node.Left, cancellationToken);
 

@@ -1,11 +1,10 @@
-﻿using System;
-using Phase.Attributes;
+﻿using Phase.Attributes;
 
 namespace Haxe
 {
     [Name("Int")]
     [External]
-    public class HaxeInt
+    public struct HaxeInt
     {
         public static extern implicit operator int(HaxeInt d);
         public static extern implicit operator HaxeInt(int d);

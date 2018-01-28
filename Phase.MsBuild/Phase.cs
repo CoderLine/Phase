@@ -198,7 +198,7 @@ namespace Phase.MsBuild
             }
             catch (Exception e)
             {
-                Log.LogErrorFromException(e, true);
+                Log.LogError(e.Message);
                 if (Debugger.IsAttached)
                 {
                     Debugger.Break();

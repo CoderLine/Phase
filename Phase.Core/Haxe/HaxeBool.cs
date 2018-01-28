@@ -4,7 +4,9 @@ namespace Haxe
 {
     [Name("Bool")]
     [External]
-    public class HaxeBool
+    public struct HaxeBool
     {
+        public static extern implicit operator bool(HaxeBool d);
+        public static extern implicit operator HaxeBool(bool d);
     }
 }

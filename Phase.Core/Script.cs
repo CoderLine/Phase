@@ -11,5 +11,14 @@ namespace Phase
         public static extern T Write<T>(string code);
         [Template("cast ({v})")]
         public static extern T As<T>(this object v);
+        public static extern object AbstractThis
+        {
+            [Template("this")]
+            get;
+            [Template("this = {value}")]
+            set;
+        }
+        [Template("this")]
+        public static extern T This<T>();
     }
 }

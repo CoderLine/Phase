@@ -8,6 +8,8 @@ namespace Phase.Translator.Utils
 {
     public class SymbolEquivalenceComparer : IEqualityComparer<ISymbol>
     {
+        public static readonly SymbolEquivalenceComparer Instance = new SymbolEquivalenceComparer();
+
         public bool Equals(ISymbol x, ISymbol y)
         {
             return GetId(x).Equals(GetId(y));
@@ -17,6 +19,12 @@ namespace Phase.Translator.Utils
         {
             return GetId(obj).GetHashCode();
         }
+
+        public void Reset()
+        {
+            _idCache.Clear();
+        }
+
 
         private ConcurrentDictionary<ISymbol, string> _idCache = new ConcurrentDictionary<ISymbol, string>();
         private string GetId(ISymbol symbol)
@@ -48,6 +56,8 @@ namespace Phase.Translator.Utils
                 default:
                     break;
             }
+
+            symbol = symbol.OriginalDefinition;
             if (_idCache.TryGetValue(symbol, out var id))
             {
                 return id;
