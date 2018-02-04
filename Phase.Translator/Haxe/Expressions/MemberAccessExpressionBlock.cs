@@ -10,11 +10,11 @@ using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe.Expressions
 {
-    public class MemberAccessExpressionBlock : AbstractHaxeScriptEmitterBlock<MemberAccessExpressionSyntax>
+    public class MemberAccessExpressionBlock : AutoCastBlockBase<MemberAccessExpressionSyntax>
     {
         public bool SkipSemicolonOnStatement { get; set; }
 
-        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
+        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {
             var member = Emitter.GetSymbolInfo(Node);
 
@@ -49,7 +49,7 @@ namespace Phase.Translator.Haxe.Expressions
                     }
 
                     Write(template.ToString());
-                    return;
+                    return AutoCastMode.SkipCast;
                 }
             }
 
@@ -61,7 +61,7 @@ namespace Phase.Translator.Haxe.Expressions
                 {
                     case SpecialType.System_Boolean:
                         Write((bool)constField.ConstantValue ? "true" : "false");
-                        return;
+                        return AutoCastMode.SkipCast;
                     case SpecialType.System_Char:
                     case SpecialType.System_SByte:
                     case SpecialType.System_Byte:
@@ -72,19 +72,19 @@ namespace Phase.Translator.Haxe.Expressions
                     case SpecialType.System_Int64:
                     case SpecialType.System_UInt64:
                         Write((int)constField.ConstantValue);
-                        return;
+                        return AutoCastMode.SkipCast;
                     case SpecialType.System_Decimal:
                         Write((decimal)constField.ConstantValue);
-                        return;
+                        return AutoCastMode.SkipCast;
                     case SpecialType.System_Single:
                         Write((float)constField.ConstantValue);
-                        return;
+                        return AutoCastMode.SkipCast;
                     case SpecialType.System_Double:
                         Write((double)constField.ConstantValue);
-                        return;
+                        return AutoCastMode.SkipCast;
                     case SpecialType.System_String:
                         Write("\"" + constField.ConstantValue + "\"");
-                        return;
+                        return AutoCastMode.SkipCast;
                 }
             }
 
@@ -123,103 +123,11 @@ namespace Phase.Translator.Haxe.Expressions
             }
             else
             {
-                switch (member.Symbol.Kind)
-                {
-                    case SymbolKind.Method:
-                        WriteDot();
-                        Write(Emitter.GetMethodName((IMethodSymbol)member.Symbol));
-                        break;
-                    case SymbolKind.Field:
-                        WriteDot();
-                        Write(Emitter.GetFieldName((IFieldSymbol)member.Symbol));
-                        break;
-                    case SymbolKind.Property:
-                        WriteDot();
-                        Write(Emitter.GetPropertyName((IPropertySymbol)member.Symbol));
-                        break;
-                    case SymbolKind.Event:
-                        WriteDot();
-                        Write(Emitter.GetEventName((IEventSymbol)member.Symbol));
-                        break;
-                    default:
-                        WriteDot();
-                        Write(Node.Name.Identifier);
-                        break;
-                }
+                WriteDot();
+                Write(Emitter.GetSymbolName(member.Symbol));
             }
 
-            var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
-            // implicit cast
-            if (typeInfo.ConvertedType != null && !typeInfo.Type.Equals(typeInfo.ConvertedType))
-            {
-                switch (typeInfo.ConvertedType.SpecialType)
-                {
-                    case SpecialType.System_Boolean:
-                    case SpecialType.System_Char:
-                    case SpecialType.System_SByte:
-                    case SpecialType.System_Byte:
-                    case SpecialType.System_Int16:
-                    case SpecialType.System_UInt16:
-                    case SpecialType.System_Int32:
-                    case SpecialType.System_UInt32:
-                    case SpecialType.System_Int64:
-                    case SpecialType.System_UInt64:
-                        if (Emitter.IsIConvertible(typeInfo.Type))
-                        {
-                            WriteDot();
-                            Write("To" + typeInfo.ConvertedType.Name + "_IFormatProvider");
-                            WriteOpenParentheses();
-                            Write("null");
-                            WriteCloseParentheses();
-                        }
-                        return;
-                }
-
-                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeInt")))
-                {
-                    switch (typeInfo.Type.SpecialType)
-                    {
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_Int32:
-                        case SpecialType.System_Int64:
-                        case SpecialType.System_UInt16:
-                        case SpecialType.System_UInt32:
-                        case SpecialType.System_UInt64:
-                            WriteDot();
-                            Write("ToHaxeInt()");
-                            return;
-                    }
-
-                }
-
-                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeFloat")))
-                {
-                    switch (typeInfo.Type.SpecialType)
-                    {
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_Int32:
-                        case SpecialType.System_Int64:
-                        case SpecialType.System_UInt16:
-                        case SpecialType.System_UInt32:
-                        case SpecialType.System_UInt64:
-                        case SpecialType.System_Single:
-                        case SpecialType.System_Double:
-                            WriteDot();
-                            Write("ToHaxeFloat()");
-                            return;
-                    }
-                }
-
-                if (typeInfo.Type.SpecialType == SpecialType.System_String && typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeString")))
-                {
-                    WriteDot();
-                    Write("ToHaxeString()");
-                }
-            }
+            return AutoCastMode.Default;
         }
     }
 }

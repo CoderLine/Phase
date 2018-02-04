@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
 
 namespace Phase.Translator.Utils
 {
@@ -21,5 +22,21 @@ namespace Phase.Translator.Utils
         {
             return char.ToUpper(s[0]) + s.Substring(1);
         }
-    }
+
+        public static T FindParent<T>(this SyntaxNode node)
+            where T :SyntaxNode
+        {
+            while (node.Parent != null)
+            {
+                if (node.Parent is T tp)
+                {
+                    return tp;
+                }
+
+                node = node.Parent;
+            }
+
+            return null;
+        }
+}
 }

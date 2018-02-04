@@ -17,6 +17,7 @@ namespace Phase.Translator
         public PhaseCompilerInput Input { get; private set; }
         public PhaseCompilerOptions Options { get; private set; }
         public PhaseTranslator Translator { get; private set; }
+        public const string Preprocessor = "PHASE";
 
         public PhaseCompiler(PhaseCompilerInput compilerInput)
         {

@@ -31,6 +31,8 @@ namespace Phase.Translator.Haxe
             if (!_property.IsIndexer && _property.OverriddenProperty == null)
             {
                 WriteComments(_property, cancellationToken);
+                WriteMeta(_property, cancellationToken);
+
                 var isAutoProperty = Emitter.IsAutoProperty(_property);
 
                 WriteAccessibility(_property.DeclaredAccessibility);

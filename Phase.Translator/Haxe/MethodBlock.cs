@@ -79,6 +79,7 @@ namespace Phase.Translator.Haxe
             }
 
             WriteComments(_method, cancellationToken);
+            WriteMeta(_method, cancellationToken);
 
             if (Emitter.IsFrom(_method))
             {
@@ -334,6 +335,7 @@ namespace Phase.Translator.Haxe
 
                                     WriteMethodInvocation(ctor,
                                         constructorDeclarationSyntax.Initializer.ArgumentList,
+                                        constructorDeclarationSyntax.Initializer, 
                                         cancellationToken);
                                     WriteSemiColon(true);
                                 }
@@ -360,6 +362,50 @@ namespace Phase.Translator.Haxe
                                     {
                                         Debugger.Break();
                                     }
+                                }
+                            }
+
+                            // write default initializers
+                            foreach (var members in _method.ContainingType.GetMembers().Where(f=>f.IsStatic == _method.IsStatic))
+                            {
+                                bool hasInitializer = true;
+                                ITypeSymbol memberType = null;
+                                string memberName = string.Empty;
+                                switch (members.Kind)
+                                {
+                                    case SymbolKind.Field:
+                                        foreach (var fieldReference in members.DeclaringSyntaxReferences)
+                                        {
+                                            if (fieldReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declaration)
+                                            {
+                                                hasInitializer = declaration.Initializer != null;
+                                                memberType = ((IFieldSymbol) members).Type;
+                                                memberName = Emitter.GetFieldName((IFieldSymbol)members);
+                                                break;
+                                            }
+                                        }
+                                        break;
+                                    case SymbolKind.Property:
+                                        if (!Emitter.IsAutoProperty((IPropertySymbol) members))
+                                        {
+                                            continue;
+                                        }
+                                        memberType = ((IPropertySymbol)members).Type;
+                                        memberName = Emitter.GetPropertyName((IPropertySymbol)members);
+                                        hasInitializer = false;
+                                        break;
+                                    default:
+                                        continue;
+                                }
+                            
+                                
+                                if (!hasInitializer)
+                                {
+                                    var defaultValue = Emitter.GetDefaultValue(memberType);
+                                    Write(memberName);
+                                    Write(" = ");
+                                    Write(defaultValue);
+                                    WriteSemiColon(true);
                                 }
                             }
 

@@ -6,11 +6,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe.Expressions
 {
-    public class InvocationExpressionBlock : AbstractHaxeScriptEmitterBlock<InvocationExpressionSyntax>
+    public class InvocationExpressionBlock : AutoCastBlockBase<InvocationExpressionSyntax>
     {
         public bool SkipSemicolonOnStatement { get; set; }
 
-        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
+        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {
             if (Node.Expression is IdentifierNameSyntax)
             {
@@ -18,7 +18,7 @@ namespace Phase.Translator.Haxe.Expressions
                 if (value.HasValue)
                 {
                     Write(value.Value);
-                    return;
+                    return AutoCastMode.Default;
                 }
             }
 
@@ -95,11 +95,43 @@ namespace Phase.Translator.Haxe.Expressions
                             PushWriter();
                             if (param.IsParams)
                             {
-                                for (int j = 0; j < values.Length; j++)
+                                if (values.Length == 1)
                                 {
-                                    if (j > 0) WriteComma();
-                                    EmitTree(Node.Expression, cancellationToken);
+                                    var singleParamType = Emitter.GetTypeInfo(values[0]);
+                                    if (singleParamType.ConvertedType.Equals(param.Type))
+                                    {
+                                        EmitTree(values[0], cancellationToken);
+                                    }
+                                    else
+                                    {
+                                        if (variable.Modifier != "raw")
+                                        {
+                                            Write("[");
+                                        }
+                                        EmitTree(values[0], cancellationToken);
+                                        if (variable.Modifier != "raw")
+                                        {
+                                            Write("]");
+                                        }
+                                    }
                                 }
+                                else
+                                {
+                                    if (variable.Modifier != "raw")
+                                    {
+                                        Write("[");
+                                    }
+                                    for (int j = 0; j < values.Length; j++)
+                                    {
+                                        if (j > 0) WriteComma();
+                                        EmitTree(values[0], cancellationToken);
+                                    }
+                                    if (variable.Modifier != "raw")
+                                    {
+                                        Write("]");
+                                    }
+                                }
+
                             }
                             else
                             {
@@ -144,12 +176,12 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(Emitter.GetMethodName(methodSymbol));
                     if (methodSymbol.IsStatic)
                     {
-                        WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
+                        WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                     }
                     else
                     {
                         arguments.Insert(0, new ParameterInvocationInfo(GetInvokeExpression(Node.Expression), true));
-                        WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
+                        WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                     }
                 }
                 else if (methodSymbol.IsStatic)
@@ -157,93 +189,21 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     WriteDot();
                     Write(Emitter.GetMethodName(methodSymbol));
-                    WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
+                    WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }
                 else
                 {
                     EmitTree(Node.Expression, cancellationToken);
-                    WriteMethodInvocation(methodSymbol, arguments, cancellationToken);
+                    WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }
             }
             else
             {
                 EmitTree(Node.Expression, cancellationToken);
-                WriteMethodInvocation(null, arguments, cancellationToken);
+                WriteMethodInvocation(null, arguments, Node, cancellationToken);
             }
 
-            var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
-            // implicit cast
-            if (typeInfo.ConvertedType != null && !typeInfo.Type.Equals(typeInfo.ConvertedType))
-            {
-                switch (typeInfo.ConvertedType.SpecialType)
-                {
-                    case SpecialType.System_Boolean:
-                    case SpecialType.System_Char:
-                    case SpecialType.System_SByte:
-                    case SpecialType.System_Byte:
-                    case SpecialType.System_Int16:
-                    case SpecialType.System_UInt16:
-                    case SpecialType.System_Int32:
-                    case SpecialType.System_UInt32:
-                    case SpecialType.System_Int64:
-                    case SpecialType.System_UInt64:
-                        if (Emitter.IsIConvertible(typeInfo.Type))
-                        {
-                            WriteDot();
-                            Write("To" + typeInfo.ConvertedType.Name + "_IFormatProvider");
-                            WriteOpenParentheses();
-                            Write("null");
-                            WriteCloseParentheses();
-                        }
-                        return;
-                }
-
-                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeInt")))
-                {
-                    switch (typeInfo.Type.SpecialType)
-                    {
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_Int32:
-                        case SpecialType.System_Int64:
-                        case SpecialType.System_UInt16:
-                        case SpecialType.System_UInt32:
-                        case SpecialType.System_UInt64:
-                            WriteDot();
-                            Write("ToHaxeInt()");
-                            return;
-                    }
-
-                }
-
-                if (typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeFloat")))
-                {
-                    switch (typeInfo.Type.SpecialType)
-                    {
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_Int32:
-                        case SpecialType.System_Int64:
-                        case SpecialType.System_UInt16:
-                        case SpecialType.System_UInt32:
-                        case SpecialType.System_UInt64:
-                        case SpecialType.System_Single:
-                        case SpecialType.System_Double:
-                            WriteDot();
-                            Write("ToHaxeFloat()");
-                            return;
-                    }
-                }
-
-                if (typeInfo.Type.SpecialType == SpecialType.System_String && typeInfo.ConvertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeString")))
-                {
-                    WriteDot();
-                    Write("ToHaxeString()");
-                }
-            }
-
+            return AutoCastMode.Default;
         }
 
         private ExpressionSyntax GetInvokeExpression(ExpressionSyntax e)

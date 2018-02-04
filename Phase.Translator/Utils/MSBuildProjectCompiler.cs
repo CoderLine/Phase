@@ -318,7 +318,7 @@ namespace Phase.Translator.Utils
                 var resolver = new MetadataFileReferenceResolver(_baseDirectory);
                 var references = args.ResolveMetadataReferences(resolver);
 
-                return Compile(_baseDirectory, args.CompilationOptions, args.ParseOptions.WithDocumentationMode(DocumentationMode.Parse), Sources, references,
+                return Compile(_baseDirectory, args.CompilationOptions, args.ParseOptions, Sources, references,
                     cancellationToken);
             }
 
@@ -327,6 +327,12 @@ namespace Phase.Translator.Utils
                 Log.Trace("Parsing Source Files");
                 var trees = new SyntaxTree[sources.Length];
                 var parseErrors = new ConcurrentBag<Exception>();
+
+                parseOptions = parseOptions
+                    .WithDocumentationMode(DocumentationMode.Parse)
+                    .WithPreprocessorSymbols(
+                        parseOptions.PreprocessorSymbolNames.Concat(new[] {PhaseCompiler.Preprocessor}));
+
                 Parallel.For(0, sources.Length, i =>
                 {
                     try

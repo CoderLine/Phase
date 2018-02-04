@@ -64,17 +64,40 @@ namespace Phase.Translator.Haxe
             }
 
 	        Write("public inline function ToBoolean_IFormatProvider(provider:system.IFormatProvider) : system.Boolean return system.Convert.ToBoolean_Int32(this);");
-	        Write("public inline function ToChar_IFormatProvider(provider:system.IFormatProvider) : system.Char return system.Convert.ToChar_Int32(this);");
+            WriteNewLine();
+
+            Write("public inline function ToChar_IFormatProvider(provider:system.IFormatProvider) : system.Char return system.Convert.ToChar_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToSByte_IFormatProvider(provider:system.IFormatProvider) : system.SByte return system.Convert.ToSByte_Byte(this);");
+            WriteNewLine();
+
             Write("public inline function ToByte_IFormatProvider(provider:system.IFormatProvider) : system.Byte return system.Convert.ToByte_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToInt16_IFormatProvider(provider:system.IFormatProvider) : system.Int16 return system.Convert.ToInt16_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToUInt16_IFormatProvider(provider:system.IFormatProvider) : system.UInt16 return system.Convert.ToUInt16_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToInt32_IFormatProvider(provider:system.IFormatProvider) : system.Int32 return system.Convert.ToInt32_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToUInt32_IFormatProvider(provider:system.IFormatProvider) : system.UInt32 return system.Convert.ToUInt32_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToInt64_IFormatProvider(provider:system.IFormatProvider) : system.Int64 return system.Convert.ToInt64_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToUInt64_IFormatProvider(provider:system.IFormatProvider) : system.UInt64 return system.Convert.ToUInt64_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToSingle_IFormatProvider(provider:system.IFormatProvider) : system.Single return system.Convert.ToSingle_Int32(this);");
+            WriteNewLine();
+
             Write("public inline function ToDouble_IFormatProvider(provider:system.IFormatProvider) : system.Double return system.Convert.ToDouble_Int32(this);");
+            WriteNewLine();
 
             Write("@:op(A+B) public static function add1(lhs:", name, ", rhs:system.CsString):system.CsString;");
             WriteNewLine();

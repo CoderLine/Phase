@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
 
 namespace Phase.Translator.Haxe
@@ -20,6 +21,9 @@ namespace Phase.Translator.Haxe
         public bool IsMethodInvocation { get; set; }
         public IWriter Writer { get; set; }
         public bool IsConstInitializer { get; set; }
+        public Stack<string> CurrentExceptionName { get; private set; }
+        public Stack<IEnumerable<ExpressionSyntax>> CurrentForIncrementors { get; set; }
+        public ISymbol CurrentMember { get; set; }
 
         public HaxeEmitterContext(HaxeEmitter emitter, PhaseType type)
         {
@@ -27,6 +31,8 @@ namespace Phase.Translator.Haxe
             CurrentType = type;
             _writerStack = new Stack<IWriter>();
             Writer = new InMemoryWriter();
+            CurrentExceptionName = new Stack<string>();
+            CurrentForIncrementors= new Stack<IEnumerable<ExpressionSyntax>>();
         }
 
         public void PushWriter()

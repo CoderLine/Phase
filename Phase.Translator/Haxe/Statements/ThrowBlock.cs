@@ -1,6 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe
 {
@@ -9,7 +10,14 @@ namespace Phase.Translator.Haxe
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteThrow();
-            EmitTree(Node.Expression, cancellationToken);
+            if (Node.Expression != null)
+            {
+                EmitTree(Node.Expression, cancellationToken);
+            }
+            else
+            {
+                Write(EmitterContext.CurrentExceptionName.Peek());
+            }
             WriteSemiColon(true);
         }
     }

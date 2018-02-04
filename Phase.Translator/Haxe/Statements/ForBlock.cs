@@ -33,6 +33,8 @@ namespace Phase.Translator.Haxe
             WriteNewLine();
             BeginBlock();
 
+            EmitterContext.CurrentForIncrementors.Push(Node.Incrementors);
+
             if (Node.Statement.Kind() == SyntaxKind.Block)
             {
                 foreach (var statement in ((BlockSyntax)Node.Statement).Statements)
@@ -50,6 +52,8 @@ namespace Phase.Translator.Haxe
                 EmitTree(incrementor, cancellationToken);
                 WriteSemiColon(true);
             }
+
+            EmitterContext.CurrentForIncrementors.Pop();
 
             EndBlock();
             EndBlock();

@@ -44,11 +44,13 @@ namespace Phase.Translator.Haxe
                             WriteOpenParentheses();
                             if (string.IsNullOrEmpty(catchClauseSyntax.Declaration.Identifier.Text))
                             {
+                                EmitterContext.CurrentExceptionName.Push(variable);
                                 Write(variable);
                             }
                             else
                             {
-                                Write(catchClauseSyntax.Declaration.Identifier.Value);
+                                EmitterContext.CurrentExceptionName.Push(catchClauseSyntax.Declaration.Identifier.ValueText);
+                                Write(catchClauseSyntax.Declaration.Identifier.ValueText);
                             }
                             WriteColon();
                             WriteType(catchClauseSyntax.Declaration.Type);
@@ -58,14 +60,14 @@ namespace Phase.Translator.Haxe
                         {
                             WriteOpenParentheses();
                             Write(variable);
+                            EmitterContext.CurrentExceptionName.Push(variable);
                             WriteColon();
-                            WriteType(
-                                EmitterContext.CurrentType.SemanticModel.Compilation.GetTypeByMetadataName(typeof(Exception)
-                                    .FullName));
+                            Write("Dynamic");
                             WriteCloseParentheses();
                         }
                         WriteNewLine();
                         EmitTree(catchClauseSyntax.Block, cancellationToken);
+                        EmitterContext.CurrentExceptionName.Pop();
                     }
                     finally
                     {

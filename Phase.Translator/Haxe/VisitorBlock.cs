@@ -168,6 +168,11 @@ namespace Phase.Translator.Haxe
 
             #region Expressions
 
+            public override void VisitInterpolatedStringExpression(InterpolatedStringExpressionSyntax node)
+            {
+                Emit<InterpolatedStringExpressionBlock, InterpolatedStringExpressionSyntax>(node);
+            }
+
             public override void VisitParenthesizedExpression(ParenthesizedExpressionSyntax node)
             {
                 Emit<ParenthesizedExpressionBlock, ParenthesizedExpressionSyntax>(node);

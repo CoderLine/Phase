@@ -10,8 +10,10 @@ namespace Phase.Translator.Haxe
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            EmitterContext.CurrentForIncrementors.Push(null);
+
             var type = Emitter.GetTypeInfo(Node.Expression);
-            var foreachMode = Emitter.GetForeachMode(type.Type);
+            var foreachMode = Emitter.GetForeachMode(type.Type) ?? ForeachMode.AsIterable;
 
             WriteFor();
             WriteOpenParentheses();
@@ -21,7 +23,7 @@ namespace Phase.Translator.Haxe
             switch (foreachMode)
             {
                 case ForeachMode.AsIterable:
-                    Write("new system.EnumerableIterable(");
+                    Write("new system.collections.generic.EnumerableIterable(");
                     EmitTree(Node.Expression, cancellationToken);
                     Write(")");
                     break;
@@ -34,11 +36,13 @@ namespace Phase.Translator.Haxe
                     Write(").GetEnumerator()");
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new ArgumentOutOfRangeException("Unexpected foreachMode '" + foreachMode + "'");
             }
             WriteCloseParentheses();
             WriteNewLine();
             EmitTree(Node.Statement, cancellationToken);
+
+            EmitterContext.CurrentForIncrementors.Pop();
         }
     }
 }

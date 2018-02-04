@@ -23,7 +23,7 @@ namespace Phase.Translator.Haxe.Expressions
                 WriteNew();
                 WriteType(Node.Type);
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
-                WriteMethodInvocation(ctor, Node.ArgumentList, cancellationToken);
+                WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
             }
             else
             {
@@ -33,7 +33,7 @@ namespace Phase.Translator.Haxe.Expressions
                 WriteDot();
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
                 Write(Emitter.GetMethodName(ctor));
-                WriteMethodInvocation(ctor, Node.ArgumentList, cancellationToken);
+                WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
             }
         }
     }

@@ -10,7 +10,6 @@ namespace Phase.Translator.Haxe
     public static class PhaseConstants
     {
         public const string Phase = "Phase";
-        public const string PhaseDot = Phase + ".";
         public const string ConstructorPrefix = "__Init";
 
     }
@@ -59,7 +58,12 @@ namespace Phase.Translator.Haxe
                 WriteNewLine();
             }
 
+            Write("using system.HaxeExtensions;");
+            WriteNewLine();
+
             WriteComments(_type.TypeSymbol, cancellationToken);
+
+            WriteMeta(_type.TypeSymbol, cancellationToken);
 
             if (abstractType != null)
             {
@@ -123,6 +127,7 @@ namespace Phase.Translator.Haxe
 
             foreach (var member in _type.TypeSymbol.GetMembers())
             {
+                EmitterContext.CurrentMember = member;
                 if (member.Kind == SymbolKind.Field)
                 {
                     var fieldBlock = new FieldBlock(EmitterContext, (IFieldSymbol) member);

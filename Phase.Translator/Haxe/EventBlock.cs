@@ -17,6 +17,7 @@ namespace Phase.Translator.Haxe
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteComments(_eventSymbol, cancellationToken);
+            WriteMeta(_eventSymbol, cancellationToken);
 
             WriteAccessibility(_eventSymbol.DeclaredAccessibility);
 

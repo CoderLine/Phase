@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Attributes;
 
 namespace Phase.Translator.Haxe.Expressions
 {
@@ -53,17 +54,47 @@ namespace Phase.Translator.Haxe.Expressions
             }
             else
             {
-                Write("cast");
-                WriteOpenParentheses();
-                EmitTree(Node.Expression, cancellationToken);
-                if (sourceType.Type.SpecialType != SpecialType.System_Object &&
-                    targetType.Type != null && targetType.Type.TypeKind != TypeKind.TypeParameter && !IsSpecialArray(targetType.Type))
+                var castMode = Emitter.GetCastMode(targetType.Type);
+                switch (castMode)
                 {
-                    WriteComma();
-                    WriteType(targetType.Type);
-                }
+                    case CastMode.SafeCast:
 
-                WriteCloseParentheses();
+                        Write("cast");
+                        WriteOpenParentheses();
+                        EmitTree(Node.Expression, cancellationToken);
+
+                        if (sourceType.Type.SpecialType != SpecialType.System_Object &&
+                            targetType.Type != null && targetType.Type.TypeKind != TypeKind.TypeParameter && !IsSpecialArray(targetType.Type))
+                        {
+                            WriteComma();
+                            WriteType(targetType.Type);
+                        }
+                        WriteCloseParentheses();
+
+                        break;
+                    case CastMode.UnsafeCast:
+
+                        Write("cast");
+                        WriteOpenParentheses();
+                        EmitTree(Node.Expression, cancellationToken);
+                        WriteCloseParentheses();
+
+                        break;
+                    case CastMode.Untyped:
+
+                        Write("untyped");
+                        WriteOpenParentheses();
+                        EmitTree(Node.Expression, cancellationToken);
+                        WriteCloseParentheses();
+
+                        break;
+                    case CastMode.Ignore:
+                        EmitTree(Node.Expression, cancellationToken);
+
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
             }
         }
 

@@ -185,7 +185,7 @@ namespace Phase.MsBuild
                 {
                     ProjectFile = ProjectFile,
                     CompilationOptions = args.CompilationOptions,
-                    ParseOptions = args.ParseOptions.WithDocumentationMode(DocumentationMode.Parse),
+                    ParseOptions = args.ParseOptions,
                     SourceFiles = Sources.Select(s => Path.Combine(directory, s.ItemSpec)).ToArray(),
                     ReferencedAssemblies = references,
                     Platform = Platform,

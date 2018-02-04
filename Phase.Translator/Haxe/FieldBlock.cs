@@ -24,6 +24,7 @@ namespace Phase.Translator.Haxe
             }
 
             WriteComments(_field, cancellationToken);
+            WriteMeta(_field, cancellationToken);
 
             WriteAccessibility(_field.DeclaredAccessibility);
             if (_field.IsConst)

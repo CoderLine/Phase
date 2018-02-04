@@ -11,6 +11,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
+using Phase.Attributes;
+using Phase.Translator.Haxe.Expressions;
 
 namespace Phase.Translator.Haxe
 {
@@ -80,12 +82,8 @@ namespace Phase.Translator.Haxe
                                     documentationWritten = true;
                                 }
                             }
-                            else
+                            else if (trimmed.StartsWith("//"))
                             {
-                                if (trimmed.StartsWith("#"))
-                                {
-                                    Write("// ");
-                                }
                                 Write(trimmed);
                                 WriteNewLine();
                             }
@@ -133,7 +131,7 @@ namespace Phase.Translator.Haxe
                     Write(((XComment)node).Value);
                     break;
                 case XmlNodeType.Element:
-                    var element = (XElement) node;
+                    var element = (XElement)node;
 
                     void WriteChildren()
                     {
@@ -315,7 +313,7 @@ namespace Phase.Translator.Haxe
 
                     break;
                 case XmlNodeType.Text:
-                    WriteDocLines(((XText) node).Value);
+                    WriteDocLines(((XText)node).Value);
                     break;
             }
         }
@@ -341,7 +339,7 @@ namespace Phase.Translator.Haxe
                     WriteType((ITypeSymbol)value);
                     break;
                 case SymbolKind.Event:
-                    Write(Emitter.GetEventName((IEventSymbol) value));
+                    Write(Emitter.GetEventName((IEventSymbol)value));
                     break;
                 case SymbolKind.Field:
                     Write(Emitter.GetFieldName((IFieldSymbol)value));
@@ -378,6 +376,33 @@ namespace Phase.Translator.Haxe
             }
         }
 
+
+
+        protected void WriteMeta(ISymbol node, CancellationToken cancellationToken)
+        {
+            foreach (var attribute in node.GetAttributes())
+            {
+                var meta = Emitter.GetHaxeMeta(attribute.AttributeClass);
+                if (!string.IsNullOrEmpty(meta))
+                {
+                    Write(meta);
+                    if (!meta.Contains("(") && attribute.ConstructorArguments.Length > 0)
+                    {
+                        Write("(");
+
+                        for (int i = 0; i < attribute.ConstructorArguments.Length; i++)
+                        {
+                            if (i > 0) WriteComma();
+                            Write(attribute.ConstructorArguments[0].Value);
+                        }
+
+                        Write(")");
+                    }
+                    WriteNewLine();
+                }
+            }
+        }
+
         protected void WriteComments(ISymbol node, CancellationToken cancellationToken)
         {
             WriteComments(node, true, cancellationToken);
@@ -387,6 +412,176 @@ namespace Phase.Translator.Haxe
         {
             WriteType(Emitter.GetTypeSymbol(syntax));
         }
+
+        public void WriteWithAutoCast(AutoCastMode mode, ITypeSymbol convertedType, ITypeSymbol type, string result)
+        {
+            if (mode == AutoCastMode.SkipCast)
+            {
+                Write(result);
+                return;
+            }
+
+            // implicit cast
+            if (convertedType != null && type != null && !type.Equals(convertedType))
+            {
+                switch (convertedType.SpecialType)
+                {
+                    case SpecialType.System_Boolean:
+                    case SpecialType.System_Char:
+                    case SpecialType.System_SByte:
+                    case SpecialType.System_Byte:
+                    case SpecialType.System_Int16:
+                    case SpecialType.System_UInt16:
+                    case SpecialType.System_Int32:
+                    case SpecialType.System_UInt32:
+                    case SpecialType.System_Int64:
+                    case SpecialType.System_UInt64:
+                        switch (mode)
+                        {
+                            case AutoCastMode.AddParenthesis:
+                                Write("(");
+                                Write(result);
+                                Write(")");
+                                break;
+                            default:
+                                Write(result);
+                                break;
+                        }
+
+                        if (Emitter.IsIConvertible(type))
+                        {
+                            WriteDot();
+                            Write("To" + convertedType.Name + "_IFormatProvider");
+                            WriteOpenParentheses();
+                            Write("null");
+                            WriteCloseParentheses();
+                        }
+                        return;
+                }
+
+                if (convertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeInt")))
+                {
+                    switch (type.SpecialType)
+                    {
+                        case SpecialType.System_Char:
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_UInt64:
+                            switch (mode)
+                            {
+                                case AutoCastMode.AddParenthesis:
+                                    Write("(");
+                                    Write(result);
+                                    Write(")");
+                                    break;
+                                default:
+                                    Write(result);
+                                    break;
+                            }
+
+                            WriteDot();
+                            Write("ToHaxeInt()");
+                            return;
+                    }
+
+                }
+
+                if (convertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeFloat")))
+                {
+                    switch (type.SpecialType)
+                    {
+                        case SpecialType.System_Byte:
+                        case SpecialType.System_SByte:
+                        case SpecialType.System_Int16:
+                        case SpecialType.System_Int32:
+                        case SpecialType.System_Int64:
+                        case SpecialType.System_UInt16:
+                        case SpecialType.System_UInt32:
+                        case SpecialType.System_UInt64:
+                        case SpecialType.System_Single:
+                        case SpecialType.System_Double:
+                            switch (mode)
+                            {
+                                case AutoCastMode.AddParenthesis:
+                                    Write("(");
+                                    Write(result);
+                                    Write(")");
+                                    break;
+                                default:
+                                    Write(result);
+                                    break;
+                            }
+
+                            WriteDot();
+                            Write("ToHaxeFloat()");
+                            return;
+                    }
+                }
+
+                if (type.SpecialType == SpecialType.System_String &&
+                    convertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeString")))
+                {
+                    switch (mode)
+                    {
+                        case AutoCastMode.AddParenthesis:
+                            Write("(");
+                            Write(result);
+                            Write(")");
+                            break;
+                        default:
+                            Write(result);
+                            break;
+                    }
+
+                    WriteDot();
+                    Write("ToHaxeString()");
+                    return;
+                }
+
+                if (convertedType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
+                {
+                    bool needsToEnumerable = false;
+                    ForeachMode? foreachMode = null;
+
+                    if (type.Kind == SymbolKind.ArrayType)
+                    {
+                        needsToEnumerable = true;
+                    }
+
+                    if ((foreachMode = Emitter.GetForeachMode(type)) != null)
+                    {
+                        needsToEnumerable = true;
+                    }
+
+                    if (needsToEnumerable)
+                    {
+                        switch (mode)
+                        {
+                            case AutoCastMode.AddParenthesis:
+                                Write("(");
+                                Write(result);
+                                Write(")");
+                                break;
+                            default:
+                                Write(result);
+                                break;
+                        }
+
+                        WriteDot();
+                        Write("ToEnumerable()");
+                        return;
+                    }
+                }
+            }
+
+            Write(result);
+        }
+
 
         protected void WriteType(ITypeSymbol type)
         {
@@ -451,12 +646,13 @@ namespace Phase.Translator.Haxe
 
         protected void WriteMethodInvocation(IMethodSymbol method,
             ArgumentListSyntax argumentList,
+            SyntaxNode callerNode = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            WriteMethodInvocation(method, argumentList?.Arguments.Select(a => new ParameterInvocationInfo(a)), cancellationToken);
+            WriteMethodInvocation(method, argumentList?.Arguments.Select(a => new ParameterInvocationInfo(a)), callerNode, cancellationToken);
         }
 
-        protected void WriteMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList, CancellationToken cancellationToken = default(CancellationToken))
+        protected void WriteMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList, SyntaxNode callerNode = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             EmitterContext.IsMethodInvocation = true;
             WriteOpenParentheses();
@@ -493,6 +689,8 @@ namespace Phase.Translator.Haxe
                         EmitTree(argument.Expression, cancellationToken);
                     }
 
+                    var isRawParams = Emitter.IsRawParams(method);
+
                     // print expressions
                     for (int i = 0; i < method.Parameters.Length; i++)
                     {
@@ -503,14 +701,30 @@ namespace Phase.Translator.Haxe
                         var value = arguments[param.Name].ToArray();
                         if (param.IsParams)
                         {
-                            Write("[");
-                            for (var j = 0; j < value.Length; j++)
+                            if (value.Length == 1)
                             {
-                                if (j > 0) WriteComma();
-                                EmitTree(value[j], cancellationToken);
+                                var singleParamType = Emitter.GetTypeInfo(value[0]);
+                                if (singleParamType.ConvertedType.Equals(param.Type))
+                                {
+                                    EmitTree(value[0], cancellationToken);
+                                }
+                                else
+                                {
+                                    if (!isRawParams) Write("[");
+                                    EmitTree(value[0], cancellationToken);
+                                    if (!isRawParams) Write("]");
+                                }
                             }
-
-                            Write("]");
+                            else
+                            {
+                                if (!isRawParams) Write("[");
+                                for (var j = 0; j < value.Length; j++)
+                                {
+                                    if (j > 0) WriteComma();
+                                    EmitTree(value[j], cancellationToken);
+                                }
+                                if (!isRawParams) Write("]");
+                            }
                         }
                         else
                         {
@@ -520,13 +734,16 @@ namespace Phase.Translator.Haxe
                             }
                             else if (param.IsOptional)
                             {
-                                if (methodDeclaration != null)
+                                if (Emitter.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode, out var callerValue))
                                 {
-                                    var parameterDeclaration =
-                                        methodDeclaration.ParameterList.Parameters[i].Default.Value;
+                                    Write(callerValue);
+                                }
+                                else if (methodDeclaration != null)
+                                {
+                                    var parameterDeclaration = methodDeclaration.ParameterList.Parameters[i].Default.Value;
                                     EmitTree(parameterDeclaration, cancellationToken);
                                 }
-                                else if (param.HasExplicitDefaultValue)
+                                else if (param.HasExplicitDefaultValue && param.ExplicitDefaultValue != null)
                                 {
                                     Write(param.ExplicitDefaultValue);
                                 }
@@ -570,8 +787,7 @@ namespace Phase.Translator.Haxe
                 {
                     arguments[argument.Name] = new[] { argument.Expression };
                 }
-
-                if (isVarArgs)
+                else if (isVarArgs)
                 {
                     varArgs.Add(argument.Expression);
                 }

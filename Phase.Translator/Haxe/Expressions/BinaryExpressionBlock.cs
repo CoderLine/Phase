@@ -7,12 +7,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe.Expressions
 {
-    public class BinaryExpressionBlock : AbstractHaxeScriptEmitterBlock<BinaryExpressionSyntax>
+    public class BinaryExpressionBlock : AutoCastBlockBase<BinaryExpressionSyntax>
     {
         private ITypeSymbol _rightType;
         private ITypeSymbol _leftType;
 
-        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
+        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {
             _leftType = Emitter.GetTypeInfo(Node.Left).Type;
             _rightType = Emitter.GetTypeInfo(Node.Right).Type;
@@ -132,11 +132,22 @@ namespace Phase.Translator.Haxe.Expressions
                     DoEmit(">=", cancellationToken);
                     break;
                 case SyntaxKind.AsExpression:
-                    Write(PhaseConstants.Phase, ".As(");
+                    WriteOpenParentheses();
+
+                    Write("Std.is(");
                     EmitTree(Node.Left, cancellationToken);
                     Write(",");
                     EmitTree(Node.Right, cancellationToken);
                     Write(")");
+
+                    Write("?");
+
+                    Write(" cast ");
+                    EmitTree(Node.Left, cancellationToken);
+
+                    Write(": null");
+
+                    WriteCloseParentheses();
                     break;
                 case SyntaxKind.IsExpression:
                     Write("Std.is(");
@@ -160,6 +171,8 @@ namespace Phase.Translator.Haxe.Expressions
                 default:
                     throw new Exception("unexpected Type given");
             }
+
+            return AutoCastMode.AddParenthesis;
         }
 
         private bool IsNumberLiteralOrInlinedConst(ExpressionSyntax node)

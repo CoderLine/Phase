@@ -38,7 +38,7 @@ namespace Phase.Translator.Haxe.Expressions
                     if (template.Variables.TryGetValue("value", out var variable))
                     {
                         PushWriter();
-                        EmitTree(Node.Right, cancellationToken);
+                        EmitValue(leftType.Type, rightType.Type, cancellationToken);
                         variable.RawValue = PopWriter();
                     }
 
@@ -69,7 +69,7 @@ namespace Phase.Translator.Haxe.Expressions
                     WriteSpace();
                 }
 
-                EmitTree(Node.Right, cancellationToken);
+                EmitValue(leftType.Type, rightType.Type, cancellationToken);
 
                 WriteCloseParentheses();
             }
@@ -88,7 +88,7 @@ namespace Phase.Translator.Haxe.Expressions
                         Write(" -= ");
                         break;
                 }
-                EmitTree(Node.Right, cancellationToken);
+                EmitValue(leftType.Type, rightType.Type, cancellationToken);
             }
             else
             {
@@ -108,7 +108,7 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(op);
                     WriteSpace();
                 }
-                EmitTree(Node.Right, cancellationToken);
+                EmitValue(leftType.Type, rightType.Type, cancellationToken);
 
                 if (needsConversion)
                 {
@@ -123,6 +123,23 @@ namespace Phase.Translator.Haxe.Expressions
                     }
                 }
             }
+        }
+
+        private void EmitValue(ITypeSymbol leftType, ITypeSymbol rightType, CancellationToken cancellationToken)
+        {
+            if (Node.Right is LiteralExpressionSyntax)
+            {
+                EmitTree(Node.Right, cancellationToken);
+                return;
+            }
+
+            PushWriter();
+            var block = EmitTree(Node.Right, cancellationToken);
+            var result = PopWriter();
+
+            var mode = block is IAutoCastBlock ? AutoCastMode.SkipCast : AutoCastMode.AddParenthesis;
+
+            WriteWithAutoCast(mode, leftType, rightType, result);
         }
 
         private bool NeedsConversion(TypeInfo leftType, TypeInfo rightType, string op)

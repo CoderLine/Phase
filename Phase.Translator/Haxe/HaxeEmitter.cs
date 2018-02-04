@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
 using NLog.Fluent;
 using Phase.Attributes;
+using Phase.Translator.Haxe.Expressions;
 using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe
@@ -29,7 +31,9 @@ namespace Phase.Translator.Haxe
             public bool? HasConstructorOverloads { get; set; }
             public int? ConstructorCount { get; set; }
             public bool? IsAutoProperty { get; set; }
-            public ForeachMode? ForeachMode { get; set; }
+            public Optional<ForeachMode?> ForeachMode { get; set; }
+            public bool? IsRawParams { get; set; }
+            public string Meta { get; set; }
         }
 
         private ConcurrentDictionary<ISymbol, SymbolMetaData> _symbolMetaCache;
@@ -338,6 +342,27 @@ namespace Phase.Translator.Haxe
             return meta;
         }
 
+        public string GetHaxeMeta(ISymbol symbol)
+        {
+            var meta = GetOrCreateMeta(symbol);
+            if (meta.Meta != null)
+            {
+                return meta.Meta;
+            }
+            return meta.Meta = GetHaxeMetaInternal(symbol);
+        }
+
+        private string GetHaxeMetaInternal(ISymbol symbol)
+        {
+            var attr = symbol.GetAttributes()
+                .FirstOrDefault(s => s.AttributeClass.Equals(GetPhaseType("Phase.Attributes.MetaAttribute")));
+            if (attr == null)
+            {
+                return string.Empty;
+            }
+            return (string)attr.ConstructorArguments[0].Value;
+        }
+
         public string GetMethodName(IMethodSymbol method)
         {
             var meta = GetOrCreateMeta(method);
@@ -393,6 +418,8 @@ namespace Phase.Translator.Haxe
 
         private string GetMethodNameInternal(IMethodSymbol method)
         {
+            method = method.OriginalDefinition;
+
             if (method.MethodKind == MethodKind.StaticConstructor)
             {
                 return "__init__";
@@ -408,6 +435,11 @@ namespace Phase.Translator.Haxe
             if (!string.IsNullOrEmpty(attributeName))
             {
                 return attributeName;
+            }
+
+            if (method.OverriddenMethod != null)
+            {
+                return GetMethodName(method.OverriddenMethod);
             }
 
             var x = new StringBuilder();
@@ -831,7 +863,7 @@ namespace Phase.Translator.Haxe
             return (meta.IsAutoProperty = InternalIsEventField(evt)).Value;
         }
 
-        public ForeachMode GetForeachMode(ITypeSymbol type)
+        public ForeachMode? GetForeachMode(ITypeSymbol type)
         {
             var meta = GetOrCreateMeta(type);
 
@@ -853,6 +885,30 @@ namespace Phase.Translator.Haxe
             }
 
             return (meta.IsAutoProperty = InternalIsAutoProperty(property)).Value;
+        }
+
+
+        public bool IsRawParams(IMethodSymbol methodSymbol)
+        {
+            var meta = GetOrCreateMeta(methodSymbol);
+
+            if (meta.IsRawParams.HasValue)
+            {
+                return meta.IsRawParams.Value;
+            }
+
+            return (meta.IsRawParams = InternalIsRawParams(methodSymbol)).Value;
+        }
+
+        private bool? InternalIsRawParams(IMethodSymbol methodSymbol)
+        {
+            var attr = methodSymbol.GetAttributes().FirstOrDefault(a =>
+                a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.RawParamsAttribute")));
+            if (attr == null)
+            {
+                return false;
+            }
+            return true;
         }
 
         private bool InternalIsAutoProperty(IPropertySymbol property)
@@ -905,7 +961,7 @@ namespace Phase.Translator.Haxe
             return false;
         }
 
-        private ForeachMode InternalGetForeachMode(ITypeSymbol type)
+        private Optional<ForeachMode?> InternalGetForeachMode(ITypeSymbol type)
         {
             var attr = type.GetAttributes().FirstOrDefault(t => t.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ForeachModeAttribute")));
             if (attr == null)
@@ -915,10 +971,23 @@ namespace Phase.Translator.Haxe
                     return ForeachMode.Native;
                 }
 
-                return ForeachMode.AsIterable;
+                return new Optional<ForeachMode?>(null);
             }
 
             return (ForeachMode) (int) attr.ConstructorArguments[0].Value;
+        }
+
+        
+
+        public CastMode GetCastMode(ITypeSymbol type)
+        {
+            var attr = type.GetAttributes().FirstOrDefault(t => t.AttributeClass.Equals(GetPhaseType("Phase.Attributes.CastModeAttribute")));
+            if (attr == null)
+            {
+                return CastMode.SafeCast;
+            }
+
+            return (CastMode)(int)attr.ConstructorArguments[0].Value;
         }
 
         private bool IsInterfaceImplementation(ISymbol method)
@@ -976,6 +1045,50 @@ namespace Phase.Translator.Haxe
                 var foreachMode = GetForeachMode(method.ContainingType);
                 return foreachMode == ForeachMode.GetEnumerator;
             }
+            return false;
+        }
+
+        public bool TryGetCallerMemberInfo(IParameterSymbol parameter, ISymbol callerMember, SyntaxNode callerNode, out string value)
+        {
+            var callerAttribute = parameter.GetAttributes().FirstOrDefault(
+                a => a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerMemberNameAttribute")) 
+                    || a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerLineNumberAttribute"))
+                    || a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerFilePathAttribute"))
+            );
+            if (callerAttribute == null)
+            {
+                value = null;
+                return false;
+            }
+            switch (callerAttribute.AttributeClass.Name)
+            {
+                case "CallerMemberNameAttribute":
+                    if (callerMember == null)
+                    {
+                        value = null;
+                        return false;
+                    }
+                    value = "\"" + GetSymbolName(callerMember) + "\"";
+                    return true;
+                case "CallerLineNumberAttribute":
+                    if (callerNode == null)
+                    {
+                        value = null;
+                        return false;
+                    }
+                    value = callerNode.GetText().Lines[0].LineNumber.ToString();
+                    return true;
+                case "CallerFilePathAttribute":
+                    if (callerNode == null)
+                    {
+                        value = null;
+                        return false;
+                    }
+                    value = "\"" + callerNode.SyntaxTree.FilePath.Replace("\\", "\\\\") + "\"";
+                    return true;
+            }
+
+            value = null;
             return false;
         }
     }
