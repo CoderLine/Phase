@@ -7,7 +7,6 @@ namespace Phase.Translator.Haxe
 {
     public class TryBlock : CommentedNodeEmitBlock<TryStatementSyntax>
     {
-        private static int _recursiveCatch;
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Node.Finally != null)
@@ -34,10 +33,10 @@ namespace Phase.Translator.Haxe
 
                 foreach (var catchClauseSyntax in Node.Catches)
                 {
-                    var variable = "__e" + ((_recursiveCatch > 0) ? _recursiveCatch.ToString() : "");
+                    var variable = "__e" + ((EmitterContext.RecursiveCatch > 0) ? EmitterContext.RecursiveCatch.ToString() : "");
                     try
                     {
-                        _recursiveCatch++;
+                        EmitterContext.RecursiveCatch++;
                         Write("catch");
                         if (catchClauseSyntax.Declaration != null)
                         {
@@ -71,7 +70,7 @@ namespace Phase.Translator.Haxe
                     }
                     finally
                     {
-                        _recursiveCatch--;
+                        EmitterContext.RecursiveCatch--;
                     }
                 }
             }

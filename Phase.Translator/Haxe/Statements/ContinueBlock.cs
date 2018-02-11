@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
@@ -14,6 +15,10 @@ namespace Phase.Translator.Haxe
 
             if (incrementors != null)
             {
+                if (Node.Parent.Kind() != SyntaxKind.Block)
+                {
+                    BeginBlock();
+                }
                 foreach (var incrementor in incrementors)
                 {
                     EmitTree(incrementor, cancellationToken);
@@ -23,6 +28,13 @@ namespace Phase.Translator.Haxe
 
             Write("continue");
             WriteSemiColon(true);
+            if (incrementors != null)
+            {
+                if (Node.Parent.Kind() != SyntaxKind.Block)
+                {
+                    EndBlock();
+                }
+            }
         }
     }
 }

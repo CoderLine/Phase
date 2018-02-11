@@ -38,9 +38,9 @@ namespace Phase.Translator
             Writer.BeginBlock();
         }
 
-        public void EndBlock()
+        public void EndBlock(bool newline = true)
         {
-            Writer.EndBlock();
+            Writer.EndBlock(newline);
         }
 
         public void Write(object value)

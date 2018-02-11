@@ -7,7 +7,6 @@ namespace Phase.Translator.Haxe
 {
     public class UsingBlock : CommentedNodeEmitBlock<UsingStatementSyntax>
     {
-        private static int _recursiveUsing = 0;
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             BeginBlock();
@@ -15,10 +14,10 @@ namespace Phase.Translator.Haxe
             string resourceName;
             if (Node.Declaration == null)
             {
-                resourceName = "__usingResource" + _recursiveUsing;
+                resourceName = "__usingResource" + EmitterContext.RecursiveUsing;
                 Write("var ", resourceName, " = ");
                 EmitTree(Node.Expression, cancellationToken);
-                _recursiveUsing++;
+                EmitterContext.RecursiveUsing++;
                 WriteSemiColon(true);
             }
             else
@@ -53,7 +52,7 @@ namespace Phase.Translator.Haxe
 
             if (Node.Declaration == null)
             {
-                _recursiveUsing--;
+                EmitterContext.RecursiveUsing--;
             }
 
             EndBlock();

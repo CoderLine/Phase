@@ -12,7 +12,7 @@ namespace Phase.Translator.Haxe
         void WriteIndent();
         void WriteNewLine();
         void BeginBlock();
-        void EndBlock();
+        void EndBlock(bool newline = true);
 
         void Write(object value);
         void Write(params object[] values);

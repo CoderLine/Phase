@@ -24,6 +24,9 @@ namespace Phase.Translator.Haxe
         public Stack<string> CurrentExceptionName { get; private set; }
         public Stack<IEnumerable<ExpressionSyntax>> CurrentForIncrementors { get; set; }
         public ISymbol CurrentMember { get; set; }
+        public int RecursiveCatch { get; set; }
+        public int RecursiveUsing { get; set; }
+        public int RecursiveObjectCreation { get; set; }
 
         public HaxeEmitterContext(HaxeEmitter emitter, PhaseType type)
         {

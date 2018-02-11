@@ -52,5 +52,6 @@ namespace Phase.Translator
         public string Name { get; set; }
         public string Executable { get; set; }
         public string Arguments { get; set; }
+        public string WorkingDirectory { get; set; }
     }
 }

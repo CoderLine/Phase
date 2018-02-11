@@ -660,31 +660,36 @@ namespace Phase.Translator.Haxe
             return GetSemanticModel(node).GetConstantValue(node, cancellationToken);
         }
 
-        private Dictionary<SpecialType, ITypeSymbol> _specialArrayTypes;
+        private Dictionary<SpecialType, string> _specialArrayTypes;
 
         public string GetSpecialArrayName(ITypeSymbol elementType, bool simple = false)
         {
             if (_specialArrayTypes == null)
             {
-                _specialArrayTypes = new Dictionary<SpecialType, ITypeSymbol>
+                _specialArrayTypes = new Dictionary<SpecialType, string>
                 {
-                    //[SpecialType.System_SByte] = GetPhaseType("System.SByteArray"),
-                    //[SpecialType.System_Byte] = GetPhaseType("System.ByteArray"),
-                    //[SpecialType.System_Int16] = GetPhaseType("System.Int16Array"),
-                    //[SpecialType.System_UInt16] = GetPhaseType("System.UInt16Array"),
-                    //[SpecialType.System_Int32] = GetPhaseType("System.Int32Array"),
-                    //[SpecialType.System_UInt32] = GetPhaseType("System.UInt32Array"),
-                    //[SpecialType.System_Int64] = GetPhaseType("System.Int64Array"),
-                    //[SpecialType.System_UInt64] = GetPhaseType("System.UInt64Array"),
-                    //[SpecialType.System_Decimal] = GetPhaseType("System.DecimalArray"),
-                    //[SpecialType.System_Single] = GetPhaseType("System.SingleArray"),
-                    //[SpecialType.System_Double] = GetPhaseType("System.DoubleArray")
+                    [SpecialType.System_SByte] = "system.SByteArray",
+                    [SpecialType.System_Byte] = ("system.ByteArray"),
+                    [SpecialType.System_Int16] = ("system.Int16Array"),
+                    [SpecialType.System_UInt16] = ("system.UInt16Array"),
+                    [SpecialType.System_Int32] = ("system.Int32Array"),
+                    [SpecialType.System_UInt32] = ("system.UInt32Array"),
+                    [SpecialType.System_Int64] = ("system.Int64Array"),
+                    [SpecialType.System_UInt64] = ("system.UInt64Array"),
+                    [SpecialType.System_Decimal] = ("system.DecimalArray"),
+                    [SpecialType.System_Single] = ("system.SingleArray"),
+                    [SpecialType.System_Double] = ("system.DoubleArray")
                 };
             }
 
             if (_specialArrayTypes.TryGetValue(elementType.SpecialType, out var arrayType))
             {
-                return GetTypeName(arrayType, simple);
+                if (simple)
+                {
+                    return arrayType.Substring(arrayType.LastIndexOf(".") + 1);
+                }
+
+                return arrayType;
             }
 
             return null;

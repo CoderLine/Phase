@@ -59,11 +59,14 @@ namespace Phase.Translator
             Indent();
         }
 
-        public void EndBlock()
+        public void EndBlock(bool newline = true)
         {
             Outdent();
             WriteCloseBrace();
-            WriteNewLine();
+            if (newline)
+            {
+                WriteNewLine();
+            }
         }
 
         public void Write(object value)

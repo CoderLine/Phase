@@ -62,6 +62,13 @@ namespace Phase.Translator
             {
                 try
                 {
+                    var workingDirectory = Path.GetDirectoryName(Input.ProjectFile);
+                    if (!string.IsNullOrEmpty(step.WorkingDirectory))
+                    {
+                        workingDirectory = Path.IsPathRooted(step.WorkingDirectory)
+                            ? step.WorkingDirectory
+                            : Path.Combine(workingDirectory, step.WorkingDirectory);
+                    }
                     var cmd = new Process
                     {
                         StartInfo =
@@ -72,7 +79,7 @@ namespace Phase.Translator
                             RedirectStandardError = true,
                             CreateNoWindow = true,
                             UseShellExecute = false,
-                            WorkingDirectory = Path.GetDirectoryName(Input.ProjectFile)
+                            WorkingDirectory = workingDirectory
                         }
                     };
 
