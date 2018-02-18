@@ -335,21 +335,27 @@ namespace Phase.Translator.Haxe
 
         private SymbolMetaData GetOrCreateMeta(ISymbol symbol)
         {
-            if (!_symbolMetaCache.TryGetValue(symbol, out var meta))
+            lock (this)
             {
-                _symbolMetaCache[symbol] = meta = new SymbolMetaData();
+                if (!_symbolMetaCache.TryGetValue(symbol, out var meta))
+                {
+                    _symbolMetaCache[symbol] = meta = new SymbolMetaData();
+                }
+                return meta;
             }
-            return meta;
         }
 
         public string GetHaxeMeta(ISymbol symbol)
         {
-            var meta = GetOrCreateMeta(symbol);
-            if (meta.Meta != null)
+            lock (this)
             {
-                return meta.Meta;
+                var meta = GetOrCreateMeta(symbol);
+                if (meta.Meta != null)
+                {
+                    return meta.Meta;
+                }
+                return meta.Meta = GetHaxeMetaInternal(symbol);
             }
-            return meta.Meta = GetHaxeMetaInternal(symbol);
         }
 
         private string GetHaxeMetaInternal(ISymbol symbol)
@@ -365,13 +371,16 @@ namespace Phase.Translator.Haxe
 
         public string GetMethodName(IMethodSymbol method)
         {
-            var meta = GetOrCreateMeta(method);
-            if (meta.OutputName != null)
+            lock (method)
             {
-                return meta.OutputName;
-            }
+                var meta = GetOrCreateMeta(method);
+                if (meta.OutputName != null)
+                {
+                    return meta.OutputName;
+                }
 
-            return meta.OutputName = GetMethodNameInternal(method);
+                return meta.OutputName = GetMethodNameInternal(method);
+            }
         }
 
         public bool HasConstructorOverloads(ITypeSymbol type)
@@ -380,13 +389,17 @@ namespace Phase.Translator.Haxe
             {
                 return false;
             }
-            var meta = GetOrCreateMeta(type);
-            if (meta.HasConstructorOverloads == null)
-            {
-                ComputeConstructorOverloads(type, meta);
-            }
 
-            return meta.HasConstructorOverloads.Value;
+            lock (this)
+            {
+                var meta = GetOrCreateMeta(type);
+                if (meta.HasConstructorOverloads == null)
+                {
+                    ComputeConstructorOverloads(type, meta);
+                }
+
+                return meta.HasConstructorOverloads.Value;
+            }
         }
 
         public int GetConstructorCount(ITypeSymbol type)
@@ -396,12 +409,15 @@ namespace Phase.Translator.Haxe
                 return 0;
             }
 
-            var meta = GetOrCreateMeta(type);
-            if (meta.ConstructorCount == null)
+            lock (this)
             {
-                ComputeConstructorOverloads(type, meta);
+                var meta = GetOrCreateMeta(type);
+                if (meta.ConstructorCount == null)
+                {
+                    ComputeConstructorOverloads(type, meta);
+                }
+                return meta.ConstructorCount.Value;
             }
-            return meta.ConstructorCount.Value;
         }
 
         private void ComputeConstructorOverloads(ITypeSymbol type, SymbolMetaData meta)
@@ -858,51 +874,63 @@ namespace Phase.Translator.Haxe
 
         public bool IsEventField(IEventSymbol evt)
         {
-            var meta = GetOrCreateMeta(evt);
-
-            if (meta.IsAutoProperty.HasValue)
+            lock (this)
             {
-                return meta.IsAutoProperty.Value;
-            }
+                var meta = GetOrCreateMeta(evt);
 
-            return (meta.IsAutoProperty = InternalIsEventField(evt)).Value;
+                if (meta.IsAutoProperty.HasValue)
+                {
+                    return meta.IsAutoProperty.Value;
+                }
+
+                return (meta.IsAutoProperty = InternalIsEventField(evt)).Value;
+            }
         }
 
         public ForeachMode? GetForeachMode(ITypeSymbol type)
         {
-            var meta = GetOrCreateMeta(type);
-
-            if (meta.ForeachMode.HasValue)
+            lock (this)
             {
-                return meta.ForeachMode.Value;
-            }
+                var meta = GetOrCreateMeta(type);
 
-            return (meta.ForeachMode = InternalGetForeachMode(type)).Value;
+                if (meta.ForeachMode.HasValue)
+                {
+                    return meta.ForeachMode.Value;
+                }
+
+                return (meta.ForeachMode = InternalGetForeachMode(type)).Value;
+            }
         }
 
         public bool IsAutoProperty(IPropertySymbol property)
         {
-            var meta = GetOrCreateMeta(property);
-
-            if (meta.IsAutoProperty.HasValue)
+            lock (this)
             {
-                return meta.IsAutoProperty.Value;
-            }
+                var meta = GetOrCreateMeta(property);
 
-            return (meta.IsAutoProperty = InternalIsAutoProperty(property)).Value;
+                if (meta.IsAutoProperty.HasValue)
+                {
+                    return meta.IsAutoProperty.Value;
+                }
+
+                return (meta.IsAutoProperty = InternalIsAutoProperty(property)).Value;
+            }
         }
 
 
         public bool IsRawParams(IMethodSymbol methodSymbol)
         {
-            var meta = GetOrCreateMeta(methodSymbol);
-
-            if (meta.IsRawParams.HasValue)
+            lock (this)
             {
-                return meta.IsRawParams.Value;
-            }
+                var meta = GetOrCreateMeta(methodSymbol);
 
-            return (meta.IsRawParams = InternalIsRawParams(methodSymbol)).Value;
+                if (meta.IsRawParams.HasValue)
+                {
+                    return meta.IsRawParams.Value;
+                }
+
+                return (meta.IsRawParams = InternalIsRawParams(methodSymbol)).Value;
+            }
         }
 
         private bool? InternalIsRawParams(IMethodSymbol methodSymbol)
@@ -918,6 +946,13 @@ namespace Phase.Translator.Haxe
 
         private bool InternalIsAutoProperty(IPropertySymbol property)
         {
+            var attr = property.GetAttributes().FirstOrDefault(a =>
+                a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.AutoPropertyAttribute")));
+            if (attr != null)
+            {
+                return true;
+            }
+
             if (property.ContainingType.TypeKind != TypeKind.Class && property.ContainingType.TypeKind != TypeKind.Struct)
             {
                 return false;
@@ -928,9 +963,9 @@ namespace Phase.Translator.Haxe
                 return false;
             }
 
-            if (IsInterfaceImplementation(property))
+            if (IsInterfaceImplementation(property, out var interfaceMember))
             {
-                return false;
+                return IsAutoProperty((IPropertySymbol)interfaceMember);
             }
 
             var declaration = (BasePropertyDeclarationSyntax)property.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
@@ -979,10 +1014,10 @@ namespace Phase.Translator.Haxe
                 return new Optional<ForeachMode?>(null);
             }
 
-            return (ForeachMode) (int) attr.ConstructorArguments[0].Value;
+            return (ForeachMode)(int)attr.ConstructorArguments[0].Value;
         }
 
-        
+
 
         public CastMode GetCastMode(ITypeSymbol type)
         {
@@ -998,6 +1033,12 @@ namespace Phase.Translator.Haxe
         private bool IsInterfaceImplementation(ISymbol method)
         {
             return method.ContainingType.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).Any(interfaceMethod => method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod).Equals(method));
+        }
+
+        private bool IsInterfaceImplementation(ISymbol method, out ISymbol interfaceMember)
+        {
+            interfaceMember = method.ContainingType.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).FirstOrDefault(interfaceMethod => method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod).Equals(method));
+            return interfaceMember != null;
         }
 
         private bool IsAutoProperty(BasePropertyDeclarationSyntax declaration)
@@ -1056,7 +1097,7 @@ namespace Phase.Translator.Haxe
         public bool TryGetCallerMemberInfo(IParameterSymbol parameter, ISymbol callerMember, SyntaxNode callerNode, out string value)
         {
             var callerAttribute = parameter.GetAttributes().FirstOrDefault(
-                a => a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerMemberNameAttribute")) 
+                a => a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerMemberNameAttribute"))
                     || a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerLineNumberAttribute"))
                     || a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerFilePathAttribute"))
             );

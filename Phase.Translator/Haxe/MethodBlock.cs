@@ -436,14 +436,18 @@ namespace Phase.Translator.Haxe
                             }
                             else if (accessorDeclarationSyntax.Body != null)
                             {
+                                EmitterContext.SetterMethod =
+                                    _method.MethodKind == MethodKind.PropertySet ? _method : null;
                                 foreach (var statement in accessorDeclarationSyntax.Body.Statements)
                                 {
                                     EmitTree(statement, cancellationToken);
                                 }
 
+                                EmitterContext.SetterMethod = null;
+
                                 if (_method.MethodKind == MethodKind.PropertySet)
                                 {
-                                    Write("return ");
+                                    WriteReturn(true);
                                     var property = (IPropertySymbol)_method.AssociatedSymbol;
                                     if (property.GetMethod != null)
                                     {

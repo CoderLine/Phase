@@ -107,9 +107,13 @@ namespace Phase.Translator.Haxe.Expressions
                     WriteSpace();
                     Write(op);
                     WriteSpace();
+                    WriteOpenParentheses();
                 }
                 EmitValue(leftType.Type, rightType.Type, cancellationToken);
-
+                if (!string.IsNullOrEmpty(op))
+                {
+                    WriteCloseParentheses();
+                }
                 if (needsConversion)
                 {
                     WriteCloseParentheses();

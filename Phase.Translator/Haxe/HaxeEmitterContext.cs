@@ -27,6 +27,7 @@ namespace Phase.Translator.Haxe
         public int RecursiveCatch { get; set; }
         public int RecursiveUsing { get; set; }
         public int RecursiveObjectCreation { get; set; }
+        public IMethodSymbol SetterMethod { get; set; }
 
         public HaxeEmitterContext(HaxeEmitter emitter, PhaseType type)
         {
