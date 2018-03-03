@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe.Expressions
@@ -34,32 +35,38 @@ namespace Phase.Translator.Haxe.Expressions
                     Write(specialArray);
                     WriteDot();
                     Write("empty");
-                    WriteOpenParentheses();
                 }
                 else
                 {
                     Write("system.FixedArray");
                     WriteDot();
                     Write("empty");
-                    WriteOpenParentheses();
                 }
 
                 if (Node.Type.RankSpecifiers.Count > 1)
                 {
-                    Write(Node.Type.RankSpecifiers);
+                    Write(Node.Type.RankSpecifiers.Count);
                 }
+
+                WriteOpenParentheses();
 
                 var x = 0;
                 for (int i = 0; i < Node.Type.RankSpecifiers.Count; i++)
                 {
-                    if (x > 0)
-                    {
-                        WriteComma();
-                    }
+                   
                     for (int j = 0; j < Node.Type.RankSpecifiers[i].Sizes.Count; j++)
                     {
-                        EmitTree(Node.Type.RankSpecifiers[i].Sizes[j], cancellationToken);
-                        x++;
+                        var expr = Node.Type.RankSpecifiers[i].Sizes[j];
+                        
+                        if (expr.Kind() != SyntaxKind.OmittedArraySizeExpression)
+                        {
+                            if (x > 0)
+                            {
+                                WriteComma();
+                            }
+                            EmitTree(Node.Type.RankSpecifiers[i].Sizes[j], cancellationToken);
+                            x++;
+                        }
                     }
                 }
                 WriteCloseParentheses();

@@ -27,7 +27,7 @@ namespace Phase.Translator.Utils
 
 
         private ConcurrentDictionary<ISymbol, string> _idCache = new ConcurrentDictionary<ISymbol, string>();
-        private string GetId(ISymbol symbol)
+        private string GetId(ISymbol symbol, bool includeContainingSymbol = true)
         {
             switch (symbol.Kind)
             {
@@ -67,7 +67,7 @@ namespace Phase.Translator.Utils
 
             void appendParent()
             {
-                if (symbol.ContainingSymbol != null)
+                if (includeContainingSymbol && symbol.ContainingSymbol != null && symbol.ContainingSymbol != symbol)
                 {
                     var parentId = GetId(symbol.ContainingSymbol);
                     if (!string.IsNullOrEmpty(parentId))
@@ -106,7 +106,7 @@ namespace Phase.Translator.Utils
                 case SymbolKind.ArrayType:
                     appendParent();
                     var arrayType = (IArrayTypeSymbol)symbol;
-                    sb.Append(GetId(arrayType.ElementType));
+                    sb.Append(GetId(arrayType.ElementType, includeContainingSymbol));
                     sb.Append($"[`{arrayType.Rank}]");
                     break;
                 case SymbolKind.NamedType:
@@ -131,14 +131,7 @@ namespace Phase.Translator.Utils
                     {
                         if (i > 0) sb.Append(", ");
                         var t = method.Parameters[i].Type;
-                        if (t.TypeKind != TypeKind.TypeParameter)
-                        {
-                            sb.Append(GetId(t));
-                        }
-                        else
-                        {
-                            sb.Append(t.Name);
-                        }
+                        sb.Append(GetId(t, false));
                     }
                     sb.Append(")");
                     break;
