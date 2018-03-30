@@ -49,7 +49,7 @@ namespace Phase.Translator.Haxe.Expressions
 
 
             var op = GetOperator();
-            if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property && ((IPropertySymbol)leftSymbol.Symbol).IsIndexer && 
+            if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property && ((IPropertySymbol)leftSymbol.Symbol).IsIndexer &&
                 !Emitter.IsNativeIndexer(leftSymbol.Symbol))
             {
                 EmitTree(Node.Left, cancellationToken);
@@ -58,15 +58,29 @@ namespace Phase.Translator.Haxe.Expressions
 
                 if (!string.IsNullOrEmpty(op))
                 {
-                    var property = ((IPropertySymbol) leftSymbol.Symbol);
-                    EmitTree(Node.Left, cancellationToken);
-                    WriteDot();
-                    Write(Emitter.GetMethodName(property.GetMethod));
-                    WriteOpenCloseParentheses();
+                    var property = ((IPropertySymbol)leftSymbol.Symbol);
+                    if (Node.Left is ElementAccessExpressionSyntax elementAccess)
+                    {
+                        EmitTree(elementAccess.Expression, cancellationToken);
+                        WriteDot();
+                        Write(Emitter.GetMethodName(property.GetMethod));
+                        WriteOpenParentheses();
 
-                    WriteSpace();
-                    Write(op);
-                    WriteSpace();
+                        for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
+                        {
+                            if (i > 0)
+                            {
+                                WriteComma();
+                            }
+                            EmitTree(elementAccess.ArgumentList.Arguments[i], cancellationToken);
+                        }
+
+                        WriteCloseParentheses();
+
+                        WriteSpace();
+                        Write(op);
+                        WriteSpace();
+                    }
                 }
 
                 EmitValue(leftType.Type, rightType.Type, cancellationToken);
@@ -96,6 +110,7 @@ namespace Phase.Translator.Haxe.Expressions
                 Write(" = ");
 
                 var needsConversion = NeedsConversion(leftType, rightType, op);
+
                 if (needsConversion)
                 {
                     WriteOpenParentheses();
@@ -166,7 +181,7 @@ namespace Phase.Translator.Haxe.Expressions
                     case SpecialType.System_UInt32:
                     case SpecialType.System_Int64:
                     case SpecialType.System_UInt64:
-                       return !string.IsNullOrEmpty(op);
+                        return !string.IsNullOrEmpty(op);
                 }
             }
 

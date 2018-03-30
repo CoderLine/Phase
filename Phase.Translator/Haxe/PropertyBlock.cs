@@ -60,9 +60,13 @@ namespace Phase.Translator.Haxe
                 {
                     Write(isAutoProperty ? "default" : "set");
                 }
-                else
+                else if(Emitter.IsAbstract(_property.ContainingType))
                 {
                     Write("never");
+                }
+                else
+                {
+                    Write("null");
                 }
 
                 WriteCloseParentheses();

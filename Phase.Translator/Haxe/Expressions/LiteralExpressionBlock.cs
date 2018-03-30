@@ -35,10 +35,16 @@ namespace Phase.Translator.Haxe.Expressions
                     }
                     break;
                 case SyntaxKind.CharacterLiteralExpression:
-                    var cast = Emitter.GetTypeInfo(Node, cancellationToken);
-                    if (cast.ConvertedType != null)
+                    var cast = Emitter.GetTypeInfo(Node, cancellationToken).ConvertedType;
+                    
+                    if (EmitterContext.IsCaseLabel)
                     {
-                        switch (cast.ConvertedType.SpecialType)
+                        cast = Emitter.GetPhaseType("System.Int32");
+                    }
+
+                    if (cast != null)
+                    {
+                        switch (cast.SpecialType)
                         {
                             case SpecialType.System_SByte:
                             case SpecialType.System_Byte:

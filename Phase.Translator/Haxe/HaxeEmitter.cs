@@ -32,6 +32,7 @@ namespace Phase.Translator.Haxe
             public int? ConstructorCount { get; set; }
             public bool? IsAutoProperty { get; set; }
             public Optional<ForeachMode?> ForeachMode { get; set; }
+            public Optional<string> Native { get; set; }
             public bool? IsRawParams { get; set; }
             public string Meta { get; set; }
         }
@@ -289,7 +290,25 @@ namespace Phase.Translator.Haxe
 
         public bool IsExternal(ISymbol symbol)
         {
-            return symbol.IsExtern || GetAttributes(symbol).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ExternalAttribute")));
+            if (GetAttributes(symbol)
+                .Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ExternalAttribute"))))
+            {
+                return true;
+            }
+
+            switch (symbol.Kind)
+            {
+                case SymbolKind.Event:
+                case SymbolKind.Field:
+                case SymbolKind.Method:
+                case SymbolKind.Property:
+                    if (IsNative(symbol.ContainingType))
+                    {
+                        return false;
+                    }
+                    break;
+            }
+            return symbol.IsExtern;
         }
 
         public CodeTemplate GetTemplate(ISymbol symbol)
@@ -758,8 +777,22 @@ namespace Phase.Translator.Haxe
                 case SpecialType.System_Double:
                     return "0.0";
                 default:
+                    if (type.TypeKind == TypeKind.Enum)
+                    {
+                        var field = GetDefaultEnumField(type);
+                        if (field != null)
+                        {
+                            return field.Name;
+                        }
+                    }
                     return "null";
             }
+        }
+
+        private IFieldSymbol GetDefaultEnumField(ITypeSymbol type)
+        {
+            return type.GetMembers().OfType<IFieldSymbol>().FirstOrDefault(f => (int)f.ConstantValue == 0) ??
+                   type.GetMembers().OfType<IFieldSymbol>().FirstOrDefault();
         }
 
         public bool IsRefVariable(VariableDeclaratorSyntax variable)
@@ -867,6 +900,11 @@ namespace Phase.Translator.Haxe
             return GetAttributes(symbol).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NativeConstructorsAttribute")));
         }
 
+        public bool HasNoConstructor(ISymbol symbol)
+        {
+            return GetAttributes(symbol).Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NoConstructorAttribute")));
+        }
+
         public ITypeSymbol GetSpecialType(SpecialType specialType)
         {
             return Compiler.Translator.Compilation.GetSpecialType(specialType);
@@ -899,6 +937,29 @@ namespace Phase.Translator.Haxe
                 }
 
                 return (meta.ForeachMode = InternalGetForeachMode(type)).Value;
+            }
+        }
+
+        public bool IsNative(ISymbol symbol)
+        {
+            lock (this)
+            {
+                return !string.IsNullOrEmpty(GetNative(symbol));
+            }
+        }
+
+        public string GetNative(ISymbol symbol)
+        {
+            lock (this)
+            {
+                var meta = GetOrCreateMeta(symbol);
+
+                if (meta.Native.HasValue)
+                {
+                    return meta.Native.Value;
+                }
+
+                return (meta.Native = InternalGetNative(symbol)).Value;
             }
         }
 
@@ -1019,6 +1080,16 @@ namespace Phase.Translator.Haxe
 
 
 
+        private Optional<string> InternalGetNative(ISymbol symbol)
+        {
+            var attr = symbol.GetAttributes().FirstOrDefault(t => t.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NativeAttribute")));
+            if (attr == null)
+            {
+                return new Optional<string>(null);
+            }
+            return (string)attr.ConstructorArguments[0].Value;
+        }
+
         public CastMode GetCastMode(ITypeSymbol type)
         {
             var attr = type.GetAttributes().FirstOrDefault(t => t.AttributeClass.Equals(GetPhaseType("Phase.Attributes.CastModeAttribute")));
@@ -1112,6 +1183,7 @@ namespace Phase.Translator.Haxe
                     if (callerMember == null)
                     {
                         value = null;
+                        Log.Warn("Could not get caller member name");
                         return false;
                     }
                     value = "\"" + GetSymbolName(callerMember) + "\"";
@@ -1120,6 +1192,7 @@ namespace Phase.Translator.Haxe
                     if (callerNode == null)
                     {
                         value = null;
+                        Log.Warn("Could not get caller line number");
                         return false;
                     }
                     value = callerNode.GetText().Lines[0].LineNumber.ToString();
@@ -1128,6 +1201,7 @@ namespace Phase.Translator.Haxe
                     if (callerNode == null)
                     {
                         value = null;
+                        Log.Warn("Could not get caller file path");
                         return false;
                     }
                     value = "\"" + callerNode.SyntaxTree.FilePath.Replace("\\", "\\\\") + "\"";

@@ -33,7 +33,9 @@ namespace Phase.Translator.Haxe.Expressions
                     }
                     else if (Emitter.IsIConvertible(sourceType.Type))
                     {
+                        WriteOpenParentheses();
                         EmitTree(Node.Expression, cancellationToken);
+                        WriteCloseParentheses();
                         WriteDot();
                         Write("To" + targetType.Type.Name + "_IFormatProvider");
                         WriteOpenParentheses();

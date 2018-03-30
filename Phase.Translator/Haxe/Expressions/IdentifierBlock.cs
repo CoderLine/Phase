@@ -15,6 +15,14 @@ namespace Phase.Translator.Haxe.Expressions
             }
             else
             {
+                if (resolve.Symbol != null
+                    && resolve.Symbol is IFieldSymbol constField
+                    && constField.ContainingType.TypeKind != TypeKind.Enum
+                    && constField.IsConst
+                    && (constField.DeclaringSyntaxReferences.Length == 0 || EmitterContext.IsCaseLabel))
+                {
+                    return WriteConstant(constField);
+                }
                 if (resolve.Symbol is ITypeSymbol)
                 {
                     WriteType((ITypeSymbol)resolve.Symbol);

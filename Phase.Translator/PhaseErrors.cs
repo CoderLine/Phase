@@ -66,6 +66,10 @@ namespace Phase.Translator
             "This overload of the Type registration requires a direct typeof() expression as parameter.",
             "This overload of the Type registration requires a direct typeof() expression as parameter.",
             "Phase.CompilerExtension", DiagnosticSeverity.Error, true);
+        public static readonly DiagnosticDescriptor PH017 = new DiagnosticDescriptor("PH017",
+            "Unexpected compilation error.",
+            "Unexpected compilation error: {0}",
+            "Phase.CompilerExtension", DiagnosticSeverity.Error, true);
 
     }
 }

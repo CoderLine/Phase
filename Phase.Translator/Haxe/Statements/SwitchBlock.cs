@@ -35,6 +35,7 @@ namespace Phase.Translator.Haxe
                         if (i == 0) Write("case ");
                         else Write(", ");
 
+                        EmitterContext.IsCaseLabel = true;
                         var label = section.Labels[i];
                         switch (label.Kind())
                         {
@@ -46,6 +47,7 @@ namespace Phase.Translator.Haxe
                                 Debugger.Break();
                                 break;
                         }
+                        EmitterContext.IsCaseLabel = false;
                     }
                 }
                 WriteColon();

@@ -55,37 +55,13 @@ namespace Phase.Translator.Haxe.Expressions
 
             var expression = Node.Expression;
             var leftHandSide = Emitter.GetSymbolInfo(expression);
-            if (member.Symbol != null && member.Symbol is IFieldSymbol constField && constField.IsConst && constField.DeclaringSyntaxReferences.Length == 0)
+            if (member.Symbol != null 
+                && member.Symbol is IFieldSymbol constField 
+                && constField.ContainingType.TypeKind != TypeKind.Enum
+                && constField.IsConst 
+                && (constField.DeclaringSyntaxReferences.Length == 0 || EmitterContext.IsCaseLabel))
             {
-                switch (constField.Type.SpecialType)
-                {
-                    case SpecialType.System_Boolean:
-                        Write((bool)constField.ConstantValue ? "true" : "false");
-                        return AutoCastMode.SkipCast;
-                    case SpecialType.System_Char:
-                    case SpecialType.System_SByte:
-                    case SpecialType.System_Byte:
-                    case SpecialType.System_Int16:
-                    case SpecialType.System_UInt16:
-                    case SpecialType.System_Int32:
-                    case SpecialType.System_UInt32:
-                    case SpecialType.System_Int64:
-                    case SpecialType.System_UInt64:
-                        Write((int)constField.ConstantValue);
-                        return AutoCastMode.SkipCast;
-                    case SpecialType.System_Decimal:
-                        Write((decimal)constField.ConstantValue);
-                        return AutoCastMode.SkipCast;
-                    case SpecialType.System_Single:
-                        Write((float)constField.ConstantValue);
-                        return AutoCastMode.SkipCast;
-                    case SpecialType.System_Double:
-                        Write((double)constField.ConstantValue);
-                        return AutoCastMode.SkipCast;
-                    case SpecialType.System_String:
-                        Write("\"" + constField.ConstantValue + "\"");
-                        return AutoCastMode.SkipCast;
-                }
+                return WriteConstant(constField);
             }
 
             if (leftHandSide.Symbol == null)
@@ -97,16 +73,6 @@ namespace Phase.Translator.Haxe.Expressions
                 var kind = leftHandSide.Symbol.Kind;
                 switch (kind)
                 {
-                    case SymbolKind.Field:
-                        var field = (IFieldSymbol)leftHandSide.Symbol;
-                        if (field.IsStatic)
-                        {
-                            WriteType(field.ContainingType);
-                            WriteDot();
-                        }
-                        Write(Emitter.GetFieldName(field));
-                        //}
-                        break;
                     case SymbolKind.NamedType:
                         Write(Emitter.GetTypeName((INamedTypeSymbol)leftHandSide.Symbol, false, true));
                         break;

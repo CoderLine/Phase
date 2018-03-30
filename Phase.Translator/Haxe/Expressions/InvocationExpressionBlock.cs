@@ -24,6 +24,7 @@ namespace Phase.Translator.Haxe.Expressions
 
             var symbol = Emitter.GetSymbolInfo(Node.Expression).Symbol;
             var methodSymbol = symbol as IMethodSymbol;
+            bool isEventInvocation = false;
             if (methodSymbol == null && symbol != null)
             {
                 switch (symbol.Kind)
@@ -47,6 +48,14 @@ namespace Phase.Translator.Haxe.Expressions
                             ((IFieldSymbol)symbol).Type.TypeKind == TypeKind.Delegate)
                         {
                             methodSymbol = ((INamedTypeSymbol)((IFieldSymbol)symbol).Type).DelegateInvokeMethod;
+                        }
+                        break;
+                    case SymbolKind.Event:
+                        if (((IEventSymbol)symbol).Type != null &&
+                            ((IEventSymbol)symbol).Type.TypeKind == TypeKind.Delegate)
+                        {
+                            methodSymbol = ((INamedTypeSymbol)((IEventSymbol)symbol).Type).DelegateInvokeMethod;
+                            isEventInvocation = true;
                         }
                         break;
                     case SymbolKind.Local:
@@ -81,7 +90,14 @@ namespace Phase.Translator.Haxe.Expressions
                         }
                         else
                         {
-                            EmitTree(Node.Expression, cancellationToken);
+                            if (Node.Expression is MemberAccessExpressionSyntax memberAccess)
+                            {
+                                EmitTree(memberAccess.Expression, cancellationToken);
+                            }
+                            else
+                            {
+                                EmitTree(Node.Expression, cancellationToken);
+                            }
                         }
                         thisVar.RawValue = PopWriter();
                     }
@@ -194,6 +210,11 @@ namespace Phase.Translator.Haxe.Expressions
                 else
                 {
                     EmitTree(Node.Expression, cancellationToken);
+                    if (isEventInvocation)
+                    {
+                        WriteDot();
+                        Write(Emitter.GetMethodName(methodSymbol));
+                    }
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }
             }
@@ -201,6 +222,7 @@ namespace Phase.Translator.Haxe.Expressions
             {
                 EmitTree(Node.Expression, cancellationToken);
                 WriteMethodInvocation(null, arguments, Node, cancellationToken);
+
             }
 
             return AutoCastMode.Default;

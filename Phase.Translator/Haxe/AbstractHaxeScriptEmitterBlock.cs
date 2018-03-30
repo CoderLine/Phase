@@ -24,6 +24,7 @@ namespace Phase.Translator.Haxe
         protected override IWriter Writer => EmitterContext.Writer;
         public HaxeEmitter Emitter => EmitterContext.Emitter;
 
+
         public void PushWriter()
         {
             EmitterContext.PushWriter();
@@ -37,6 +38,11 @@ namespace Phase.Translator.Haxe
         protected AbstractHaxeScriptEmitterBlock(HaxeEmitterContext context)
         {
             EmitterContext = context;
+        }
+
+        protected override void BeginEmit(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            base.BeginEmit(cancellationToken);
         }
 
         protected AbstractHaxeScriptEmitterBlock EmitTree(SyntaxNode value, CancellationToken cancellationToken = default(CancellationToken))
@@ -380,6 +386,12 @@ namespace Phase.Translator.Haxe
 
         protected void WriteMeta(ISymbol node, CancellationToken cancellationToken)
         {
+            var native = Emitter.GetNative(node);
+            if (native != null)
+            {
+                Write("@:native('", native, ")");
+                WriteNewLine();
+            }
             foreach (var attribute in node.GetAttributes())
             {
                 var meta = Emitter.GetHaxeMeta(attribute.AttributeClass);
@@ -393,7 +405,37 @@ namespace Phase.Translator.Haxe
                         for (int i = 0; i < attribute.ConstructorArguments.Length; i++)
                         {
                             if (i > 0) WriteComma();
-                            Write(attribute.ConstructorArguments[0].Value);
+                            switch (attribute.ConstructorArguments[0].Type.SpecialType)
+                            {
+                                case SpecialType.System_Boolean:
+                                    Write((bool)attribute.ConstructorArguments[0].Value ? "true" : "false");
+                                    break;
+                                case SpecialType.System_Char:
+                                case SpecialType.System_SByte:
+                                case SpecialType.System_Byte:
+                                case SpecialType.System_Int16:
+                                case SpecialType.System_UInt16:
+                                case SpecialType.System_Int32:
+                                case SpecialType.System_UInt32:
+                                case SpecialType.System_Int64:
+                                case SpecialType.System_UInt64:
+                                    Write((int)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_Decimal:
+                                    Write((decimal)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_Single:
+                                    Write((float)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_Double:
+                                    Write((double)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_String:
+                                    Write("\"" + attribute.ConstructorArguments[0].Value + "\"");
+                                    break;
+                                default:
+                                    throw new PhaseCompilerException("Only built-in types supported for meta constructor");
+                            }
                         }
 
                         Write(")");
@@ -424,6 +466,13 @@ namespace Phase.Translator.Haxe
             // implicit cast
             if (convertedType != null && type != null && !type.Equals(convertedType))
             {
+                convertedType = convertedType.TypeKind == TypeKind.Array
+                    ? ((IArrayTypeSymbol) convertedType).ElementType
+                    : convertedType;
+                type = type.TypeKind == TypeKind.Array
+                    ? ((IArrayTypeSymbol)type).ElementType
+                    : type;
+
                 switch (convertedType.SpecialType)
                 {
                     case SpecialType.System_Boolean:
@@ -555,7 +604,15 @@ namespace Phase.Translator.Haxe
 
                     if ((foreachMode = Emitter.GetForeachMode(type)) != null)
                     {
-                        needsToEnumerable = true;
+                        switch (foreachMode)
+                        {
+                            case ForeachMode.Native:
+                                needsToEnumerable = false;
+                                break;
+                            default:
+                                needsToEnumerable = true;
+                                break;
+                        }
                     }
 
                     if (needsToEnumerable)
@@ -847,6 +904,47 @@ namespace Phase.Translator.Haxe
             }
         }
 
+        protected AutoCastMode WriteConstant(IFieldSymbol constField)
+        {
+            switch (constField.Type.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    Write((bool)constField.ConstantValue ? "true" : "false");
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_Char:
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                    Write((int)constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_Decimal:
+                    Write((decimal)constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_Single:
+                    Write((float)constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_Double:
+                    Write((double)constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_String:
+                    Write("\"" + constField.ConstantValue + "\"");
+                    return AutoCastMode.SkipCast;
+                default:
+                    if (constField.Type.TypeKind == TypeKind.Enum)
+                    {
+                        Write(constField.Name);
+                        return AutoCastMode.SkipCast;
+                    }
+
+                    Log.Error("Unknown constant type: " + constField.Type);
+                    throw new PhaseCompilerException("Unknown constant type: " + constField.Type);
+            }
+        }
     }
 
     public class ParameterInvocationInfo
@@ -883,6 +981,18 @@ namespace Phase.Translator.Haxe
             EmitterContext = context;
             Node = node;
             Emit(cancellationToken);
+        }
+
+        protected override void BeginEmit(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            base.BeginEmit(cancellationToken);
+            EmitterContext.BeginEmit(Node);
+        }
+
+        protected override void EndEmit(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            base.EndEmit(cancellationToken);
+            EmitterContext.EndEmit(Node);
         }
     }
 }

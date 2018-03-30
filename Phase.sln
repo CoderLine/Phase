@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2010
+VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.Translator", "Phase.Translator\Phase.Translator.csproj", "{AEED0B9F-56D8-4C22-B06B-E25A790EB18C}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.Haxe.Js", "Phase.Haxe.Js\Phase.Haxe.Js.csproj", "{CCA5F531-A2C5-4FE2-9DA2-CB9FBB96853C}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.MsBuild", "Phase.MsBuild\Phase.MsBuild.csproj", "{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Phase.Haxe", "Phase.Haxe\Phase.Haxe.csproj", "{FBACBA3F-FE04-462D-ACB2-890ACF8CF2EF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +41,10 @@ Global
 		{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8F0C206E-437D-4EE1-BC91-6ECA5F565F62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBACBA3F-FE04-462D-ACB2-890ACF8CF2EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBACBA3F-FE04-462D-ACB2-890ACF8CF2EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBACBA3F-FE04-462D-ACB2-890ACF8CF2EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBACBA3F-FE04-462D-ACB2-890ACF8CF2EF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -10,6 +10,10 @@ namespace Phase.Translator.Haxe
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteDo();
+            if (Node.Statement.Kind() == SyntaxKind.Block)
+            {
+                WriteNewLine();
+            }
             EmitTree(Node.Statement, cancellationToken);
             if (Node.Statement.Kind() == SyntaxKind.Block)
             {

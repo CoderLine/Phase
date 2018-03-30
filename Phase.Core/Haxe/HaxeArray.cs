@@ -37,6 +37,9 @@ namespace Haxe
         [Name("splice")]
         public extern HaxeArray<T> Splice(HaxeInt index, HaxeInt length);
 
+        [Name("insert")]
+        public extern void Insert(HaxeInt pos, T x);
+
         [Name("indexOf")]
         public extern int IndexOf(T item);
 

@@ -36,7 +36,7 @@ namespace Phase.Translator.Haxe
                 || (_method.MethodKind == MethodKind.PropertyGet && !((IPropertySymbol)_method.AssociatedSymbol).ExplicitInterfaceImplementations.IsEmpty)
                 || (_method.MethodKind == MethodKind.PropertySet && !((IPropertySymbol)_method.AssociatedSymbol).ExplicitInterfaceImplementations.IsEmpty)
             )
-            {   
+            {
                 return;
             }
 
@@ -129,7 +129,7 @@ namespace Phase.Translator.Haxe
 
             var methodName = Emitter.GetMethodName(_method);
             Write(methodName);
-           
+
             var typeParameters = new List<ITypeSymbol>(_method.TypeParameters);
             if (_method.IsStatic)
             {
@@ -179,7 +179,7 @@ namespace Phase.Translator.Haxe
                     if (Emitter.IsGetEnumeratorAsIterator(_method))
                     {
                         Write("Iterable<");
-                        var generic = ((INamedTypeSymbol) _method.ReturnType).TypeArguments[0];
+                        var generic = ((INamedTypeSymbol)_method.ReturnType).TypeArguments[0];
                         WriteType(generic);
                         Write(">");
                     }
@@ -192,7 +192,7 @@ namespace Phase.Translator.Haxe
                     break;
             }
 
-            if (_method.ContainingType.TypeKind == TypeKind.Interface)
+            if (_method.ContainingType.TypeKind == TypeKind.Interface || (Emitter.IsNative(_method.ContainingType) && _method.IsExtern))
             {
                 WriteSemiColon(true);
             }
@@ -207,15 +207,19 @@ namespace Phase.Translator.Haxe
                     var x = Emitter.GetMethodName(_method);
                     if (x == "new")
                     {
-                        Write("super");
+                        if (!Emitter.HasNoConstructor(_method.ContainingType.BaseType))
+                        {
+                            Write("super");
+                            WriteOpenCloseParentheses();
+                            WriteSemiColon(true);
+                        }
                     }
                     else
                     {
                         Write(x);
+                        WriteOpenCloseParentheses();
+                        WriteSemiColon(true);
                     }
-
-                    WriteOpenCloseParentheses();
-                    WriteSemiColon(true);
                 }
                 else if (!_method.DeclaringSyntaxReferences.IsEmpty)
                 {
@@ -335,7 +339,7 @@ namespace Phase.Translator.Haxe
 
                                     WriteMethodInvocation(ctor,
                                         constructorDeclarationSyntax.Initializer.ArgumentList,
-                                        constructorDeclarationSyntax.Initializer, 
+                                        constructorDeclarationSyntax.Initializer,
                                         cancellationToken);
                                     WriteSemiColon(true);
                                 }
@@ -349,14 +353,19 @@ namespace Phase.Translator.Haxe
                                         var x = Emitter.GetMethodName(ctor);
                                         if (x == "new")
                                         {
-                                            Write("super");
+                                            if (!Emitter.HasNoConstructor(_method.ContainingType.BaseType))
+                                            {
+                                                Write("super");
+                                                WriteOpenCloseParentheses();
+                                                WriteSemiColon(true);
+                                            }
                                         }
                                         else
                                         {
                                             Write(x);
+                                            WriteOpenCloseParentheses();
+                                            WriteSemiColon(true);
                                         }
-                                        WriteOpenCloseParentheses();
-                                        WriteSemiColon(true);
                                     }
                                     else
                                     {
@@ -366,7 +375,7 @@ namespace Phase.Translator.Haxe
                             }
 
                             // write default initializers
-                            foreach (var members in _method.ContainingType.GetMembers().Where(f=>f.IsStatic == _method.IsStatic))
+                            foreach (var members in _method.ContainingType.GetMembers().Where(f => f.IsStatic == _method.IsStatic))
                             {
                                 bool hasInitializer = true;
                                 ITypeSymbol memberType = null;
@@ -379,14 +388,14 @@ namespace Phase.Translator.Haxe
                                             if (fieldReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declaration)
                                             {
                                                 hasInitializer = declaration.Initializer != null;
-                                                memberType = ((IFieldSymbol) members).Type;
+                                                memberType = ((IFieldSymbol)members).Type;
                                                 memberName = Emitter.GetFieldName((IFieldSymbol)members);
                                                 break;
                                             }
                                         }
                                         break;
                                     case SymbolKind.Property:
-                                        if (!Emitter.IsAutoProperty((IPropertySymbol) members))
+                                        if (!Emitter.IsAutoProperty((IPropertySymbol)members))
                                         {
                                             continue;
                                         }
@@ -397,8 +406,8 @@ namespace Phase.Translator.Haxe
                                     default:
                                         continue;
                                 }
-                            
-                                
+
+
                                 if (!hasInitializer)
                                 {
                                     var defaultValue = Emitter.GetDefaultValue(memberType);
@@ -476,7 +485,7 @@ namespace Phase.Translator.Haxe
                             else
                             {
                                 WriteDefaultImplementation(_method);
-                               
+
                             }
                         }
                         else
@@ -576,7 +585,7 @@ namespace Phase.Translator.Haxe
             }
             else if (type is INamedTypeSymbol)
             {
-                var named = (INamedTypeSymbol) type;
+                var named = (INamedTypeSymbol)type;
                 foreach (var argument in named.TypeArguments)
                 {
                     CollectTypeParameters(typeParameters, argument);
