@@ -6,7 +6,7 @@ using Phase.CompilerServices;
 namespace Phase
 {
     [External]
-    public class MsCorlibCompilerExtension : ICompilerExtension
+    public class MsCorlibHaxeCompilerExtension : IHaxeCompilerExtension
     {
         public void Run(ICompilerContext context)
         {

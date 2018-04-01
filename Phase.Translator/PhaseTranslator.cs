@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
+using Phase.Translator.Cpp;
 using Phase.Translator.Haxe;
 using Phase.Translator.Utils;
 
@@ -52,6 +53,9 @@ namespace Phase.Translator
                 {
                     case PhaseLanguage.Haxe:
                         emitter = new HaxeEmitter(Compiler);
+                        break;
+                    case PhaseLanguage.Cpp:
+                        emitter = new CppEmitter(Compiler);
                         break;
                     default:
                         Log.Error("Invalid compilation language");
@@ -187,7 +191,7 @@ namespace Phase.Translator
         {
             using (new LogHelper("loading attributes from project", Log, 3))
             {
-                var attributeLoader = new AttributeLoader(Compilation);
+                var attributeLoader = new AttributeLoader(Compiler.Options.Language, Compilation);
                 await attributeLoader.LoadAsync(cancellationToken);
                 Attributes = attributeLoader.Attributes;
                 Compilation = attributeLoader.Compilation;

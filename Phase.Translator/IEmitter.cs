@@ -2,19 +2,17 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
-using Phase.Translator.Haxe;
 
 namespace Phase.Translator
 {
     public class EmitResult
     {
-        public Dictionary<PhaseType, PhaseTypeResult> Results { get; }
+        public Dictionary<PhaseType, List<PhaseTypeResult>> Results { get; }
 
         public EmitResult()
         {
-            Results = new Dictionary<PhaseType, PhaseTypeResult>();
+            Results = new Dictionary<PhaseType, List<PhaseTypeResult>>();
         }
     }
 

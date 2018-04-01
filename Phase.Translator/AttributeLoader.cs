@@ -31,10 +31,18 @@ namespace Phase.Translator
         public CSharpCompilation Compilation { get; private set; }
         public AttributeRegistry Attributes { get; private set; }
 
-        public AttributeLoader(CSharpCompilation compilation)
+        public AttributeLoader(PhaseLanguage language, CSharpCompilation compilation)
         {
             Compilation = compilation;
-            _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerExtension");
+            switch (language)
+            {
+                case PhaseLanguage.Haxe:
+                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.IHaxeCompilerExtension");
+                    break;
+                case PhaseLanguage.Cpp:
+                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICppHaxeCompilerExtension");
+                    break;
+            }
             _compilerContextType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerContext");
         }
 
@@ -804,7 +812,7 @@ namespace Phase.Translator
     {
         internal static int Combine(int newKey, int currentKey)
         {
-            return unchecked((currentKey * (int) 0xA5555529) + newKey);
+            return unchecked((currentKey * (int)0xA5555529) + newKey);
         }
         internal static int CombineValues<T>(IEnumerable<T> values, int maxItemsToHash = int.MaxValue)
         {

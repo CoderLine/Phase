@@ -10,10 +10,10 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseInterface _type;
 
-        public InterfaceBlock(HaxeEmitterContext context, PhaseInterface type)
+        public InterfaceBlock(HaxeEmitterContext context)
             : base(context)
         {
-            _type = type;
+            _type = (PhaseInterface)context.CurrentType;
         }
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())

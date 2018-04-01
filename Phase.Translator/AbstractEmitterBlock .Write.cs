@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using Phase.Translator.Haxe;
 
 namespace Phase.Translator
 {

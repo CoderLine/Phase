@@ -9,10 +9,10 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseEnum _type;
 
-        public EnumBlock(HaxeEmitterContext context, PhaseEnum type)
+        public EnumBlock(HaxeEmitterContext context)
             : base(context)
         {
-            _type = type;
+            _type = (PhaseEnum) context.CurrentType;
         }
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())

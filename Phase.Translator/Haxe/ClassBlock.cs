@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 
 namespace Phase.Translator.Haxe
@@ -18,10 +17,10 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseType _type;
 
-        public ClassBlock(HaxeEmitterContext emitter, PhaseType type)
+        public ClassBlock(HaxeEmitterContext emitter)
             : base(emitter)
         {
-            _type = type;
+            _type = emitter.CurrentType;
         }
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())

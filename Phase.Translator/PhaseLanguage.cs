@@ -2,6 +2,7 @@
 {
     public enum PhaseLanguage
     {
-        Haxe = 0
+        Haxe = 0,
+        Cpp
     }
 }

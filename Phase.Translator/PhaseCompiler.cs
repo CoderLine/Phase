@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -162,22 +163,22 @@ namespace Phase.Translator
             {
                 if (Translator.Result != null)
                 {
-                    Log.Trace($"writing ({Translator.Result.Results.Count} files) to {Options.Output}");
+                    Log.Trace($"writing ({Translator.Result.Results.Sum(r=>r.Value.Count)} files) to {Options.Output}");
 
                     if (!Directory.Exists(Options.Output))
                     {
                         Directory.CreateDirectory(Options.Output);
                     }
 
-                    Parallel.ForEach(Translator.Result.Results, results =>
+                    Parallel.ForEach(Translator.Result.Results.SelectMany(r=>r.Value), results =>
                     {
-                        var fileName = Path.Combine(Options.Output, results.Value.FileName);
+                        var fileName = Path.Combine(Options.Output, results.FileName);
                         var dir = Path.GetDirectoryName(fileName);
                         if (!Directory.Exists(dir))
                         {
                             Directory.CreateDirectory(dir);
                         }
-                        File.WriteAllText(fileName, results.Value.SourceCode);
+                        File.WriteAllText(fileName, results.SourceCode);
                     });
                 }
             }

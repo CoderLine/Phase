@@ -8,10 +8,10 @@ namespace Phase.Translator.Haxe
     {
         private readonly PhaseDelegate _type;
 
-        public DelegateBlock(HaxeEmitterContext context, PhaseDelegate type)
+        public DelegateBlock(HaxeEmitterContext context)
             : base(context)
         {
-            _type = type;
+            _type = (PhaseDelegate) context.CurrentType;
         }
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())

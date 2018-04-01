@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Phase.Translator.Haxe
+namespace Phase.Translator
 {
     public interface IWriter
     {
