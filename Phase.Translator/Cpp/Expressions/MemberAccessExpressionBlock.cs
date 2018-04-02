@@ -3,6 +3,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Phase.Translator.Utils;
+using SyntaxKind = Microsoft.CodeAnalysis.CSharp.SyntaxKind;
 
 namespace Phase.Translator.Cpp.Expressions
 {
@@ -149,7 +150,7 @@ namespace Phase.Translator.Cpp.Expressions
             }
             else
             {
-                if (member.Symbol.IsStatic)
+                if (member.Symbol.IsStatic || Node.Expression.Kind() == SyntaxKind.BaseExpression)
                 {
                     Write("::");
                 }

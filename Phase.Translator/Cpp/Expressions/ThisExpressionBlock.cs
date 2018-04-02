@@ -5,9 +5,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Cpp.Expressions
 {
-    class ThisExpressionBlock : AbstractCppEmitterBlock<ThisExpressionSyntax>
+    class ThisExpressionBlock : AutoCastBlockBase<ThisExpressionSyntax>
     {
-        protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
+        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {
             switch (Node.Parent.Kind())
             {
@@ -24,6 +24,7 @@ namespace Phase.Translator.Cpp.Expressions
                     break;
             }
 
+            return AutoCastMode.Default;
         }
     }
 }

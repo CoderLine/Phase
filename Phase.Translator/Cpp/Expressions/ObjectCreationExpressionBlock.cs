@@ -54,11 +54,23 @@ namespace Phase.Translator.Cpp.Expressions
             }
             else
             {
-                Write("std::make_shared<");
-                Write(Emitter.GetTypeName(type, false, false, CppEmitter.TypeNamePointerKind.NoPointer));
-                Write(">");
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
-                WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
+                    var typeName = Emitter.GetTypeName(type, false, false, CppEmitter.TypeNamePointerKind.NoPointer);
+                if (ctor.DeclaredAccessibility == Accessibility.Public)
+                {
+                    Write("std::make_shared<");
+                    Write(typeName);
+                    Write(">");
+                    WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
+                }
+                else
+                {
+                    Write("std::shared_ptr<");
+                    Write(typeName);
+                    Write(">( new ", typeName);
+                    WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
+                    Write(")");
+                }
             }
             
             if (Node.Initializer != null)

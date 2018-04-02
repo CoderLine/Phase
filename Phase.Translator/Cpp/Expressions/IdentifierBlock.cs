@@ -43,6 +43,7 @@ namespace Phase.Translator.Cpp.Expressions
                     else if (resolve.Symbol != null && resolve.Symbol.Kind == SymbolKind.Property && !Emitter.IsNativeIndexer(resolve.Symbol))
                     {
                         var property = ((IPropertySymbol)resolve.Symbol);
+                        EmitterContext.ImportType(property.Type);
                         var writeCloseParenthesis = false;
                         switch (Node.Parent.Kind())
                         {
@@ -64,6 +65,7 @@ namespace Phase.Translator.Cpp.Expressions
                                 else
                                 {
                                     Write(Emitter.GetMethodName(property.GetMethod));
+
                                     WriteOpenParentheses();
                                     writeCloseParenthesis = true;
                                 }
@@ -85,23 +87,22 @@ namespace Phase.Translator.Cpp.Expressions
                         {
                             WriteCloseParentheses();
                         }
+
+                        return AutoCastMode.Default;
                     }
-                    else
+                    switch (resolve.Symbol)
                     {
-                        switch (resolve.Symbol)
-                        {
-                            case IFieldSymbol f:
-                                EmitterContext.ImportType(f.Type);
-                                break;
-                            case IPropertySymbol p:
-                                EmitterContext.ImportType(p.Type);
-                                break;
-                            case IEventSymbol e:
-                                EmitterContext.ImportType(e.Type);
-                                break;
-                        }
-                        Write(Emitter.GetSymbolName(resolve.Symbol));
+                        case IFieldSymbol f:
+                            EmitterContext.ImportType(f.Type);
+                            break;
+                        case IPropertySymbol p:
+                            EmitterContext.ImportType(p.Type);
+                            break;
+                        case IEventSymbol e:
+                            EmitterContext.ImportType(e.Type);
+                            break;
                     }
+                    Write(Emitter.GetSymbolName(resolve.Symbol));
                 }
             }
 

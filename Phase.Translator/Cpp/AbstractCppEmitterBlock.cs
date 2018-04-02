@@ -917,21 +917,19 @@ namespace Phase.Translator.Cpp
                 return;
             }
 
-            // boxing? 
             // implicit cast
             if (convertedType != null && type != null && !type.Equals(convertedType))
             {
-                convertedType = convertedType.TypeKind == TypeKind.Array
-                    ? ((IArrayTypeSymbol)convertedType).ElementType
-                    : convertedType;
-                type = type.TypeKind == TypeKind.Array
-                    ? ((IArrayTypeSymbol)type).ElementType
-                    : type;
-
+                // boxing? 
                 if (convertedType.SpecialType == SpecialType.System_Object)
                 {
                     switch (type.SpecialType)
                     {
+                        case SpecialType.System_String:
+                            Write("System::String::Box(");
+                            Write(result);
+                            WriteCloseParentheses();
+                            return;
                         case SpecialType.System_Boolean:
                         case SpecialType.System_Char:
                         case SpecialType.System_Byte:
@@ -950,9 +948,46 @@ namespace Phase.Translator.Cpp
                             WriteCloseParentheses();
                             return;
                     }
-
                 }
 
+                // int to single/double promotion
+                switch (type.SpecialType)
+                {
+                    case SpecialType.System_SByte:
+                    case SpecialType.System_Int16:
+                    case SpecialType.System_Int32:
+                    case SpecialType.System_Int64:
+                    case SpecialType.System_UInt16:
+                    case SpecialType.System_UInt32:
+                    case SpecialType.System_UInt64:
+                        switch (convertedType.SpecialType)
+                        {
+                            case SpecialType.System_Single:
+                            case SpecialType.System_Double:
+                                Write("static_cast<");
+                                Write(Emitter.GetTypeName(convertedType, false, true, CppEmitter.TypeNamePointerKind.NoPointer));
+                                Write(">(", result, ")");
+                                return;
+                        }
+                        break;
+                }
+
+                // no implicit casts to IEnumerable
+                if (type.IsReferenceType && convertedType.SpecialType == SpecialType.System_Collections_IEnumerable)
+                {
+                    Write(result);
+                    return;
+                }
+                
+                // cast to base class/interface?
+                if(type.TypeKind != TypeKind.Array && type.IsReferenceType && convertedType.IsReferenceType)
+                {
+                    var typeName = Emitter.GetTypeName(convertedType, false, false, CppEmitter.TypeNamePointerKind.NoPointer);
+                    Write("std::static_pointer_cast<", typeName, ">(");
+                    Write(result);
+                    WriteCloseParentheses();
+                    return;
+                }
             }
 
             Write(result);

@@ -6,9 +6,9 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Cpp.Expressions
 {
-    public class LiteralExpressionBlock : AbstractCppEmitterBlock<LiteralExpressionSyntax>
+    public class LiteralExpressionBlock : AutoCastBlockBase<LiteralExpressionSyntax>
     {
-        protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
+        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {
             var value = Node.Token.Value;
             switch (Node.Kind())
@@ -23,7 +23,7 @@ namespace Phase.Translator.Cpp.Expressions
                                 !Node.Token.Text.Contains("."))
                             {
                                 Write(Node.Token.Text.Replace("f", ".0f"));
-                                return;
+                                return AutoCastMode.Default;
                             }
                         }
                     }
@@ -75,6 +75,7 @@ namespace Phase.Translator.Cpp.Expressions
                     Write("nullptr");
                     break;
             }
+            return AutoCastMode.Default;
         }
 
         private bool IsBinaryOp()
