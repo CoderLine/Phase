@@ -31,6 +31,7 @@ namespace Phase.Translator.Haxe
             public bool? HasConstructorOverloads { get; set; }
             public int? ConstructorCount { get; set; }
             public bool? IsAutoProperty { get; set; }
+            public bool? NeedsDefaultInitializer { get; set; }
             public Optional<ForeachMode?> ForeachMode { get; set; }
             public Optional<string> Native { get; set; }
             public bool? IsRawParams { get; set; }
@@ -979,6 +980,22 @@ namespace Phase.Translator.Haxe
         }
 
 
+        public bool NeedsDefaultInitializer(IPropertySymbol property)
+        {
+            lock (this)
+            {
+                var meta = GetOrCreateMeta(property);
+
+                if (meta.NeedsDefaultInitializer.HasValue)
+                {
+                    return meta.NeedsDefaultInitializer.Value;
+                }
+
+                return (meta.NeedsDefaultInitializer = InternalNeedsDefaultInitializer(property)).Value;
+            }
+
+        }
+
         public bool IsRawParams(IMethodSymbol methodSymbol)
         {
             lock (this)
@@ -1004,6 +1021,34 @@ namespace Phase.Translator.Haxe
             }
             return true;
         }
+
+        private bool InternalNeedsDefaultInitializer(IPropertySymbol property)
+        {
+            var attr = property.GetAttributes().FirstOrDefault(a =>
+                a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.AutoPropertyAttribute")));
+            if (attr != null)
+            {
+                return true;
+            }
+
+            if (property.ContainingType.TypeKind != TypeKind.Class && property.ContainingType.TypeKind != TypeKind.Struct)
+            {
+                return false;
+            }
+
+            if (property.IsAbstract || property.IsExtern)
+            {
+                return false;
+            }
+
+            var declaration = (BasePropertyDeclarationSyntax)property.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+            if (declaration != null)
+            {
+                return IsAutoProperty(declaration);
+            }
+            return false;
+        }
+
 
         private bool InternalIsAutoProperty(IPropertySymbol property)
         {

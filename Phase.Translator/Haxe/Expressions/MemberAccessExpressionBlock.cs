@@ -59,6 +59,8 @@ namespace Phase.Translator.Haxe.Expressions
                 && member.Symbol is IFieldSymbol constField 
                 && constField.ContainingType.TypeKind != TypeKind.Enum
                 && constField.IsConst 
+                && (constField.ContainingType.SpecialType != SpecialType.System_Single || constField.Name != "NaN")
+                && (constField.ContainingType.SpecialType != SpecialType.System_Double || constField.Name != "NaN")
                 && (constField.DeclaringSyntaxReferences.Length == 0 || EmitterContext.IsCaseLabel))
             {
                 return WriteConstant(constField);

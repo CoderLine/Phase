@@ -375,48 +375,7 @@ namespace Phase.Translator.Haxe
                             }
 
                             // write default initializers
-                            foreach (var members in _method.ContainingType.GetMembers().Where(f => f.IsStatic == _method.IsStatic))
-                            {
-                                bool hasInitializer = true;
-                                ITypeSymbol memberType = null;
-                                string memberName = string.Empty;
-                                switch (members.Kind)
-                                {
-                                    case SymbolKind.Field:
-                                        foreach (var fieldReference in members.DeclaringSyntaxReferences)
-                                        {
-                                            if (fieldReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declaration)
-                                            {
-                                                hasInitializer = declaration.Initializer != null;
-                                                memberType = ((IFieldSymbol)members).Type;
-                                                memberName = Emitter.GetFieldName((IFieldSymbol)members);
-                                                break;
-                                            }
-                                        }
-                                        break;
-                                    case SymbolKind.Property:
-                                        if (!Emitter.IsAutoProperty((IPropertySymbol)members))
-                                        {
-                                            continue;
-                                        }
-                                        memberType = ((IPropertySymbol)members).Type;
-                                        memberName = Emitter.GetPropertyName((IPropertySymbol)members);
-                                        hasInitializer = false;
-                                        break;
-                                    default:
-                                        continue;
-                                }
-
-
-                                if (!hasInitializer)
-                                {
-                                    var defaultValue = Emitter.GetDefaultValue(memberType);
-                                    Write(memberName);
-                                    Write(" = ");
-                                    Write(defaultValue);
-                                    WriteSemiColon(true);
-                                }
-                            }
+                            WriteDefaultInitializers(_method.ContainingType, _method.IsStatic, cancellationToken);
 
                             if (constructorDeclarationSyntax.ExpressionBody != null)
                             {
@@ -484,7 +443,7 @@ namespace Phase.Translator.Haxe
                             }
                             else
                             {
-                                WriteDefaultImplementation(_method);
+                                WriteDefaultImplementation(cancellationToken);
 
                             }
                         }
@@ -496,7 +455,7 @@ namespace Phase.Translator.Haxe
                 }
                 else
                 {
-                    WriteDefaultImplementation(_method);
+                    WriteDefaultImplementation(cancellationToken);
                 }
 
                 if (_method.MethodKind == MethodKind.Constructor && !Emitter.HasNativeConstructors(_method.ContainingType) && Emitter.HasConstructorOverloads(_method.ContainingType))
@@ -513,7 +472,7 @@ namespace Phase.Translator.Haxe
             WriteComments(_method, false, cancellationToken);
         }
 
-        private void WriteDefaultImplementation(IMethodSymbol method)
+        private void WriteDefaultImplementation(CancellationToken cancellationToken)
         {
             if (_method.MethodKind == MethodKind.PropertyGet)
             {
@@ -530,6 +489,10 @@ namespace Phase.Translator.Haxe
             else if (_method.MethodKind == MethodKind.EventRemove)
             {
                 WriteDefaultEventRemover();
+            }
+            else if (_method.MethodKind == MethodKind.Constructor)
+            {
+                WriteDefaultInitializers(_method.ContainingType, _method.IsStatic, cancellationToken);
             }
         }
 

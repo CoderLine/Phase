@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -165,6 +166,9 @@ namespace Phase.Translator.Haxe
                     Write("super();");
                     WriteNewLine();
                 }
+
+                WriteDefaultInitializers(_type.TypeSymbol, false, cancellationToken);
+
                 EndBlock();
             }
             EndBlock();

@@ -455,6 +455,54 @@ namespace Phase.Translator.Haxe
             WriteType(Emitter.GetTypeSymbol(syntax));
         }
 
+        protected void WriteDefaultInitializers(INamedTypeSymbol type, bool forStaticMembers, CancellationToken cancellationToken)
+        {
+            foreach (var members in type.GetMembers().Where(f => f.IsStatic == forStaticMembers))
+            {
+                bool hasInitializer = true;
+                ITypeSymbol memberType = null;
+                string memberName = string.Empty;
+                switch (members.Kind)
+                {
+                    case SymbolKind.Field:
+                        foreach (var fieldReference in members.DeclaringSyntaxReferences)
+                        {
+                            if (fieldReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declaration)
+                            {
+                                hasInitializer = declaration.Initializer != null;
+                                memberType = ((IFieldSymbol)members).Type;
+                                memberName = Emitter.GetFieldName((IFieldSymbol)members);
+                                break;
+                            }
+                        }
+
+                        break;
+                    case SymbolKind.Property:
+                        if (!Emitter.NeedsDefaultInitializer((IPropertySymbol)members))
+                        {
+                            continue;
+                        }
+
+                        memberType = ((IPropertySymbol)members).Type;
+                        memberName = Emitter.GetPropertyName((IPropertySymbol)members);
+                        hasInitializer = false;
+                        break;
+                    default:
+                        continue;
+                }
+
+
+                if (!hasInitializer)
+                {
+                    var defaultValue = Emitter.GetDefaultValue(memberType);
+                    Write(memberName);
+                    Write(" = ");
+                    Write(defaultValue);
+                    WriteSemiColon(true);
+                }
+            }
+        }
+
         public void WriteWithAutoCast(AutoCastMode mode, ITypeSymbol convertedType, ITypeSymbol type, string result)
         {
             if (mode == AutoCastMode.SkipCast)

@@ -58,7 +58,9 @@ namespace Phase.Translator
                     }
                 }
             });
-            Compilation = Compilation.AddSyntaxTrees(trees);
+            Compilation = Compilation
+                .AddSyntaxTrees(trees)
+                .WithAssemblyName(Compilation.AssemblyName);
 
             _semanticModel = new ConcurrentDictionary<SyntaxTree, SemanticModel>(SyntaxTreeComparer.Instance);
 

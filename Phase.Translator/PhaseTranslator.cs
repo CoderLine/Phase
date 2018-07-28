@@ -144,7 +144,7 @@ namespace Phase.Translator
             using (new LogHelper("project preprocessing", Log, 2))
             {
                 var hasError = false;
-                
+
                 try
                 {
                     await RegisterAttributesAsync(cancellationToken);
@@ -209,7 +209,7 @@ namespace Phase.Translator
                             ["Platform"] = Compiler.Input.Platform,
                         });
                         Compilation =
-                            (CSharpCompilation) await compiler.BuildAsync(Compiler.Input.ProjectFile,
+                            (CSharpCompilation)await compiler.BuildAsync(Compiler.Input.ProjectFile,
                                 cancellationToken);
                     }
                     else
@@ -221,6 +221,7 @@ namespace Phase.Translator
                             Compiler.Input.SourceFiles,
                             Compiler.Input.ReferencedAssemblies,
                             cancellationToken);
+                        Log.Info("Via Source files: '" + Compiler.Input.CompilationOptions.ModuleName + "'" );
                     }
 
                     Log.Trace("Project compiled");

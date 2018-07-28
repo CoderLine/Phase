@@ -39,7 +39,7 @@ namespace Phase.MsBuild
             get;
         }
 
-        public string ModuleAssemblyName
+        public string AssemblyName
         {
             set;
             get;
@@ -138,7 +138,8 @@ namespace Phase.MsBuild
                 arguments.Add("/main:\"" + MainEntryPoint + "\"");
             }
             arguments.Add("/target:" + TargetType);
-            arguments.Add("/moduleassemblyname:\"" + ModuleAssemblyName + "\"");
+            arguments.Add("/moduleassemblyname:\"" + AssemblyName + "\"");
+
             if (TreatWarningsAsErrors)
             {
                 arguments.Add("/warnaserror");
@@ -177,14 +178,13 @@ namespace Phase.MsBuild
                 LogManager.Configuration = config;
 
                 var args = CSharpCommandLineParser.Default.Parse(arguments, directory, RuntimeEnvironment.GetRuntimeDirectory());
-
                 var resolver = new MetadataFileReferenceResolver(directory);
                 var references = args.ResolveMetadataReferences(resolver);
 
                 var input = new PhaseCompilerInput
                 {
                     ProjectFile = ProjectFile,
-                    CompilationOptions = args.CompilationOptions,
+                    CompilationOptions = args.CompilationOptions.WithModuleName(AssemblyName),
                     ParseOptions = args.ParseOptions,
                     SourceFiles = Sources.Select(s => Path.Combine(directory, s.ItemSpec)).ToArray(),
                     ReferencedAssemblies = references,
