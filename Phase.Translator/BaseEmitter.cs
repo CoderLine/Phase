@@ -332,7 +332,7 @@ namespace Phase.Translator
         }
 
 
-        public string GetEventName(IEventSymbol eventSymbol)
+        public virtual string GetEventName(IEventSymbol eventSymbol)
         {
             if (!eventSymbol.ExplicitInterfaceImplementations.IsEmpty)
             {

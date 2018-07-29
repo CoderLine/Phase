@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
 using Phase.Translator.Cpp;
 using Phase.Translator.Haxe;
+using Phase.Translator.Java;
 using Phase.Translator.Utils;
 
 namespace Phase.Translator
@@ -56,6 +57,9 @@ namespace Phase.Translator
                         break;
                     case PhaseLanguage.Cpp:
                         emitter = new CppEmitter(Compiler);
+                        break;
+                    case PhaseLanguage.Java:
+                        emitter = new JavaEmitter(Compiler);
                         break;
                     default:
                         Log.Error("Invalid compilation language");

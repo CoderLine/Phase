@@ -40,7 +40,10 @@ namespace Phase.Translator
                     _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.IHaxeCompilerExtension");
                     break;
                 case PhaseLanguage.Cpp:
-                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICppHaxeCompilerExtension");
+                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICppCompilerExtension");
+                    break;
+                case PhaseLanguage.Java:
+                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.IJavaCompilerExtension");
                     break;
             }
             _compilerContextType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerContext");

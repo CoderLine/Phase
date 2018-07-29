@@ -7,7 +7,10 @@
     public interface IHaxeCompilerExtension : ICompilerExtension
     {
     }
-    public interface ICppHaxeCompilerExtension : ICompilerExtension
+    public interface ICppCompilerExtension : ICompilerExtension
+    {
+    }
+    public interface IJavaCompilerExtension : ICompilerExtension
     {
     }
 }
