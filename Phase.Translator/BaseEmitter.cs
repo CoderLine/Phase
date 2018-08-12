@@ -882,9 +882,9 @@ namespace Phase.Translator
             return (CastMode)(int)attr.ConstructorArguments[0].Value;
         }
 
-        private bool IsInterfaceImplementation(ISymbol method)
+        public bool IsInterfaceImplementation(ISymbol method)
         {
-            return method.ContainingType.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).Any(interfaceMethod => method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod).Equals(method));
+            return method.ContainingType.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).Any(interfaceMethod => method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod)?.Equals(method) ?? false);
         }
 
         private bool IsInterfaceImplementation(ISymbol method, out ISymbol interfaceMember)

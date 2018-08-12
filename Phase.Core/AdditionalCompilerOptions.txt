@@ -1,1 +1,1 @@
-﻿/resource:MsCorlibHaxeCompilerExtension.cs /resource:MsCorlibJavaCompilerExtension.cs
+﻿/resource:MsCorlibHaxeCompilerExtension.cs /resource:MsCorlibKotlinCompilerExtension.cs

@@ -10,7 +10,7 @@
     public interface ICppCompilerExtension : ICompilerExtension
     {
     }
-    public interface IJavaCompilerExtension : ICompilerExtension
+    public interface IKotlinCompilerExtension : ICompilerExtension
     {
     }
 }

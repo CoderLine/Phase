@@ -4,6 +4,6 @@
     {
         Haxe = 0,
         Cpp,
-        Java
+        Kotlin
     }
 }

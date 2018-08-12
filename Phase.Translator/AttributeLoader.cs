@@ -42,8 +42,8 @@ namespace Phase.Translator
                 case PhaseLanguage.Cpp:
                     _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICppCompilerExtension");
                     break;
-                case PhaseLanguage.Java:
-                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.IJavaCompilerExtension");
+                case PhaseLanguage.Kotlin:
+                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.IKotlinCompilerExtension");
                     break;
             }
             _compilerContextType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerContext");
