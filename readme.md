@@ -1,6 +1,6 @@
 # Phase 
 
-Phase is an open souce C#-to-Haxe Compiler. This allows you to write any C# code and compile it to 
+Phase is an open source C#-to-Haxe Compiler. This allows you to write any C# code and compile it to 
 
 * JavaScript
 * Neko
