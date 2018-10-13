@@ -31,6 +31,7 @@ namespace Phase.Translator.Haxe
         public int RecursiveObjectCreation { get; set; }
         public IMethodSymbol SetterMethod { get; set; }
         public bool IsCaseLabel { get; set; }
+        public bool IsAssignmentLeftHand { get; set; }
 
         public HaxeEmitterContext(HaxeEmitter emitter, PhaseType type)
         {

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -89,24 +90,40 @@ namespace Phase.Translator.Haxe.Expressions
             }
             else if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Event)
             {
-                EmitTree(Node.Left, cancellationToken);
+                IEventSymbol evt = (IEventSymbol)leftSymbol.Symbol;
+                IMethodSymbol method;
                 switch (Node.Kind())
                 {
-                    case SyntaxKind.SimpleAssignmentExpression:
-                        Write(" = ");
-                        break;
                     case SyntaxKind.AddAssignmentExpression:
-                        Write(" += ");
+                        method = evt.AddMethod;
                         break;
                     case SyntaxKind.SubtractAssignmentExpression:
-                        Write(" -= ");
+                        method = evt.RemoveMethod;
+                        break;
+                    default:
+                        method = null;
                         break;
                 }
-                EmitValue(leftType.Type, rightType.Type, cancellationToken);
+
+                if (method != null)
+                {
+                    if (Node.Left is MemberAccessExpressionSyntax member)
+                    {
+                        EmitTree(member.Expression, cancellationToken);
+                        WriteDot();
+                    }
+                    Write(Emitter.GetMethodName(method));
+                    WriteMethodInvocation(method, new[]
+                    {
+                        new ParameterInvocationInfo(Node.Right)
+                    }, Node, cancellationToken);
+                }
             }
             else
             {
+                EmitterContext.IsAssignmentLeftHand = true;
                 EmitTree(Node.Left, cancellationToken);
+                EmitterContext.IsAssignmentLeftHand = false;
                 Write(" = ");
 
                 var needsConversion = NeedsConversion(leftType, rightType, op);

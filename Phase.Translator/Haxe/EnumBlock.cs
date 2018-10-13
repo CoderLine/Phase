@@ -53,6 +53,12 @@ namespace Phase.Translator.Haxe
             Write("@:enum");
             WriteNewLine();
 
+            if (_type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
+            {
+                Write("@:expose");
+                WriteNewLine();
+            }
+
             Write("abstract ", name, "(Int) from Int to Int");
 
             BeginBlock();

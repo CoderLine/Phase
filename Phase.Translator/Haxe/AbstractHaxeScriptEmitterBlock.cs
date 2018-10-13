@@ -478,13 +478,27 @@ namespace Phase.Translator.Haxe
 
                         break;
                     case SymbolKind.Property:
-                        if (!Emitter.NeedsDefaultInitializer((IPropertySymbol)members))
+                        var prop = (IPropertySymbol) members;
+                        if (!Emitter.NeedsDefaultInitializer(prop))
                         {
                             continue;
                         }
 
                         memberType = ((IPropertySymbol)members).Type;
-                        memberName = Emitter.GetPropertyName((IPropertySymbol)members);
+
+                        if (!Emitter.IsAutoProperty(prop) && prop.SetMethod == null)
+                        {
+                            var backingField = prop.ContainingType
+                                .GetMembers()
+                                .OfType<IFieldSymbol>()
+                                .FirstOrDefault(f => f.AssociatedSymbol == prop);
+                            memberName = Emitter.GetFieldName(backingField);
+                        }
+                        else
+                        {
+                            memberName = Emitter.GetPropertyName(prop);
+                        }
+
                         hasInitializer = false;
                         break;
                     default:

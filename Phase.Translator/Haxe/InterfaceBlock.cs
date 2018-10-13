@@ -40,6 +40,12 @@ namespace Phase.Translator.Haxe
 
             WriteComments(_type.TypeSymbol, cancellationToken);
 
+            if (_type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
+            {
+                Write("@:expose");
+                WriteNewLine();
+            }
+
             Write("interface ", name);
 
             if (_type.TypeSymbol.IsGenericType)

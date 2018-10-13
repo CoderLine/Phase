@@ -31,6 +31,7 @@ namespace Phase.Translator.Haxe
             public bool? HasConstructorOverloads { get; set; }
             public int? ConstructorCount { get; set; }
             public bool? IsAutoProperty { get; set; }
+            public bool? IsEventField { get; set; }
             public bool? NeedsDefaultInitializer { get; set; }
             public Optional<ForeachMode?> ForeachMode { get; set; }
             public Optional<string> Native { get; set; }
@@ -917,12 +918,12 @@ namespace Phase.Translator.Haxe
             {
                 var meta = GetOrCreateMeta(evt);
 
-                if (meta.IsAutoProperty.HasValue)
+                if (meta.IsEventField.HasValue)
                 {
-                    return meta.IsAutoProperty.Value;
+                    return meta.IsEventField.Value;
                 }
 
-                return (meta.IsAutoProperty = InternalIsEventField(evt)).Value;
+                return (meta.IsEventField = InternalIsEventField(evt)).Value;
             }
         }
 
@@ -1084,21 +1085,6 @@ namespace Phase.Translator.Haxe
 
         private bool InternalIsEventField(IEventSymbol evt)
         {
-            if (evt.ContainingType.TypeKind != TypeKind.Class && evt.ContainingType.TypeKind != TypeKind.Struct)
-            {
-                return false;
-            }
-
-            if (evt.IsAbstract || evt.IsExtern)
-            {
-                return false;
-            }
-
-            if (IsInterfaceImplementation(evt))
-            {
-                return false;
-            }
-
             var declaration = evt.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
             if (declaration.Kind() == SyntaxKind.EventFieldDeclaration || declaration.Kind() == SyntaxKind.VariableDeclarator)
             {
@@ -1146,7 +1132,7 @@ namespace Phase.Translator.Haxe
             return (CastMode)(int)attr.ConstructorArguments[0].Value;
         }
 
-        private bool IsInterfaceImplementation(ISymbol method)
+        public bool IsInterfaceImplementation(ISymbol method)
         {
             return method.ContainingType.AllInterfaces.SelectMany(@interface => @interface.GetMembers()).Any(interfaceMethod => method.ContainingType.FindImplementationForInterfaceMember(interfaceMethod).Equals(method));
         }

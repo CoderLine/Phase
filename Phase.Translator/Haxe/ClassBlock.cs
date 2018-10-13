@@ -66,6 +66,12 @@ namespace Phase.Translator.Haxe
 
             WriteMeta(_type.TypeSymbol, cancellationToken);
 
+            if (_type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
+            {
+                Write("@:expose");
+                WriteNewLine();
+            }
+
             if (abstractType != null)
             {
                 Write("abstract ", name);

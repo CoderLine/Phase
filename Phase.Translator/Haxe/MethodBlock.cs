@@ -49,8 +49,6 @@ namespace Phase.Translator.Haxe
                         return;
                     }
                     break;
-                case MethodKind.EventAdd:
-                case MethodKind.EventRemove:
                 case MethodKind.EventRaise:
                     if (Emitter.IsEventField((IEventSymbol)_method.AssociatedSymbol))
                     {
@@ -169,7 +167,7 @@ namespace Phase.Translator.Haxe
                 case MethodKind.EventAdd:
                 case MethodKind.EventRemove:
                     WriteColon();
-                    WriteEventType((INamedTypeSymbol)((IEventSymbol)_method.AssociatedSymbol).Type);
+                    WriteType(Emitter.GetSpecialType(SpecialType.System_Void));
                     break;
                 case MethodKind.Constructor:
                 case MethodKind.StaticConstructor:
@@ -506,11 +504,9 @@ namespace Phase.Translator.Haxe
             }
             else
             {
-                Write("return (");
                 Write(Emitter.GetEventName(property));
                 Write(" -= ");
                 Write(_method.Parameters[0].Name);
-                Write(")");
                 WriteSemiColon();
             }
             WriteNewLine();
@@ -527,11 +523,9 @@ namespace Phase.Translator.Haxe
             }
             else
             {
-                Write("return (");
                 Write(Emitter.GetEventName(property));
                 Write(" += ");
                 Write(_method.Parameters[0].Name);
-                Write(")");
                 WriteSemiColon();
             }
             WriteNewLine();

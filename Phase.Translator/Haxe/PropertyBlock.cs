@@ -66,7 +66,7 @@ namespace Phase.Translator.Haxe
                 }
                 else
                 {
-                    Write("null");
+                    Write(isAutoProperty ? "null" : "never");
                 }
 
                 WriteCloseParentheses();

@@ -1,4 +1,7 @@
+using System.Diagnostics;
+using System.Linq;
 using System.Threading;
+using Microsoft.Build.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
@@ -36,7 +39,23 @@ namespace Phase.Translator.Haxe.Expressions
                         WriteDot();
                     }
 
-                    Write(Emitter.GetSymbolName(resolve.Symbol));
+
+                    if (EmitterContext.IsAssignmentLeftHand && resolve.Symbol.Kind == SymbolKind.Property
+                        && !Emitter.IsAutoProperty((IPropertySymbol)resolve.Symbol)
+                        && ((IPropertySymbol)resolve.Symbol).SetMethod == null
+                    )
+                    {
+                        var backingField = resolve.Symbol.ContainingType
+                            .GetMembers()
+                            .OfType<IFieldSymbol>()
+                            .FirstOrDefault(f => f.AssociatedSymbol == resolve.Symbol);
+
+                        Write(Emitter.GetSymbolName(backingField));
+                    }
+                    else
+                    {
+                        Write(Emitter.GetSymbolName(resolve.Symbol));
+                    }
                 }
 
                 if (!EmitterContext.IsMethodInvocation && (
