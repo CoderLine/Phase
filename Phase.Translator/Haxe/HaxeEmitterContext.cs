@@ -20,6 +20,7 @@ namespace Phase.Translator.Haxe
             }
         }
 
+
         public HaxeEmitterContext(HaxeEmitter emitter, PhaseType type)
             :base(emitter, type)
         {
