@@ -17,10 +17,14 @@ namespace Phase.Translator.Kotlin.Expressions
                 var type = Emitter.GetTypeSymbol(Node.Type);
                 Write(Emitter.GetTypeName(type, false, false));
 
+                Write(" = ");
                 if (variable.Initializer != null)
                 {
-                    Write(" = ");
                     EmitTree(variable.Initializer.Value, cancellationToken);
+                }
+                else
+                {
+                    Write(Emitter.GetDefaultValue(type));
                 }
                 WriteNewLine();
             }

@@ -21,30 +21,6 @@ namespace Phase.Translator.Haxe
             _reservedMethodNames = new ConcurrentDictionary<string, IMethodSymbol>();
         }
 
-        public string GetHaxeMeta(ISymbol symbol)
-        {
-            lock (this)
-            {
-                var meta = GetOrCreateMeta(symbol);
-                if (meta.Meta != null)
-                {
-                    return meta.Meta;
-                }
-                return meta.Meta = GetHaxeMetaInternal(symbol);
-            }
-        }
-
-        private string GetHaxeMetaInternal(ISymbol symbol)
-        {
-            var attr = GetAttributes(symbol)
-                .FirstOrDefault(s => s.AttributeClass.Equals(GetPhaseType("Phase.Attributes.MetaAttribute")));
-            if (attr == null)
-            {
-                return string.Empty;
-            }
-            return (string)attr.ConstructorArguments[0].Value;
-        }
-
         protected override IEnumerable<HaxeEmitterContext> BuildEmitterContexts(PhaseType type)
         {
             return new[]{new HaxeEmitterContext(this, type)};

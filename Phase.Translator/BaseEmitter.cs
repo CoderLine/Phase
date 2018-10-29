@@ -17,7 +17,7 @@ using Phase.Translator.Utils;
 namespace Phase.Translator
 {
     public abstract class BaseEmitter : IEmitter
-    { 
+    {
         private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
         protected class SymbolMetaData
@@ -26,6 +26,8 @@ namespace Phase.Translator
             public bool? HasConstructorOverloads { get; set; }
             public int? ConstructorCount { get; set; }
             public bool? IsAutoProperty { get; set; }
+            public bool? IsNullable { get; set; }
+            public bool? IsReifiedExtensionMethod { get; set; }
             public bool? IsEventField { get; set; }
             public bool? NeedsDefaultInitializer { get; set; }
             public Optional<ForeachMode?> ForeachMode { get; set; }
@@ -194,10 +196,15 @@ namespace Phase.Translator
             {
                 return attributeName;
             }
-            if (field.AssociatedSymbol is IPropertySymbol)
+            if (field.AssociatedSymbol is IPropertySymbol p)
             {
-                return "__" + field.AssociatedSymbol.Name;
+                return "__" + GetPropertyName(p);
             }
+            return GetFieldNameInternal(field);
+        }
+
+        protected virtual string GetFieldNameInternal(IFieldSymbol field)
+        {
             return field.Name;
         }
 
@@ -278,7 +285,7 @@ namespace Phase.Translator
 
         protected abstract string GetMethodNameInternal(IMethodSymbol method);
 
-        public string GetSymbolName(ISymbol symbol)
+        public virtual string GetSymbolName(ISymbol symbol, BaseEmitterContext context)
         {
             switch (symbol.Kind)
             {
@@ -292,7 +299,7 @@ namespace Phase.Translator
                 case SymbolKind.RangeVariable:
                 case SymbolKind.Preprocessing:
                 case SymbolKind.Discard:
-                    return symbol.Name;
+                    return EscapeKeyword(symbol.Name);
                 case SymbolKind.ArrayType:
                 case SymbolKind.DynamicType:
                 case SymbolKind.ErrorType:
@@ -313,6 +320,11 @@ namespace Phase.Translator
             }
         }
 
+        protected virtual string EscapeKeyword(string symbolName)
+        {
+            return symbolName;
+        }
+
 
         public string GetPropertyName(IPropertySymbol property)
         {
@@ -328,6 +340,11 @@ namespace Phase.Translator
                 return GetTypeName(impl.ContainingType, true) + "_" + GetPropertyName(impl);
             }
 
+            return GetPropertyNameInternal(property);
+        }
+
+        protected virtual string GetPropertyNameInternal(IPropertySymbol property)
+        {
             return property.Name.ToCamelCase();
         }
 
@@ -409,6 +426,12 @@ namespace Phase.Translator
         }
 
         public ISymbol GetDeclaredSymbol(VariableDeclaratorSyntax syntax,
+            CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return GetSemanticModel(syntax).GetDeclaredSymbol(syntax, cancellationToken);
+        }
+
+        public ISymbol GetDeclaredSymbol(VariableDeclarationSyntax syntax,
             CancellationToken cancellationToken = default(CancellationToken))
         {
             return GetSemanticModel(syntax).GetDeclaredSymbol(syntax, cancellationToken);
@@ -668,6 +691,32 @@ namespace Phase.Translator
             }
         }
 
+
+        public bool IsNullable(ISymbol symbol)
+        {
+            var meta = GetOrCreateMeta(symbol);
+            if (meta.IsNullable.HasValue)
+            {
+                return meta.IsNullable.Value;
+            }
+
+            return (meta.IsNullable = IsNullableInternal(symbol)).Value;
+        }
+
+
+
+        public bool IsReifiedExtensionMethod(IMethodSymbol symbol)
+        {
+            var meta = GetOrCreateMeta(symbol);
+            if (meta.IsNullable.HasValue)
+            {
+                return meta.IsReifiedExtensionMethod.Value;
+            }
+
+            return (meta.IsReifiedExtensionMethod = IsReifiedExtensionMethodInternal(symbol)).Value;
+        }
+
+
         public ForeachMode? GetForeachMode(ITypeSymbol type)
         {
             lock (this)
@@ -778,6 +827,18 @@ namespace Phase.Translator
                 return IsAutoProperty(declaration);
             }
             return false;
+        }
+
+        private bool IsNullableInternal(ISymbol symbol)
+        {
+            return GetAttributes(symbol)
+                .Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NullableAttribute")));
+        }
+
+        private bool IsReifiedExtensionMethodInternal(ISymbol symbol)
+        {
+            return GetAttributes(symbol)
+                .Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.ReifiedExtensionMethodAttribute")));
         }
 
         private bool InternalNeedsDefaultInitializer(IPropertySymbol property)
@@ -944,6 +1005,74 @@ namespace Phase.Translator
                 return foreachMode == ForeachMode.GetEnumerator;
             }
             return false;
+        }
+        
+        public bool NeedsDefaultInitializer(IPropertySymbol property)
+        {
+            lock (this)
+            {
+                var meta = GetOrCreateMeta(property);
+
+                if (meta.NeedsDefaultInitializer.HasValue)
+                {
+                    return meta.NeedsDefaultInitializer.Value;
+                }
+
+                return (meta.NeedsDefaultInitializer = InternalNeedsDefaultInitializer(property)).Value;
+            }
+
+        }
+
+        private bool InternalNeedsDefaultInitializer(IPropertySymbol property)
+        {
+            var attr = property.GetAttributes().FirstOrDefault(a =>
+                a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.AutoPropertyAttribute")));
+            if (attr != null)
+            {
+                return true;
+            }
+
+            if (property.ContainingType.TypeKind != TypeKind.Class && property.ContainingType.TypeKind != TypeKind.Struct)
+            {
+                return false;
+            }
+
+            if (property.IsAbstract || property.IsExtern)
+            {
+                return false;
+            }
+
+            var declaration = (BasePropertyDeclarationSyntax)property.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+            if (declaration != null)
+            {
+                return IsAutoProperty(declaration);
+            }
+            return false;
+        }
+
+
+        public string GetMeta(ISymbol symbol)
+        {
+            lock (this)
+            {
+                var meta = GetOrCreateMeta(symbol);
+                if (meta.Meta != null)
+                {
+                    return meta.Meta;
+                }
+                return meta.Meta = GetMetaInternal(symbol);
+            }
+        }
+
+        private string GetMetaInternal(ISymbol symbol)
+        {
+            var attr = symbol.GetAttributes()
+                .FirstOrDefault(s => s.AttributeClass.Equals(GetPhaseType("Phase.Attributes.MetaAttribute")));
+            if (attr == null)
+            {
+                return string.Empty;
+            }
+            return (string)attr.ConstructorArguments[0].Value;
         }
 
         public bool TryGetCallerMemberInfo(IParameterSymbol parameter, ISymbol callerMember, SyntaxNode callerNode, out string value)

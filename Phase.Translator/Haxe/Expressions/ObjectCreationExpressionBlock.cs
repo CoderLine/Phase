@@ -85,7 +85,7 @@ namespace Phase.Translator.Haxe.Expressions
 
                         Write(tmpvar);
                         WriteDot();
-                        Write(Emitter.GetSymbolName(left.Symbol));
+                        Write(EmitterContext.GetSymbolName(left.Symbol));
 
                         Write(" = ");
 
@@ -97,7 +97,7 @@ namespace Phase.Translator.Haxe.Expressions
                     {
                         Write(tmpvar);
                         WriteDot();
-                        Write(Emitter.GetSymbolName(addMethod));
+                        Write(EmitterContext.GetSymbolName(addMethod));
                         WriteMethodInvocation(addMethod, new[]
                         {
                             new ParameterInvocationInfo(expression)

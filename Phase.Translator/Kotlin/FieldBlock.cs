@@ -23,21 +23,22 @@ namespace Phase.Translator.Kotlin
 
             WriteComments(_field, cancellationToken);
 
+            if (_field.IsStatic)
+            {
+                Write("@JvmStatic");
+                WriteNewLine();
+            }
+
+            WriteMeta(_field, cancellationToken);
             WriteAccessibility(_field.DeclaredAccessibility);
 
             
             if (_field.IsConst)
             {
-                Write("const val ");
+                Write("val "); // kotlin const is not properly compatible with @JvmStatic
             }
             else
             {
-                if (_field.IsStatic)
-                {
-                    Write("@JvmStatic");
-                    WriteNewLine();
-                }
-
                 Write("var ");
             }
 

@@ -735,7 +735,7 @@ namespace Phase.Translator.Cpp
                             }
                             else if (param.IsOptional)
                             {
-                                if (Emitter.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode, out var callerValue))
+                                if (EmitterContext.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode, out var callerValue))
                                 {
                                     Write(callerValue);
                                 }

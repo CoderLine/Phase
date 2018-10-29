@@ -14,11 +14,13 @@ namespace Phase.Translator.Kotlin
     public class MethodBlock : AbstractKotlinEmitterBlock
     {
         private readonly IMethodSymbol _method;
+        private readonly bool _asExtensionMethod;
 
-        public MethodBlock(KotlinEmitterContext context, IMethodSymbol method)
+        public MethodBlock(KotlinEmitterContext context, IMethodSymbol method, bool asExtensionMethod = false)
             : base(context)
         {
             _method = method;
+            _asExtensionMethod = asExtensionMethod;
         }
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
@@ -36,6 +38,13 @@ namespace Phase.Translator.Kotlin
                 || (_method.MethodKind == MethodKind.PropertyGet && !((IPropertySymbol)_method.AssociatedSymbol).ExplicitInterfaceImplementations.IsEmpty)
                 || (_method.MethodKind == MethodKind.PropertySet && !((IPropertySymbol)_method.AssociatedSymbol).ExplicitInterfaceImplementations.IsEmpty)
             )
+            {
+                return;
+            }
+
+            var isReifiedExtensionMethod = Emitter.IsReifiedExtensionMethod(_method);
+            if (isReifiedExtensionMethod && !_asExtensionMethod ||
+                !isReifiedExtensionMethod && _asExtensionMethod)
             {
                 return;
             }
@@ -66,6 +75,8 @@ namespace Phase.Translator.Kotlin
                 WriteNewLine();
             }
 
+            WriteMeta(_method, cancellationToken);
+
             if (_method.MethodKind == MethodKind.StaticConstructor)
             {
                 // Static constructors are simply blocks in java
@@ -88,10 +99,19 @@ namespace Phase.Translator.Kotlin
                 WriteAccessibility(_method.DeclaredAccessibility);
             }
 
+
+            if (isReifiedExtensionMethod)
+            {
+                Write("inline ");
+            }
+
             if (_method.IsOverride || Emitter.IsInterfaceImplementation(_method))
             {
                 Write("override ");
-                WriteNewLine();
+            }
+            else if (_method.IsVirtual)
+            {
+                Write("open ");
             }
 
             if ((_method.MethodKind == MethodKind.PropertyGet && ((IPropertySymbol)_method.AssociatedSymbol).IsIndexer)
@@ -100,9 +120,7 @@ namespace Phase.Translator.Kotlin
             {
                 Write("operator ");
             }
-
-
-
+            
             switch (_method.MethodKind)
             {
                 case MethodKind.StaticConstructor:
@@ -120,6 +138,10 @@ namespace Phase.Translator.Kotlin
             }
 
             var typeParameters = new List<ITypeSymbol>(_method.TypeParameters);
+            if (isReifiedExtensionMethod)
+            {
+                CollectTypeParameters(typeParameters, _method.ContainingType);
+            }
             if (_method.IsStatic)
             {
                 CollectTypeParameters(typeParameters, _method.ReturnType);
@@ -128,6 +150,7 @@ namespace Phase.Translator.Kotlin
                     CollectTypeParameters(typeParameters, parameter.Type);
                 }
             }
+
 
             if (typeParameters.Count > 0)
             {
@@ -138,6 +161,11 @@ namespace Phase.Translator.Kotlin
                     {
                         WriteComma();
                     }
+
+                    if (isReifiedExtensionMethod)
+                    {
+                        Write("reified ");
+                    }
                     Write(typeParameters[i].Name);
                 }
                 Write("> ");
@@ -145,6 +173,13 @@ namespace Phase.Translator.Kotlin
 
             if (_method.MethodKind != MethodKind.StaticConstructor)
             {
+                if (isReifiedExtensionMethod)
+                {
+                    Write(Emitter.GetTypeName(_method.ContainingType, true, false, false));
+                    WriteDot();
+                }
+
+
                 var methodName = Emitter.GetMethodName(_method);
                 Write(methodName);
                 WriteOpenParentheses();
@@ -161,8 +196,6 @@ namespace Phase.Translator.Kotlin
                         break;
                     case MethodKind.EventAdd:
                     case MethodKind.EventRemove:
-                        Write(" : ");
-                        WriteEventType((INamedTypeSymbol)((IEventSymbol)_method.AssociatedSymbol).Type);
                         break;
                     case MethodKind.Constructor:
                     case MethodKind.StaticConstructor:
@@ -181,7 +214,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else
                             {
-                                WriteType(_method.ReturnType);
+                                Write(Emitter.GetTypeName(_method.ReturnType, false, false, _method.Name != "ToString"));
                             }
                         }
                         break;
@@ -199,6 +232,7 @@ namespace Phase.Translator.Kotlin
             {
                 if (!_method.DeclaringSyntaxReferences.IsEmpty)
                 {
+                    EmitterContext.ParameterNames.Clear();
                     foreach (var reference in _method.DeclaringSyntaxReferences)
                     {
                         var node = reference.GetSyntax(cancellationToken);
@@ -212,6 +246,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteNewLine();
                             BeginBlock();
+
                             if (methodDeclarationSyntax.ExpressionBody != null)
                             {
                                 if (!_method.ReturnsVoid)
@@ -224,6 +259,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else if (methodDeclarationSyntax.Body != null)
                             {
+                                WriteLocalParameters(methodDeclarationSyntax.Body, cancellationToken);
                                 foreach (var statement in methodDeclarationSyntax.Body.Statements)
                                 {
                                     EmitTree(statement, cancellationToken);
@@ -234,6 +270,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteNewLine();
                             BeginBlock();
+
                             if (conversionOperatorDeclarationSyntax.ExpressionBody != null)
                             {
                                 if (!_method.ReturnsVoid)
@@ -246,6 +283,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else if (conversionOperatorDeclarationSyntax.Body != null)
                             {
+                                WriteLocalParameters(conversionOperatorDeclarationSyntax.Body, cancellationToken);
                                 foreach (var statement in conversionOperatorDeclarationSyntax.Body.Statements)
                                 {
                                     EmitTree(statement, cancellationToken);
@@ -256,6 +294,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteNewLine();
                             BeginBlock();
+
                             if (operatorDeclarationSyntax.ExpressionBody != null)
                             {
                                 if (!_method.ReturnsVoid)
@@ -268,6 +307,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else if (operatorDeclarationSyntax.Body != null)
                             {
+                                WriteLocalParameters(operatorDeclarationSyntax.Body, cancellationToken);
                                 foreach (var statement in operatorDeclarationSyntax.Body.Statements)
                                 {
                                     EmitTree(statement, cancellationToken);
@@ -278,6 +318,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteNewLine();
                             BeginBlock();
+
                             if (!_method.ReturnsVoid)
                             {
                                 WriteReturn(true);
@@ -318,6 +359,7 @@ namespace Phase.Translator.Kotlin
                                 WriteNewLine();
                             }
                             BeginBlock();
+
                             if (constructorDeclarationSyntax.ExpressionBody != null)
                             {
                                 EmitTree(constructorDeclarationSyntax.ExpressionBody);
@@ -325,6 +367,7 @@ namespace Phase.Translator.Kotlin
                             }
                             if (constructorDeclarationSyntax.Body != null)
                             {
+                                WriteLocalParameters(constructorDeclarationSyntax.Body, cancellationToken);
                                 foreach (var statement in constructorDeclarationSyntax.Body.Statements)
                                 {
                                     EmitTree(statement, cancellationToken);
@@ -335,6 +378,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteNewLine();
                             BeginBlock();
+
                             if (accessorDeclarationSyntax.ExpressionBody != null)
                             {
                                 if (!_method.ReturnsVoid || _method.MethodKind == MethodKind.PropertySet)
@@ -347,6 +391,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else if (accessorDeclarationSyntax.Body != null)
                             {
+                                WriteLocalParameters(accessorDeclarationSyntax.Body, cancellationToken);
                                 EmitterContext.SetterMethod =
                                     _method.MethodKind == MethodKind.PropertySet ? _method : null;
                                 foreach (var statement in accessorDeclarationSyntax.Body.Statements)
@@ -388,6 +433,7 @@ namespace Phase.Translator.Kotlin
                             {
                                 WriteNewLine();
                                 BeginBlock();
+
                                 WriteDefaultImplementation(_method);
 
                             }
@@ -405,11 +451,31 @@ namespace Phase.Translator.Kotlin
                     WriteDefaultImplementation(_method);
                 }
 
+                EmitterContext.IsInMethodBody = false;
                 EndBlock();
                 WriteNewLine();
             }
 
             WriteComments(_method, false, cancellationToken);
+        }
+
+        private void WriteLocalParameters(BlockSyntax body, CancellationToken cancellationToken)
+        {
+            EmitterContext.IsInMethodBody = true;
+
+            EmitterContext.BuildLocalParameters(_method, body, cancellationToken);
+            foreach (var parameter in EmitterContext.ParameterNames)
+            {
+                Write("var ", EmitterContext.GetSymbolName(parameter.Key));
+                WriteSpace();
+                WriteColon();
+                WriteType(parameter.Key.Type);
+
+                Write(" = ");
+
+                Write(parameter.Key.Name);
+                WriteSemiColon(true);
+            }
         }
 
         private void WriteDefaultImplementation(IMethodSymbol method)
@@ -435,7 +501,6 @@ namespace Phase.Translator.Kotlin
         private void WriteDefaultEventRemover()
         {
             var property = (IEventSymbol)_method.AssociatedSymbol;
-            Write("return ");
             Write(Emitter.GetEventName(property));
             Write(" = ");
             WriteEventType((INamedTypeSymbol)property.Type, false);
@@ -451,7 +516,6 @@ namespace Phase.Translator.Kotlin
         private void WriteDefaultEventAdder()
         {
             var property = (IEventSymbol)_method.AssociatedSymbol;
-            Write("return ");
             Write(Emitter.GetEventName(property));
             Write(" = ");
             WriteEventType((INamedTypeSymbol)property.Type, false);

@@ -11,12 +11,25 @@ namespace Phase.Translator.Kotlin.Statements
         {
             if (Node.Expression != null)
             {
-                WriteReturn(true);
+                WriteReturn(false);
+                var lambdaName = EmitterContext.GetLambdaNameForReturn();
+                if (lambdaName != null)
+                {
+                    Write("@", lambdaName);
+                }
+                Write(" ");
                 EmitTree(Node.Expression, cancellationToken);
             }
             else if (EmitterContext.SetterMethod != null)
             {
-                WriteReturn(true);
+                WriteReturn(false);
+                var lambdaName = EmitterContext.GetLambdaNameForReturn();
+                if (lambdaName != null)
+                {
+                    Write("@", lambdaName);
+                }
+                Write(" ");
+
                 var property = (IPropertySymbol)EmitterContext.SetterMethod.AssociatedSymbol;
                 if (property.GetMethod != null)
                 {
@@ -43,6 +56,11 @@ namespace Phase.Translator.Kotlin.Statements
             else
             {
                 WriteReturn(false);
+                var lambdaName = EmitterContext.GetLambdaNameForReturn();
+                if (lambdaName != null)
+                {
+                    Write("@", lambdaName);
+                }
             }
             WriteSemiColon(true);
             WriteNewLine();

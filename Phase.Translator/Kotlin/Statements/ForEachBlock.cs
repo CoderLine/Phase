@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Phase.Attributes;
 
@@ -17,18 +18,33 @@ namespace Phase.Translator.Kotlin.Statements
 
             if (foreachMode == ForeachMode.Native)
             {
+                PushWriter();
+                EmitTree(Node.Statement, cancellationToken);
+                var body = PopWriter();
+
+                if (EmitterContext.LoopNames.TryGetValue(Node, out var name))
+                {
+                    Write(name, "@ ");
+                    EmitterContext.LoopNames.Remove(Node);
+                }
                 WriteFor();
 
                 WriteOpenParentheses();
 
+                Write(Node.Identifier.ValueText, " : ");
                 WriteType(Node.Type);
-                Write(" ", Node.Identifier.ValueText, " : ");
+
+                Write(" in ");
+
                 EmitTree(Node.Expression, cancellationToken);
+                Write("!!");
 
                 WriteCloseParentheses();
+
+                Write(body);
+
                 WriteNewLine();
 
-                EmitTree(Node.Statement, cancellationToken);
             }
             else
             {
@@ -51,19 +67,42 @@ namespace Phase.Translator.Kotlin.Statements
                 Write("try");
                 BeginBlock();
 
+                PushWriter();
+                BeginBlock();
+
+                Write("var ", Node.Identifier.ValueText, " = ", enumeratorVariable, "!!.current");
+                WriteSemiColon(true);
+
+                if (Node.Statement is BlockSyntax block)
+                {
+                    foreach (var statement in block.Statements)
+                    {
+                        EmitTree(statement, cancellationToken);
+                    }
+                }
+                else
+                {
+                    EmitTree(Node.Statement, cancellationToken);
+                }
+
+                EndBlock();
+                var body = PopWriter();
+
+                if (EmitterContext.LoopNames.TryGetValue(Node, out var name))
+                {
+                    Write(name, "@ ");
+                    EmitterContext.LoopNames.Remove(Node);
+                }
+
                 WriteWhile();
                 WriteOpenParentheses();
                 Write(enumeratorVariable, "!!.moveNext()");
                 WriteCloseParentheses();
                 WriteNewLine();
-                BeginBlock();
 
-                Write("var ", Node.Identifier.ValueText, " = ", enumeratorVariable, "!!.Current");
-                WriteSemiColon(true);
+                Write(body);
 
-                EmitTree(Node.Statement, cancellationToken);
 
-                EndBlock();
                 EndBlock();
                 WriteFinally();
                 BeginBlock();

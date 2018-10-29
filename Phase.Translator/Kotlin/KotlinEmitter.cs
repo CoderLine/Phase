@@ -56,7 +56,7 @@ namespace Phase.Translator.Kotlin
                 }
                 else
                 {
-                    var x = GetTypeName(array.ElementType, false, false);
+                    var x = GetTypeName(array.ElementType, false, false, true);
 
                     var arrayName = new StringBuilder();
                     for (int i = 0; i < array.Rank; i++)
@@ -67,9 +67,9 @@ namespace Phase.Translator.Kotlin
                     for (int i = 0; i < array.Rank; i++)
                     {
                         arrayName.Append(">");
+                        if (nullable) arrayName.Append("?");
                     }
 
-                    if (nullable) arrayName.Append("?");
 
                     return arrayName.ToString();
                 }
@@ -82,7 +82,12 @@ namespace Phase.Translator.Kotlin
 
             if (type is ITypeParameterSymbol)
             {
-                return nullable ? type.Name + "?" : type.Name;
+                if (nullable && IsNullable(type))
+                {
+                    return type.Name + "?";
+                }
+
+                return type.Name;
             }
 
             switch (type.SpecialType)
@@ -90,19 +95,23 @@ namespace Phase.Translator.Kotlin
                 case SpecialType.System_Char:
                     return "Char";
                 case SpecialType.System_Byte:
+                    return "UByte";
                 case SpecialType.System_SByte:
                     return "Byte";
                 case SpecialType.System_UInt16:
+                    return "UShort";
                 case SpecialType.System_Int16:
                     return "Short";
                 case SpecialType.System_UInt32:
+                    return "UInt";
                 case SpecialType.System_Int32:
                     return "Int";
                 case SpecialType.System_UInt64:
+                    return "ULong";
                 case SpecialType.System_Int64:
                     return "Long";
                 case SpecialType.System_Void:
-                    return "Void";
+                    return "Unit";
                 case SpecialType.System_Boolean:
                     return "Boolean";
                 case SpecialType.System_Single:
@@ -112,7 +121,7 @@ namespace Phase.Translator.Kotlin
                 case SpecialType.System_String:
                     return nullable ? "String?" : "String";
                 case SpecialType.System_Object:
-                    return nullable ? "Object?" : "Object";
+                    return nullable ? "Any?" : "Any";
             }
 
             if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
@@ -142,7 +151,7 @@ namespace Phase.Translator.Kotlin
                     name += typeArgs.Length;
                 }
 
-                if (!noTypeArguments && !simple)
+                if (!noTypeArguments)
                 {
                     name += "<";
 
@@ -195,16 +204,7 @@ namespace Phase.Translator.Kotlin
                     return "remove" + method.Name.Substring("remove_".Length);
             }
 
-            var numCaps = 0;
-            foreach (var c in method.Name)
-            {
-                if (char.IsUpper(c)) numCaps++;
-                else break;
-            }
-
-            return numCaps == method.Name.Length
-                ? method.Name.ToLowerInvariant()
-                : method.Name.Substring(0, numCaps).ToLowerInvariant() + method.Name.Substring(numCaps);
+            return EscapeKeyword(method.Name.ToCamelCase());
         }
 
         protected override Dictionary<SpecialType, string> BuildSpecialArrayLookup()
@@ -212,16 +212,18 @@ namespace Phase.Translator.Kotlin
             return new Dictionary<SpecialType, string>
             {
                 [SpecialType.System_SByte] = "ByteArray",
-                [SpecialType.System_Byte] = "ByteArray",
+                [SpecialType.System_Byte] = "UByteArray",
                 [SpecialType.System_Int16] = "ShortArray",
-                [SpecialType.System_UInt16] = "ShortArray",
+                [SpecialType.System_UInt16] = "UShortArray",
                 [SpecialType.System_Int32] = "IntArray",
-                [SpecialType.System_UInt32] = "IntArray",
+                [SpecialType.System_UInt32] = "UIntArray",
                 [SpecialType.System_Int64] = "LongArray",
-                [SpecialType.System_UInt64] = "LongArray",
+                [SpecialType.System_UInt64] = "ULongArray",
                 [SpecialType.System_Decimal] = "DoubleArray",
                 [SpecialType.System_Single] = "FloatArray",
-                [SpecialType.System_Double] = "DoubleArray"
+                [SpecialType.System_Double] = "DoubleArray",
+                [SpecialType.System_Boolean] = "BooleanArray",
+                [SpecialType.System_Char] = "CharArray"
 
             };
         }
@@ -280,17 +282,21 @@ namespace Phase.Translator.Kotlin
         {
             switch (type.SpecialType)
             {
-                case SpecialType.System_Enum:
-                case SpecialType.System_SByte:
                 case SpecialType.System_Byte:
-                case SpecialType.System_Int16:
+                    return "0.toUByte()";
                 case SpecialType.System_UInt16:
-                case SpecialType.System_Int32:
+                    return "0.toUShort()";
                 case SpecialType.System_UInt32:
-                case SpecialType.System_Int64:
+                    return "0.toUInt()";
                 case SpecialType.System_UInt64:
-                case SpecialType.System_IntPtr:
+                    return "0.toULong()";
                 case SpecialType.System_UIntPtr:
+                    return "0.toULong()";
+                case SpecialType.System_SByte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_IntPtr:
                     return "0";
                 case SpecialType.System_Boolean:
                     return "false";
@@ -307,11 +313,89 @@ namespace Phase.Translator.Kotlin
                         var field = GetDefaultEnumField(type);
                         if (field != null)
                         {
-                            return GetTypeName(type) + "." + field.Name;
+                            return GetTypeName(type) + "." + GetFieldName(field);
                         }
                     }
                     return "null";
             }
+        }
+
+        public override string GetSymbolName(ISymbol symbol, BaseEmitterContext context)
+        {
+            if (symbol.Kind == SymbolKind.Parameter && context is KotlinEmitterContext kotlinEmitterContext)
+            {
+                if (kotlinEmitterContext.ParameterNames.TryGetValue((IParameterSymbol)symbol, out var name))
+                {
+                    return name;
+                }
+            }
+
+            return base.GetSymbolName(symbol, context);
+        }
+
+        protected override string GetPropertyNameInternal(IPropertySymbol property)
+        {
+            return property.Name.ToCamelCase();
+        }
+
+        protected override string GetFieldNameInternal(IFieldSymbol field)
+        {
+            return field.Name.ToCamelCase();
+        }
+
+        public string GetArrayCreationFunctionName(ITypeSymbol elementType)
+        {
+            SpecialType specialType;
+            if (elementType is IArrayTypeSymbol array)
+            {
+                specialType = (array.Sizes.Length > 0) ? SpecialType.None : array.ElementType.SpecialType;
+            }
+            else
+            {
+                specialType = elementType.SpecialType;
+            }
+
+            switch (specialType)
+            {
+                case SpecialType.System_SByte:
+                    return "byteArrayOf";
+                case SpecialType.System_Byte:
+                    return "ubyteArrayOf";
+                case SpecialType.System_Int16:
+                    return "ushortArrayOf";
+                case SpecialType.System_UInt16:
+                    return "shortArrayOf";
+                case SpecialType.System_Int32:
+                    return "intArrayOf";
+                case SpecialType.System_UInt32:
+                    return "uintArrayOf";
+                case SpecialType.System_Int64:
+                    return "longArrayOf";
+                case SpecialType.System_UInt64:
+                    return "ulongArrayOf";
+                case SpecialType.System_Boolean:
+                    return "booleanArrayOf";
+                case SpecialType.System_Char:
+                    return "charArrayOf";
+                case SpecialType.System_Single:
+                    return "floatArrayOf";
+                case SpecialType.System_Decimal:
+                case SpecialType.System_Double:
+                    return "doubleArrayOf";
+                default:
+                    return "arrayOf";
+            }
+        }
+
+        protected override string EscapeKeyword(string symbolName)
+        {
+            switch (symbolName)
+            {
+                case "val":
+                case "continue":
+                    return "`" + symbolName + "`";
+            }
+            return base.EscapeKeyword(symbolName);
         }
     }
 }

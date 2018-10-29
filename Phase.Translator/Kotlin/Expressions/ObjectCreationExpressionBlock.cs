@@ -23,11 +23,6 @@ namespace Phase.Translator.Kotlin.Expressions
                 }
             }
 
-            if (Node.Initializer != null)
-            {
-                Write("system.Phase.initialize(");
-            }
-
             var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
             var typeName = Emitter.GetTypeName(type, false, false, false);
             Write(typeName);
@@ -35,15 +30,10 @@ namespace Phase.Translator.Kotlin.Expressions
 
             if (Node.Initializer != null)
             {
-                string tmpvar = "__this";
-                if (EmitterContext.RecursiveObjectCreation > 0)
-                {
-                    tmpvar += EmitterContext.RecursiveObjectCreation;
-                }
-                EmitterContext.RecursiveObjectCreation++;
-
-                Write(", (", typeName, " ", tmpvar, ") -> ");
+                WriteDot();
+                Write("apply");
                 BeginBlock();
+                EmitterContext.RecursiveObjectCreation++;
 
                 IMethodSymbol addMethod = null;
                 if (Node.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
@@ -53,9 +43,14 @@ namespace Phase.Translator.Kotlin.Expressions
                             Emitter.GetPhaseType("System.Collections.Generic.IEnumerable`1")))
                         .TypeArguments[0];
 
-                    addMethod = type.GetMembers("Add")
-                        .OfType<IMethodSymbol>()
-                        .First(m => m.Parameters.Length == 1 && m.Parameters[0].Type.Equals(memberType));
+                    var currentType = type;
+                    while (addMethod == null && currentType != null && currentType.SpecialType != SpecialType.System_Object)
+                    {
+                        addMethod = currentType.GetMembers("Add")
+                            .OfType<IMethodSymbol>()
+                            .FirstOrDefault(m => m.Parameters.Length == 1 && m.Parameters[0].Type.Equals(memberType));
+                        currentType = currentType.BaseType;
+                    }
                 }
 
                 foreach (var expression in Node.Initializer.Expressions)
@@ -65,33 +60,19 @@ namespace Phase.Translator.Kotlin.Expressions
                         var assignment = (AssignmentExpressionSyntax)expression;
                         var left = Emitter.GetSymbolInfo(assignment.Left);
 
-                        if (left.Symbol.Kind == SymbolKind.Property)
-                        {
-                            Write(tmpvar);
-                            Write(".");
-                            Write(Emitter.GetMethodName(((IPropertySymbol)left.Symbol).SetMethod));
-                            WriteOpenParentheses();
-                            EmitTree(assignment.Right);
-                            WriteCloseParentheses();
-                        }
-                        else
-                        {
-                            Write(tmpvar);
-                            Write(".");
-                            Write(Emitter.GetSymbolName(left.Symbol));
+                        Write("this.");
+                        Write(EmitterContext.GetSymbolName(left.Symbol));
 
-                            Write(" = ");
+                        Write(" = ");
 
-                            EmitTree(assignment.Right);
-                        }
+                        EmitTree(assignment.Right);
 
-                        WriteSemiColon(true);
+                        WriteNewLine();
                     }
                     else if (Node.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
                     {
-                        Write(tmpvar);
-                        Write(".");
-                        Write(Emitter.GetSymbolName(addMethod));
+                        Write("this.");
+                        Write(EmitterContext.GetSymbolName(addMethod));
                         WriteMethodInvocation(addMethod, new[]
                         {
                             new ParameterInvocationInfo(expression)
@@ -102,8 +83,7 @@ namespace Phase.Translator.Kotlin.Expressions
 
                 EmitterContext.RecursiveObjectCreation--;
 
-                EndBlock(false);
-                WriteCloseParentheses();
+                EndBlock(true);
             }
         }
     }

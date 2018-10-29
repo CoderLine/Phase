@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using NLog;
 
 namespace Phase.Translator
 {
@@ -52,13 +54,15 @@ namespace Phase.Translator
         public void PushWriter()
         {
             _writerStack.Push(Writer);
-            Writer = new InMemoryWriter();
+            Writer = new InMemoryWriter() { Level = Writer.Level };
         }
 
         public string PopWriter()
         {
+            var level = Writer.Level;
             var result = Writer.ToString();
             Writer = _writerStack.Pop();
+            Writer.Level = level;
             return result;
         }
 
@@ -68,11 +72,68 @@ namespace Phase.Translator
     public abstract class BaseEmitterContext<TEmitter> : BaseEmitterContext
         where TEmitter : BaseEmitter
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
+
         public TEmitter Emitter { get; }
-       
+
         protected BaseEmitterContext(TEmitter emitter, PhaseType type) : base(type)
         {
             Emitter = emitter;
+        }
+
+        public string GetSymbolName(ISymbol symbol)
+        {
+            return Emitter.GetSymbolName(symbol, this);
+        }
+
+
+
+
+        public bool TryGetCallerMemberInfo(IParameterSymbol parameter, ISymbol callerMember, SyntaxNode callerNode, out string value)
+        {
+            var callerAttribute = parameter.GetAttributes().FirstOrDefault(
+                a => a.AttributeClass.Equals(Emitter.GetPhaseType("System.Runtime.CompilerServices.CallerMemberNameAttribute"))
+                    || a.AttributeClass.Equals(Emitter.GetPhaseType("System.Runtime.CompilerServices.CallerLineNumberAttribute"))
+                    || a.AttributeClass.Equals(Emitter.GetPhaseType("System.Runtime.CompilerServices.CallerFilePathAttribute"))
+            );
+            if (callerAttribute == null)
+            {
+                value = null;
+                return false;
+            }
+            switch (callerAttribute.AttributeClass.Name)
+            {
+                case "CallerMemberNameAttribute":
+                    if (callerMember == null)
+                    {
+                        value = null;
+                        Log.Warn("Could not get caller member name");
+                        return false;
+                    }
+                    value = "\"" + GetSymbolName(callerMember) + "\"";
+                    return true;
+                case "CallerLineNumberAttribute":
+                    if (callerNode == null)
+                    {
+                        value = null;
+                        Log.Warn("Could not get caller line number");
+                        return false;
+                    }
+                    value = callerNode.GetText().Lines[0].LineNumber.ToString();
+                    return true;
+                case "CallerFilePathAttribute":
+                    if (callerNode == null)
+                    {
+                        value = null;
+                        Log.Warn("Could not get caller file path");
+                        return false;
+                    }
+                    value = "\"" + callerNode.SyntaxTree.FilePath.Replace("\\", "\\\\") + "\"";
+                    return true;
+            }
+
+            value = null;
+            return false;
         }
     }
 }

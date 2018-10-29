@@ -92,7 +92,7 @@ namespace Phase.Translator.Haxe.Expressions
             else
             {
                 WriteDot();
-                Write(Emitter.GetSymbolName(member.Symbol));
+                Write(EmitterContext.GetSymbolName(member.Symbol));
             }
 
             return AutoCastMode.Default;

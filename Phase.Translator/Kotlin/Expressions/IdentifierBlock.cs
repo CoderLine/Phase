@@ -1,5 +1,6 @@
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Kotlin.Expressions
@@ -27,18 +28,42 @@ namespace Phase.Translator.Kotlin.Expressions
 
                 if (resolve.Symbol is ITypeSymbol)
                 {
-                    Write(Emitter.GetTypeName((ITypeSymbol) resolve.Symbol, false, false));
+                    Write(Emitter.GetTypeName((ITypeSymbol)resolve.Symbol, false, false));
+                }
+                else if (resolve.Symbol is IMethodSymbol method && Node.Parent.Kind() != SyntaxKind.InvocationExpression)
+                {
+                    Write("::");
+                    Write(Emitter.GetMethodName(method));
+                    return AutoCastMode.SkipCast;
                 }
                 else
                 {
-                    if (resolve.Symbol.IsStatic &&
-                        !resolve.Symbol.ContainingType.Equals(EmitterContext.CurrentType.TypeSymbol))
+                    if (resolve.Symbol.IsStatic)
                     {
-                        Write(Emitter.GetTypeName(resolve.Symbol.ContainingType, false, false));
+                        Write(Emitter.GetTypeName(resolve.Symbol.ContainingType, false, false, false));
                         Write(".");
                     }
+                    else if (!resolve.Symbol.IsStatic && (resolve.Symbol.Kind == SymbolKind.Field || resolve.Symbol.Kind == SymbolKind.Property) && EmitterContext.RecursiveObjectCreation == 0)
+                    {
+                        // write this for fields and properites to prevent clashes with local variables and parameters
+                        Write("this.");
+                    }
 
-                    Write(Emitter.GetSymbolName(resolve.Symbol));
+
+                    if (resolve.Symbol is IEventSymbol evt && Node.Parent.Kind() != SyntaxKind.InvocationExpression)
+                    {
+                        Write("if (");
+                        Write(EmitterContext.GetSymbolName(resolve.Symbol));
+                        Write(" != null) ");
+                        Write(EmitterContext.GetSymbolName(resolve.Symbol));
+                        Write("!!::");
+                        Write(Emitter.GetMethodName(((INamedTypeSymbol)evt.Type).DelegateInvokeMethod));
+                        Write(" else null");
+                    }
+                    else
+                    {
+                        Write(EmitterContext.GetSymbolName(resolve.Symbol));
+                    }
                 }
             }
 

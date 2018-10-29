@@ -9,7 +9,6 @@ namespace Phase.Translator
     public class InMemoryWriter : IWriter
     {
         private readonly StringBuilder _output;
-        private int _level;
 
         public InMemoryWriter()
         {
@@ -17,17 +16,18 @@ namespace Phase.Translator
         }
 
         public bool IsNewLine { get; set; }
+        public int Level { get; set; }
 
         public void Indent()
         {
-            _level++;
+            Level++;
         }
 
         public void Outdent()
         {
-            if (_level > 0)
+            if (Level > 0)
             {
-                _level--;
+                Level--;
             }
         }
 
@@ -38,7 +38,7 @@ namespace Phase.Translator
                 return;
             }
 
-            for (var i = 0; i < _level; i++)
+            for (var i = 0; i < Level; i++)
             {
                 _output.Append("    ");
             }

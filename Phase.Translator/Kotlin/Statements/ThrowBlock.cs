@@ -16,6 +16,7 @@ namespace Phase.Translator.Kotlin.Statements
             {
                 Write(EmitterContext.CurrentExceptionName.Peek());
             }
+            Write("!!");
             WriteSemiColon(true);
         }
     }

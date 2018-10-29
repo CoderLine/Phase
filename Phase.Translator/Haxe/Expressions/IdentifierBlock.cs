@@ -61,11 +61,11 @@ namespace Phase.Translator.Haxe.Expressions
                             .OfType<IFieldSymbol>()
                             .FirstOrDefault(f => f.AssociatedSymbol == resolve.Symbol);
 
-                        Write(Emitter.GetSymbolName(backingField));
+                        Write(EmitterContext.GetSymbolName(backingField));
                     }
                     else
                     {
-                        Write(Emitter.GetSymbolName(resolve.Symbol));
+                        Write(EmitterContext.GetSymbolName(resolve.Symbol));
                     }
                 }
 

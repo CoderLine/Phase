@@ -25,12 +25,7 @@ namespace Phase.Translator.Kotlin.Statements
             }
 
 
-            WriteWhile();
-            WriteOpenParentheses();
-            EmitTree(Node.Condition, cancellationToken);
-            WriteCloseParentheses();
-
-            WriteNewLine();
+            PushWriter();
             BeginBlock();
 
             EmitterContext.CurrentForIncrementors.Push(Node.Incrementors);
@@ -56,6 +51,24 @@ namespace Phase.Translator.Kotlin.Statements
             EmitterContext.CurrentForIncrementors.Pop();
 
             EndBlock();
+            var body = PopWriter();
+
+
+            if (EmitterContext.LoopNames.TryGetValue(Node, out var name))
+            {
+                Write(name, "@ ");
+                EmitterContext.LoopNames.Remove(Node);
+            }
+
+            WriteWhile();
+            WriteOpenParentheses();
+            EmitTree(Node.Condition, cancellationToken);
+            WriteCloseParentheses();
+
+            WriteNewLine();
+
+            Write(body);
+
             EndBlock();
         }
     }

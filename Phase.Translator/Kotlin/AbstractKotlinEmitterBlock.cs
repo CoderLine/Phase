@@ -139,7 +139,6 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteDocumentation(crefs, child);
                         }
-                        WriteNewLine();
                     }
 
                     void WriteDocLines(string text)
@@ -209,6 +208,7 @@ namespace Phase.Translator.Kotlin
                         case "para":
                             Write("<p>");
                             WriteChildren();
+                            WriteNewLine();
                             Write("</p>");
                             WriteNewLine();
                             break;
@@ -220,7 +220,7 @@ namespace Phase.Translator.Kotlin
                             WriteSpace();
 
                             WriteChildren();
-
+                            WriteNewLine();
                             break;
                         case "paramref":
                             Write("{@link ");
@@ -275,7 +275,12 @@ namespace Phase.Translator.Kotlin
                             var remarks = element.Parent.Elements("remarks");
                             foreach (var remark in remarks)
                             {
-                                WriteDocLines(remark.Value);
+                                WriteNewLine();
+                                Write(" * ");
+                                foreach (var child in remark.Nodes())
+                                {
+                                    WriteDocumentation(crefs, child);
+                                }
                             }
 
                             WriteNewLine();
@@ -306,6 +311,7 @@ namespace Phase.Translator.Kotlin
                             Write("<" + element.Name.LocalName + ">");
                             WriteNewLine();
                             WriteChildren();
+                                                        WriteNewLine();
 
                             Write("</" + element.Name.LocalName + ">");
                             break;
@@ -395,41 +401,41 @@ namespace Phase.Translator.Kotlin
             }
 
 
-            // Automatic Delegate wrapping
-            if (type == null && convertedType?.TypeKind == TypeKind.Delegate)
-            {
-                // TODO: can be changed to this::Method or Class::Method
-                WriteOpenParentheses();
+            //// Automatic Delegate wrapping
+            //if (type == null && convertedType?.TypeKind == TypeKind.Delegate)
+            //{
+            //    // TODO: can be changed to this::Method or Class::Method
+            //    WriteOpenParentheses();
 
-                var invoke = ((INamedTypeSymbol)convertedType).DelegateInvokeMethod;
-                var isFirst = true;
-                foreach (var param in invoke.Parameters)
-                {
-                    if (!isFirst) WriteComma();
-                    isFirst = false;
-                    Write(param.Name);
-                }
+            //    var invoke = ((INamedTypeSymbol)convertedType).DelegateInvokeMethod;
+            //    var isFirst = true;
+            //    foreach (var param in invoke.Parameters)
+            //    {
+            //        if (!isFirst) WriteComma();
+            //        isFirst = false;
+            //        Write(param.Name);
+            //    }
 
-                WriteCloseParentheses();
+            //    WriteCloseParentheses();
 
-                Write("->");
+            //    Write("->");
 
-                Write(result);
+            //    Write(result);
 
-                WriteOpenParentheses();
+            //    WriteOpenParentheses();
 
-                isFirst = true;
-                foreach (var param in invoke.Parameters)
-                {
-                    if (!isFirst) WriteComma();
-                    isFirst = false;
-                    Write(param.Name);
-                }
+            //    isFirst = true;
+            //    foreach (var param in invoke.Parameters)
+            //    {
+            //        if (!isFirst) WriteComma();
+            //        isFirst = false;
+            //        Write(param.Name);
+            //    }
 
-                WriteCloseParentheses();
+            //    WriteCloseParentheses();
 
-                return;
-            }
+            //    return;
+            //}
 
             // implicit cast
             if (convertedType != null && type != null && !type.Equals(convertedType))
@@ -443,7 +449,7 @@ namespace Phase.Translator.Kotlin
 
                 if (convertedType.TypeKind == TypeKind.Enum)
                 {
-                    switch (convertedType.SpecialType)
+                    switch (type.SpecialType)
                     {
                         case SpecialType.System_Byte:
                         case SpecialType.System_SByte:
@@ -455,23 +461,7 @@ namespace Phase.Translator.Kotlin
                         case SpecialType.System_UInt64:
                             WriteType(convertedType);
                             WriteDot();
-                            Write("fromValue(", result, ")");
-                            return;
-                    }
-                }
-
-                if (type.SpecialType == SpecialType.System_Int32)
-                {
-                    switch (convertedType.SpecialType)
-                    {
-                        case SpecialType.System_Byte:
-                        case SpecialType.System_SByte:
-                        case SpecialType.System_Int16:
-                        case SpecialType.System_UInt16:
-                            Write(result);
-                            Write(".to");
-                            Write(Emitter.GetTypeName(convertedType, true, true, false));
-                            WriteOpenCloseParentheses();
+                            Write("fromValue(", result, ".toInt())");
                             return;
                     }
                 }
@@ -512,7 +502,7 @@ namespace Phase.Translator.Kotlin
                         else if (type.TypeKind == TypeKind.Enum)
                         {
                             WriteDot();
-                            Write("getValue()");
+                            Write("value");
                         }
                         return;
                 }
@@ -607,7 +597,7 @@ namespace Phase.Translator.Kotlin
                     Write(">");
                 }
             }
-
+            Write("?");
         }
 
         protected void WriteDefaultFileHeader()
@@ -712,6 +702,7 @@ namespace Phase.Translator.Kotlin
                                 var singleParamType = Emitter.GetTypeInfo(value[0]);
                                 if (singleParamType.ConvertedType.Equals(param.Type))
                                 {
+                                    Write("*");
                                     EmitTree(value[0], cancellationToken);
                                 }
                                 else
@@ -736,7 +727,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else if (param.IsOptional)
                             {
-                                if (Emitter.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode, out var callerValue))
+                                if (EmitterContext.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode, out var callerValue))
                                 {
                                     Write(callerValue);
                                 }
@@ -834,6 +825,62 @@ namespace Phase.Translator.Kotlin
                     throw new PhaseCompilerException("Unknown constant type: " + constField.Type);
             }
         }
+
+        protected void WriteMeta(ISymbol node, CancellationToken cancellationToken)
+        {
+            foreach (var attribute in node.GetAttributes())
+            {
+                var meta = Emitter.GetMeta(attribute.AttributeClass);
+                if (!string.IsNullOrEmpty(meta))
+                {
+                    Write(meta);
+                    if (!meta.Contains("(") && attribute.ConstructorArguments.Length > 0)
+                    {
+                        Write("(");
+
+                        for (int i = 0; i < attribute.ConstructorArguments.Length; i++)
+                        {
+                            if (i > 0) WriteComma();
+                            switch (attribute.ConstructorArguments[0].Type.SpecialType)
+                            {
+                                case SpecialType.System_Boolean:
+                                    Write((bool)attribute.ConstructorArguments[0].Value ? "true" : "false");
+                                    break;
+                                case SpecialType.System_Char:
+                                case SpecialType.System_SByte:
+                                case SpecialType.System_Byte:
+                                case SpecialType.System_Int16:
+                                case SpecialType.System_UInt16:
+                                case SpecialType.System_Int32:
+                                case SpecialType.System_UInt32:
+                                case SpecialType.System_Int64:
+                                case SpecialType.System_UInt64:
+                                    Write((int)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_Decimal:
+                                    Write((decimal)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_Single:
+                                    Write((float)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_Double:
+                                    Write((double)attribute.ConstructorArguments[0].Value);
+                                    break;
+                                case SpecialType.System_String:
+                                    Write("\"" + attribute.ConstructorArguments[0].Value + "\"");
+                                    break;
+                                default:
+                                    throw new PhaseCompilerException("Only built-in types supported for meta constructor");
+                            }
+                        }
+
+                        Write(")");
+                    }
+                    WriteNewLine();
+                }
+            }
+        }
+
     }
 
     public abstract class AbstractKotlinEmitterBlock<T> : AbstractKotlinEmitterBlock where T : SyntaxNode

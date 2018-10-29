@@ -410,7 +410,7 @@ namespace Phase.Translator.Haxe
                 }
                 else
                 {
-                    meta = Emitter.GetHaxeMeta(attribute.AttributeClass);
+                    meta = Emitter.GetMeta(attribute.AttributeClass);
                     printArguments = true;
                 }
 
@@ -908,7 +908,7 @@ namespace Phase.Translator.Haxe
                             }
                             else if (param.IsOptional)
                             {
-                                if (Emitter.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode,
+                                if (EmitterContext.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode,
                                     out var callerValue))
                                 {
                                     Write(callerValue);

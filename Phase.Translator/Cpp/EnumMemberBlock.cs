@@ -17,7 +17,7 @@ namespace Phase.Translator.Cpp
         {
             WriteComments(_enumMember, true, cancellationToken);
 
-            Write(Emitter.GetSymbolName(_enumMember));
+            Write(EmitterContext.GetSymbolName(_enumMember));
             Write(" = ");
             Write(_enumMember.ConstantValue);
 

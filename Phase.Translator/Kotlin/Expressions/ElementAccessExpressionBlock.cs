@@ -13,7 +13,7 @@ namespace Phase.Translator.Kotlin.Expressions
             var symbol = Emitter.GetSymbolInfo(Node);
             if (symbol.Symbol != null && symbol.Symbol.Kind == SymbolKind.Property
                 && !Emitter.IsNativeIndexer(symbol.Symbol)
-            )                
+            )
             {
                 var property = ((IPropertySymbol)symbol.Symbol);
 
@@ -61,13 +61,18 @@ namespace Phase.Translator.Kotlin.Expressions
                 }
             }
             EmitTree(Node.Expression, cancellationToken);
-            for (int i = 0; i < Node.ArgumentList.Arguments.Count; i++)
+
+            if (Node.ArgumentList.Arguments.Count > 0)
             {
-                Write("!!");
-                WriteOpenBracket();
-                EmitTree(Node.ArgumentList.Arguments[i], cancellationToken);
-                WriteCloseBracket();
+                foreach (var t in Node.ArgumentList.Arguments)
+                {
+                    Write("!!");
+                    WriteOpenBracket();
+                    EmitTree(t, cancellationToken);
+                    WriteCloseBracket();
+                }
             }
+
             return AutoCastMode.Default;
         }
     }

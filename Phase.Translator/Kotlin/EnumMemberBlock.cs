@@ -17,11 +17,14 @@ namespace Phase.Translator.Kotlin
         {
             WriteComments(_field, cancellationToken);
 
-            Write(_field.Name);
+            Write("@JvmStatic");
+            WriteNewLine();
+            Write("public val ", Emitter.GetFieldName(_field), " = ");
+            Write(Emitter.GetTypeName(_field.ContainingType, true, true, false));
             WriteOpenParentheses();
             Write(_field.ConstantValue);
             WriteCloseParentheses();
-
+            WriteSemiColon(true);
             WriteComments(_field, false, cancellationToken);
         }
     }

@@ -110,7 +110,7 @@ namespace Phase.Translator.Cpp.Expressions
                         {
                             Write(tmpvar);
                             Write("->");
-                            Write(Emitter.GetSymbolName(left.Symbol));
+                            Write(EmitterContext.GetSymbolName(left.Symbol));
 
                             Write(" = ");
 
@@ -123,7 +123,7 @@ namespace Phase.Translator.Cpp.Expressions
                     {
                         Write(tmpvar);
                         Write("->");
-                        Write(Emitter.GetSymbolName(addMethod));
+                        Write(EmitterContext.GetSymbolName(addMethod));
                         WriteMethodInvocation(addMethod, new[]
                         {
                             new ParameterInvocationInfo(expression)

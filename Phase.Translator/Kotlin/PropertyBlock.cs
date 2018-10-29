@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -30,7 +31,7 @@ namespace Phase.Translator.Kotlin
             }
 
             WriteComments(_property, cancellationToken);
-
+            WriteMeta(_property, cancellationToken);
             if (_property.IsStatic)
             {
                 Write("@JvmStatic");
@@ -41,10 +42,15 @@ namespace Phase.Translator.Kotlin
             {
                 Write("override ");
             }
+            else if (_property.IsVirtual)
+            {
+                Write("open ");
+            }
             if (_property.IsAbstract && _property.ContainingType.TypeKind != TypeKind.Interface)
             {
                 Write("abstract ");
             }
+            
 
             WriteAccessibility(_property.DeclaredAccessibility);
             if (_property.SetMethod != null)
@@ -61,14 +67,14 @@ namespace Phase.Translator.Kotlin
             Write(" ", propertyName, " : ");
             WriteType(_property.Type);
 
-            if (declaration != null && _property.ContainingType.TypeKind != TypeKind.Interface)
+            if (declaration != null && _property.ContainingType.TypeKind != TypeKind.Interface && !_property.IsAbstract)
             {
                 if (declaration.Initializer != null)
                 {
                     Write(" = ");
                     EmitTree(declaration.Initializer.Value);
                 }
-                else if (autoProperty)
+                else if (autoProperty && _property.SetMethod != null)
                 {
                     Write(" = ");
                     Write(Emitter.GetDefaultValue(_property.Type));
@@ -99,16 +105,7 @@ namespace Phase.Translator.Kotlin
 
                     if (getter != null)
                     {
-                        if (getter.Modifiers.Any(SyntaxKind.PrivateKeyword))
-                        {
-                            Write("private ");
-                            if (autoProperty)
-                            {
-                                Write("get");
-                                WriteNewLine();
-                            }
-                        }
-                        else if (getter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
+                        if (getter.Modifiers.Any(SyntaxKind.PrivateKeyword) || getter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
                         {
                             Write("protected ");
                             if (autoProperty)
@@ -131,21 +128,29 @@ namespace Phase.Translator.Kotlin
                             {
                                 EmitTree(getter.Body);
                             }
+                            else if(!_property.IsAbstract)
+                            {
+                                Write(" = ");
+                                var backingField = _property.ContainingType
+                                    .GetMembers()
+                                    .OfType<IFieldSymbol>()
+                                    .FirstOrDefault(f => f.AssociatedSymbol == _property);
+                                if (backingField == null)
+                                {
+                                    Write("/* TODO */");
+                                }
+                                else
+                                {
+                                    Write(Emitter.GetFieldName(backingField));
+                                }
+                            }
                             WriteNewLine();
                         }
                     }
+
                     if (setter != null)
                     {
-                        if (setter.Modifiers.Any(SyntaxKind.PrivateKeyword))
-                        {
-                            Write("private ");
-                            if (autoProperty)
-                            {
-                                Write("set");
-                                WriteNewLine();
-                            }
-                        }
-                        else if (setter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
+                        if (setter.Modifiers.Any(SyntaxKind.PrivateKeyword) || setter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
                         {
                             Write("protected ");
                             if (autoProperty)
@@ -157,26 +162,46 @@ namespace Phase.Translator.Kotlin
 
                         if (!autoProperty)
                         {
-                            Write("set()");
-
+                            Write("set(v)");
+                            BeginBlock();
                             if (setter.ExpressionBody != null)
                             {
-                                Write(" = ");
+                                Write("var value = v;");
+                                WriteNewLine();
                                 EmitTree(setter.ExpressionBody);
                             }
                             else if (setter.Body != null)
                             {
-                                EmitTree(setter.Body);
+                                Write("var value = v;");
+                                WriteNewLine();
+                                foreach (var statement in setter.Body.Statements)
+                                {
+                                    EmitTree(statement);
+                                }
                             }
-                            WriteNewLine();
+                            else if (!_property.IsAbstract)
+                            {
+                                var backingField = _property.ContainingType
+                                    .GetMembers()
+                                    .OfType<IFieldSymbol>()
+                                    .FirstOrDefault(f => f.AssociatedSymbol == _property);
+                                if (backingField == null)
+                                {
+                                    Write("/* TODO */");
+                                }
+                                else
+                                {
+                                    Write(Emitter.GetFieldName(backingField), " = v");
+                                    WriteSemiColon();
+                                }
+                                WriteNewLine();
+                            }
+                            EndBlock(true);
                         }
                     }
                 }
             }
-            else
-            {
-                WriteNewLine();
-            }
+            WriteNewLine();
         }
     }
 }

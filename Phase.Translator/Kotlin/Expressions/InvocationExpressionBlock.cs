@@ -199,12 +199,20 @@ namespace Phase.Translator.Kotlin.Expressions
                 else
                 {
                     EmitTree(Node.Expression, cancellationToken);
+
                     if (isDelegateInvocation)
                     {
-                        Write("!!.");
-                        Write(Emitter.GetMethodName(methodSymbol));
+                        Write("!!");
                     }
+
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
+
+                    EmitterContext.WriteTypeParameterArrayCast(methodSymbol.OriginalDefinition.ReturnType, methodSymbol.ReturnType);
+
+                    if (methodSymbol.OriginalDefinition.ReturnType.TypeKind == TypeKind.TypeParameter &&  methodSymbol.ReturnType.IsValueType)
+                    {
+                        Write("!!");
+                    }
                 }
             }
             else

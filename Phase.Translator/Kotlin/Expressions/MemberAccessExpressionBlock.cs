@@ -60,14 +60,14 @@ namespace Phase.Translator.Kotlin.Expressions
             {
                 return WriteConstant(constField);
             }
-            if (member.Symbol != null
-                && member.Symbol is IFieldSymbol enumField
-                && enumField.ContainingType.TypeKind == TypeKind.Enum
-                && EmitterContext.IsCaseLabel)
-            {
-                Write(enumField.Name);
-                return AutoCastMode.Default;
-            }
+            //if (member.Symbol != null
+            //    && member.Symbol is IFieldSymbol enumField
+            //    && enumField.ContainingType.TypeKind == TypeKind.Enum
+            //    && EmitterContext.IsCaseLabel)
+            //{
+            //    Write(enumField.Name);
+            //    return AutoCastMode.Default;
+            //}
 
             if (leftHandSide.Symbol == null)
             {
@@ -95,16 +95,39 @@ namespace Phase.Translator.Kotlin.Expressions
             }
             else
             {
-                if (member.Symbol.IsStatic)
+                if (member.Symbol.Name == "Value" && member.Symbol.ContainingType.OriginalDefinition.SpecialType ==
+                    SpecialType.System_Nullable_T)
                 {
-                    Write(".");
+                    Write("!!");
                 }
                 else
                 {
-                    Write("!!.");
+                    bool accessOpWritten = false;
+                    if (member.Symbol.Kind == SymbolKind.Method)
+                    {
+                        var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
+                        if (typeInfo.ConvertedType?.TypeKind == TypeKind.Delegate)
+                        {
+                            Write("!!::");
+                            accessOpWritten = true;
+                        }
+                    }
+
+                    if (!accessOpWritten)
+                    {
+                        if (member.Symbol.IsStatic || Node.Expression.Kind() == SyntaxKind.BaseExpression)
+                        {
+                            Write(".");
+                        }
+                        else
+                        {
+                            Write("!!.");
+                        }
+                    }
+                    Write(EmitterContext.GetSymbolName(member.Symbol));
                 }
-                Write(Emitter.GetSymbolName(member.Symbol));
             }
+
 
             return AutoCastMode.Default;
         }

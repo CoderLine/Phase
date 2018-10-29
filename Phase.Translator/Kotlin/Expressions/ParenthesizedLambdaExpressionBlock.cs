@@ -11,14 +11,11 @@ namespace Phase.Translator.Kotlin.Expressions
     {
         protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {
-            WriteOpenBrace();
+            EmitterContext.AddLambdaNameForReturn();
 
             if (Node.ParameterList.Parameters.Count > 0)
             {
-                WriteOpenParentheses();
-
-                var type = Emitter.GetTypeInfo(Node).Type;
-                var method = (type as INamedTypeSymbol)?.DelegateInvokeMethod;
+                WriteOpenBrace();
 
                 for (int i = 0; i < Node.ParameterList.Parameters.Count; i++)
                 {
@@ -26,26 +23,65 @@ namespace Phase.Translator.Kotlin.Expressions
                     {
                         WriteComma();
                     }
-
-                    var parameter = Emitter.GetDeclaredSymbol(Node.ParameterList.Parameters[i], cancellationToken);
-
-                    if (Node.ParameterList.Parameters[i].Type != null)
-                    {
-                        var needsBoxedType = method != null && method.Parameters[i].OriginalDefinition.Type.TypeKind ==
-                                             TypeKind.TypeParameter;
-                        Write(Emitter.GetTypeName(parameter.Type, false, false));
-                        WriteSpace();
-                    }
-
                     Write(Node.ParameterList.Parameters[i].Identifier.Text);
+
+                    WriteColon();
+                    var parameter = Emitter.GetDeclaredSymbol(Node.ParameterList.Parameters[i], cancellationToken);
+                    Write(Emitter.GetTypeName(parameter.Type, false, false));
                 }
 
-                WriteCloseParentheses();
                 Write(" -> ");
+
+                if (Node.Body is BlockSyntax block)
+                {
+                    PushWriter();
+                    WriteOpenBrace();
+                    WriteNewLine();
+                    foreach (var statement in block.Statements)
+                    {
+                        EmitTree(statement, cancellationToken);
+                    }
+                    WriteCloseBrace();
+                    var body = PopWriter();
+
+                    if (EmitterContext.WasLambdaNameForReturnUsed(out var lambdaName))
+                    {
+                        Write("run ", lambdaName, "@");
+                    }
+                    Write(body);
+                }
+                else
+                {
+                    EmitTree(Node.Body, cancellationToken);
+                }
+            }
+            else if (Node.Body is BlockSyntax block)
+            {
+                PushWriter();
+                WriteOpenBrace();
+                WriteNewLine();
+                foreach (var statement in block.Statements)
+                {
+                    EmitTree(statement, cancellationToken);
+                }
+                var body = PopWriter();
+
+                if (EmitterContext.WasLambdaNameForReturnUsed(out var lambdaName))
+                {
+                    Write("run ", lambdaName, "@");
+                }
+                Write(body);
+            }
+            else
+            {
+                WriteOpenBrace();
+                EmitTree(Node.Body, cancellationToken);
             }
 
-            EmitTree(Node.Body, cancellationToken);
             WriteCloseBrace();
+            EmitterContext.RemoveLambdaNameForReturn();
+
+
             return AutoCastMode.SkipCast;
         }
     }

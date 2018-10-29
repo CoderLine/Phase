@@ -7,12 +7,22 @@ namespace Phase.Translator.Kotlin.Statements
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            PushWriter();
+            EmitTree(Node.Statement, cancellationToken);
+            var body = PopWriter();
+
+            if (EmitterContext.LoopNames.TryGetValue(Node, out var name))
+            {
+                Write(name, "@ ");
+                EmitterContext.LoopNames.Remove(Node);
+            }
+
             WriteWhile();
             WriteOpenParentheses();
             EmitTree(Node.Condition, cancellationToken);
             WriteCloseParentheses();
             WriteNewLine();
-            EmitTree(Node.Statement, cancellationToken);
+            Write(body);
         }
     }
 }

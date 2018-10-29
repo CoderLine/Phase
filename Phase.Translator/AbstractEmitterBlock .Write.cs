@@ -12,6 +12,12 @@ namespace Phase.Translator
             set { Writer.IsNewLine = value; }
         }
 
+        public int Level
+        {
+            get => Writer.Level;
+            set => Writer.Level = value;
+        }
+
         public void Indent()
         {
             Writer.Indent();

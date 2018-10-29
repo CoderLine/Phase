@@ -7,10 +7,14 @@ namespace Phase.Translator.Kotlin.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            Write("if");
+            WriteOpenParentheses();
             EmitTree(Node.Condition, cancellationToken);
-            Write(" ? ");
+            WriteCloseParentheses();
+            WriteSpace();
             EmitTree(Node.WhenTrue, cancellationToken);
-            Write(" : ");
+            WriteSpace();
+            WriteElse();
             EmitTree(Node.WhenFalse, cancellationToken);
         }
     }

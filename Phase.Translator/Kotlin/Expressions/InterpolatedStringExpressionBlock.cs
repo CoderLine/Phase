@@ -12,7 +12,7 @@ namespace Phase.Translator.Kotlin.Expressions
         {
             var num = 0;
             var formatArguments = new List<ExpressionSyntax>();
-            Write("system.Phase.format(");
+            Write("system.StringExtensions.format(");
             Write("\"");
             foreach (var content in Node.Contents)
             {

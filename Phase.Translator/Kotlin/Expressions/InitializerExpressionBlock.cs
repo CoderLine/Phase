@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Kotlin.Expressions
@@ -9,47 +10,25 @@ namespace Phase.Translator.Kotlin.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            var type = Emitter.GetTypeInfo(Node, cancellationToken);
-            if (type.Type is IArrayTypeSymbol array)
+            var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
+            var type = typeInfo.Type ?? typeInfo.ConvertedType;
+            string arrayFunction = null;
+            if (type is IArrayTypeSymbol array)
             {
-                string arrayFunction;
-                var elementType = array.ElementType;
-                switch (elementType.SpecialType)
+                arrayFunction = Emitter.GetArrayCreationFunctionName(array);
+            }
+            else if (Node.Kind() == SyntaxKind.ArrayInitializerExpression && Node.Expressions.Count > 0)
+            {
+                typeInfo = Emitter.GetTypeInfo(Node.Expressions[0]);
+                type = typeInfo.Type ?? typeInfo.ConvertedType;
+                if (type != null)
                 {
-                    case SpecialType.System_SByte:
-                    case SpecialType.System_Byte:
-                        arrayFunction = "byteArrayOf";
-                        break;
-                    case SpecialType.System_Int16:
-                    case SpecialType.System_UInt16:
-                        arrayFunction = "shortArrayOf";
-                        break;
-                    case SpecialType.System_Int32:
-                    case SpecialType.System_UInt32:
-                        arrayFunction = "intArrayOf";
-                        break;
-                    case SpecialType.System_Int64:
-                    case SpecialType.System_UInt64:
-                        arrayFunction = "longArrayOf";
-                        break;
-                    case SpecialType.System_Boolean:
-                        arrayFunction = "booleanArrayOf";
-                        break;
-                    case SpecialType.System_Char:
-                        arrayFunction = "charArrayOf";
-                        break;
-                    case SpecialType.System_Single:
-                        arrayFunction = "floatArrayOf";
-                        break;
-                    case SpecialType.System_Decimal:
-                    case SpecialType.System_Double:
-                        arrayFunction = "doubleArrayOf";
-                        break;
-                    default:
-                        arrayFunction = "arrayOf";
-                        break;
+                    arrayFunction = Emitter.GetArrayCreationFunctionName(type);
                 }
+            }
 
+            if (arrayFunction != null)
+            {
                 Write(arrayFunction);
                 WriteOpenParentheses();
 

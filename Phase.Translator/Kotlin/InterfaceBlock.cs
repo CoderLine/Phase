@@ -53,12 +53,16 @@ namespace Phase.Translator.Kotlin
                 WriteNewLine();
             }
 
+            Write("import phase.extensions.*;");
+            WriteNewLine();
+
             EmitNested(cancellationToken);
         }
 
         public void EmitNested(CancellationToken cancellationToken)
         {
             WriteComments(_type.TypeSymbol, cancellationToken);
+            WriteMeta(_type.TypeSymbol, cancellationToken);
 
             WriteAccessibility(_type.TypeSymbol.DeclaredAccessibility);
             Write("interface ", _name);

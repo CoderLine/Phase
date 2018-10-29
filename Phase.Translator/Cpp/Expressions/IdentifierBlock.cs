@@ -102,7 +102,7 @@ namespace Phase.Translator.Cpp.Expressions
                             EmitterContext.ImportType(e.Type);
                             break;
                     }
-                    Write(Emitter.GetSymbolName(resolve.Symbol));
+                    Write(EmitterContext.GetSymbolName(resolve.Symbol));
                 }
             }
 

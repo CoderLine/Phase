@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -12,7 +13,15 @@ namespace Phase.Translator.Kotlin.Expressions
             var leftSymbol = Emitter.GetSymbolInfo(Node.Left);
             var leftType = Emitter.GetTypeInfo(Node.Left);
             var rightType = Emitter.GetTypeInfo(Node.Right);
+            var isStatement = Node.Parent is ExpressionStatementSyntax;
 
+            if (!isStatement)
+            {
+                Write("run ");
+                WriteOpenBrace(true);
+            }
+
+            var assignmentHandled = false;
             switch (Node.Kind())
             {
                 case SyntaxKind.OrAssignmentExpression:
@@ -21,72 +30,109 @@ namespace Phase.Translator.Kotlin.Expressions
                     EmitTree(Node.Left, cancellationToken);
                     Write(" or ");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                    return;
+                    assignmentHandled = true;
+                    break;
                 case SyntaxKind.AndAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
                     Write(" and ");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                    return;
+                    assignmentHandled = true;
+                    break;
                 case SyntaxKind.ExclusiveOrAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
                     Write(" xor ");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                    return;
+                    assignmentHandled = true;
+                    break;
                 case SyntaxKind.LeftShiftAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
                     Write(" shl ");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                    return;
+                    assignmentHandled = true;
+                    break;
                 case SyntaxKind.RightShiftAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
                     Write(" shr ");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                    return;
+                    assignmentHandled = true;
+                    break;
             }
 
-            if (leftSymbol.Symbol is IPropertySymbol prop && prop.SetMethod != null)
+            if (!assignmentHandled)
             {
-                var template = Emitter.GetTemplate(prop.SetMethod);
-                if (template != null)
+                if (leftSymbol.Symbol is IEventSymbol evt)
                 {
-                    if (template.Variables.TryGetValue("this", out var thisVar))
-                    {
-                        PushWriter();
-                        if (leftSymbol.Symbol.IsStatic)
-                        {
-                            Write(Emitter.GetTypeName(leftSymbol.Symbol.ContainingType, false, true));
-                        }
-                        else
-                        {
-                            EmitTree(Node.Left, cancellationToken);
-                        }
+                    var method = Node.Kind() == SyntaxKind.AddAssignmentExpression
+                        ? evt.AddMethod
+                        : evt.RemoveMethod;
 
-                        thisVar.RawValue = PopWriter();
+                    if (Node.Left is MemberAccessExpressionSyntax memberAccess)
+                    {
+                        EmitTree(memberAccess.Expression);
+                        Write("!!.");
                     }
 
-                    if (template.Variables.TryGetValue("value", out var variable))
+                    Write(Emitter.GetMethodName(method));
+                    WriteMethodInvocation(method, new List<ParameterInvocationInfo>
                     {
-                        PushWriter();
-                        EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                        variable.RawValue = PopWriter();
-                    }
+                        new ParameterInvocationInfo(Node.Right)
+                    }, cancellationToken: cancellationToken);
+                    assignmentHandled = true;
+                }
+                else if (leftSymbol.Symbol is IPropertySymbol prop && prop.SetMethod != null)
+                {
+                    var template = Emitter.GetTemplate(prop.SetMethod);
+                    if (template != null)
+                    {
+                        if (template.Variables.TryGetValue("this", out var thisVar))
+                        {
+                            PushWriter();
+                            if (leftSymbol.Symbol.IsStatic)
+                            {
+                                Write(Emitter.GetTypeName(leftSymbol.Symbol.ContainingType, false, true));
+                            }
+                            else
+                            {
+                                EmitTree(Node.Left, cancellationToken);
+                            }
 
-                    Write(template.ToString());
-                    return;
+                            thisVar.RawValue = PopWriter();
+                        }
+
+                        if (template.Variables.TryGetValue("value", out var variable))
+                        {
+                            PushWriter();
+                            EmitValue(leftType.Type, rightType.Type, cancellationToken);
+                            variable.RawValue = PopWriter();
+                        }
+
+                        Write(template.ToString());
+                        return;
+                    }
+                }
+
+                if (!assignmentHandled)
+                {
+                    EmitTree(Node.Left, cancellationToken);
+                    Write(Node.OperatorToken.Text);
+                    EmitValue(leftType.Type, rightType.Type, cancellationToken);
                 }
             }
 
-            EmitTree(Node.Left, cancellationToken);
-            Write(Node.OperatorToken.Text);
-            EmitValue(leftType.Type, rightType.Type, cancellationToken);
+            if (!isStatement)
+            {
+                WriteSemiColon();
+                EmitTree(Node.Left, cancellationToken);
+                WriteCloseBrace(true);
+            }
         }
 
         private void EmitValue(ITypeSymbol leftType, ITypeSymbol rightType, CancellationToken cancellationToken)

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -50,12 +51,16 @@ namespace Phase.Translator.Kotlin
                 WriteNewLine();
             }
 
+            Write("import phase.extensions.*;");
+            WriteNewLine();
+
             EmitNested(cancellationToken);
         }
 
         public void EmitNested(CancellationToken cancellationToken)
         {
             WriteComments(_type.TypeSymbol, cancellationToken);
+            WriteMeta(_type.TypeSymbol, cancellationToken);
 
             WriteAccessibility(_type.TypeSymbol.DeclaredAccessibility);
 
@@ -105,6 +110,7 @@ namespace Phase.Translator.Kotlin
                 if (_type.TypeSymbol.Interfaces.Length > 0)
                 {
                     if (!colonWritten) Write(" : ");
+                    else {  Write(", ");}
                     for (int i = 0; i < _type.TypeSymbol.Interfaces.Length; i++)
                     {
                         if (i > 0) WriteComma();
@@ -117,6 +123,7 @@ namespace Phase.Translator.Kotlin
             WriteNewLine();
             BeginBlock();
 
+            var methods = new List<IMethodSymbol>();
             foreach (var group in _type.TypeSymbol.GetMembers().GroupBy(m => m.IsStatic))
             {
                 if (group.Key)
@@ -141,6 +148,7 @@ namespace Phase.Translator.Kotlin
                         case SymbolKind.Method:
                             var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol)member);
                             methodBlock.Emit(cancellationToken);
+                            methods.Add((IMethodSymbol) member);
                             break;
                         case SymbolKind.Property:
                             var propertyBlock = new PropertyBlock(EmitterContext, (IPropertySymbol)member);
@@ -160,6 +168,13 @@ namespace Phase.Translator.Kotlin
             }
 
             EndBlock();
+
+            // reified methods
+            foreach (var methodSymbol in methods)
+            {
+                var methodBlock = new MethodBlock(EmitterContext, methodSymbol, true);
+                methodBlock.Emit(cancellationToken);
+            }
 
             WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);
         }

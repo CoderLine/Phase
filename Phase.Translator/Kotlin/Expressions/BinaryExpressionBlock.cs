@@ -67,31 +67,18 @@ namespace Phase.Translator.Kotlin.Expressions
                     DoEmit(">=", cancellationToken);
                     break;
                 case SyntaxKind.AsExpression:
-
-                    Write("system.Phase.as");
-                    Write("(");
-                    EmitTree(Node.Right, cancellationToken);
-                    Write(".class");
-                    WriteComma();
                     EmitTree(Node.Left, cancellationToken);
-                    Write(")");
-
+                    Write(" as ");
+                    EmitTree(Node.Right, cancellationToken);
                     break;
                 case SyntaxKind.IsExpression:
-                    Write("system.Phase.is");
-                    Write("(");
-                    EmitTree(Node.Right, cancellationToken);
-                    Write(".class");
-                    WriteComma();
                     EmitTree(Node.Left, cancellationToken);
-                    Write(")");
+                    Write(" is ");
+                    EmitTree(Node.Right, cancellationToken);
                     break;
                 case SyntaxKind.CoalesceExpression:
-                    // TODO: this way the left expression is executed twice, 
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" ? ");
-                    EmitTree(Node.Left, cancellationToken);
-                    Write(" : ");
+                    Write(" ?? ");
                     EmitTree(Node.Right, cancellationToken);
                     break;
                 case SyntaxKind.SimpleMemberAccessExpression:

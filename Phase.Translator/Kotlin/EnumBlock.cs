@@ -51,41 +51,35 @@ namespace Phase.Translator.Kotlin
                 WriteSemiColon(true);
                 WriteNewLine();
             }
+            Write("import phase.extensions.*;");
+            WriteNewLine();
+
             EmitNested(cancellationToken);
         }
 
         public void EmitNested(CancellationToken cancellationToken)
         {
             WriteComments(_type.TypeSymbol, cancellationToken);
+            WriteMeta(_type.TypeSymbol, cancellationToken);
 
             WriteAccessibility(_type.TypeSymbol.DeclaredAccessibility);
-            Write("enum class ", _name, "(val value : ");
+            Write("class ", _name, "(val value : ");
             WriteType(_type.TypeSymbol.EnumUnderlyingType);
             Write(")");
             WriteNewLine();
 
             BeginBlock();
 
-            var first = true;
+            Write("companion object");
+            WriteNewLine();
+            BeginBlock();
+
             foreach (var enumMember in _type.TypeSymbol.GetMembers().OfType<IFieldSymbol>())
             {
-                if (!first)
-                {
-                    Write(",");
-                    WriteNewLine();
-                }
-                first = false;
                 var enumMemberBlock = new EnumMemberBlock(EmitterContext, enumMember);
                 enumMemberBlock.Emit(cancellationToken);
             }
 
-            WriteSemiColon(true);
-
-
-            Write("companion object");
-            WriteNewLine();
-
-            BeginBlock();
             Write("@JvmStatic");
             WriteNewLine();
             Write("fun fromValue");
@@ -108,11 +102,11 @@ namespace Phase.Translator.Kotlin
             {
                 Write(enumMember.ConstantValue);
                 Write(" -> return ");
-                Write(enumMember.Name);
+                Write(Emitter.GetFieldName(enumMember));
                 WriteSemiColon(true);
             }
 
-            Write("else -> throw IllegalArgumentException(\"Invalid enum value\");");
+            Write("else -> return ", _name, "(value);");
             WriteNewLine();
 
             EndBlock();
@@ -139,15 +133,21 @@ namespace Phase.Translator.Kotlin
             Write("operator fun minus(rhs : ", _name, ") : ", _name, " { return fromValue(value - rhs.value); }");
             WriteNewLine();
 
-            Write("infix fun and(rhs : ", _name, ") : Int { return value and rhs.value; }");
+            Write("operator fun compareTo(rhs : ", _name, ") : Int { return value.compareTo(rhs.value); }");
             WriteNewLine();
 
-            Write("infix fun or(rhs : ", _name, ") : Int { return value or rhs.value; }");
+            Write("override fun equals(rhs : Any? ) : Boolean { if(rhs is ",_name,") return value.equals(rhs.value); else return false; }");
             WriteNewLine();
 
-            Write("infix fun xor(rhs : ", _name, ") : Int { return value xor rhs.value; }");
+            Write("infix fun and(rhs : ", _name, ") : ", _name, " { return fromValue(value and rhs.value); }");
             WriteNewLine();
-            
+
+            Write("infix fun or(rhs : ", _name, ") : ", _name, " { return fromValue(value or rhs.value); }");
+            WriteNewLine();
+
+            Write("infix fun xor(rhs : ", _name, ") : ", _name, " { return fromValue(value xor rhs.value); }");
+            WriteNewLine();
+
             EndBlock();
 
             WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);

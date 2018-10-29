@@ -6,6 +6,7 @@ namespace Phase.Translator
     {
         bool IsNewLine { get; set; }
 
+        int Level { get; set; }
         void Indent();
         void Outdent();
 

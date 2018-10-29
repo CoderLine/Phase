@@ -33,7 +33,7 @@ namespace Phase.Translator.Haxe.Expressions
                         case SyntaxKind.SimpleMemberAccessExpression:
                             if (accessedMember != null)
                             {
-                                Write(Emitter.GetSymbolName(accessedMember));
+                                Write(EmitterContext.GetSymbolName(accessedMember));
                             }
                             else
                             {
@@ -43,7 +43,7 @@ namespace Phase.Translator.Haxe.Expressions
                         case SyntaxKind.IdentifierName:
                             if (accessedMember != null)
                             {
-                                Write(Emitter.GetSymbolName(accessedMember));
+                                Write(EmitterContext.GetSymbolName(accessedMember));
                             }
                             else
                             {

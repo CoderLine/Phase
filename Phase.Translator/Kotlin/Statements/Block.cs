@@ -11,10 +11,11 @@ namespace Phase.Translator.Kotlin.Statements
             switch (Node.Parent.Kind())
             {
                 case SyntaxKind.IfStatement:
+                case SyntaxKind.ElseClause:
                 case SyntaxKind.WhileStatement:
                 case SyntaxKind.DoStatement:
-                //case SyntaxKind.ForStatement:
-                //case SyntaxKind.ForEachStatement:
+                case SyntaxKind.ForStatement:
+                case SyntaxKind.ForEachStatement:
                 case SyntaxKind.LockStatement:
                 case SyntaxKind.CheckedStatement:
                 case SyntaxKind.FixedStatement:
@@ -26,6 +27,8 @@ namespace Phase.Translator.Kotlin.Statements
                 case SyntaxKind.RemoveAccessorDeclaration:
                 case SyntaxKind.GetAccessorDeclaration:
                 case SyntaxKind.SetAccessorDeclaration:
+                case SyntaxKind.ParenthesizedLambdaExpression:
+                case SyntaxKind.FinallyClause:
                     break;
                 default:
                     Write("run ");

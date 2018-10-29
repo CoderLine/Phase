@@ -21,32 +21,7 @@ namespace Phase.Cli
                 Console.WriteLine("Phase.Cli.exe ProjectFile Configuration Platform");
                 return;
             }
-
-            string testSrc =
-@"
-using System;
-
-class Test { 
-public function Main() {
-#if POSITIVE
-    int i = 1;
-#endif 
-
-#if NEGATIVE
-    int x = 2;
-#endif 
-
-#if !POSITIVE
-    int j = 2;
-#endif 
-}
-
-} 
-";
-
-            var tree = CSharpSyntaxTree.ParseText(testSrc,
-                CSharpParseOptions.Default.WithPreprocessorSymbols("POSITIVE"));
-
+            
             var input = new PhaseCompilerInput
             {
                 ProjectFile = args[0],

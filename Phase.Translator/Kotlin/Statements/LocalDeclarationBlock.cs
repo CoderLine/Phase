@@ -10,15 +10,19 @@ namespace Phase.Translator.Kotlin.Statements
             foreach (var var in Node.Declaration.Variables)
             {
                 var type = Emitter.GetTypeSymbol(Node.Declaration.Type);
+                var local = Emitter.GetDeclaredSymbol(var);
 
-                Write("var ", var.Identifier.Text.Replace("@", ""), " : ");
+                Write("var ", EmitterContext.GetSymbolName(local), " : ");
                 Write(Emitter.GetTypeName(type, false, false));
+                Write(" = ");
                 if (var.Initializer != null)
                 {
-                    Write(" = ");
                     EmitTree(var.Initializer.Value, cancellationToken);
                 }
-
+                else
+                {
+                    Write(Emitter.GetDefaultValue(type));
+                }
                 WriteSemiColon(true);
             }
         }

@@ -1,5 +1,6 @@
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Kotlin.Expressions
@@ -13,8 +14,9 @@ namespace Phase.Translator.Kotlin.Expressions
 
             if (sourceType.Type.TypeKind == TypeKind.Enum)
             {
+                Write("(");
                 EmitTree(Node.Expression, cancellationToken);
-                Write(".value.to");
+                Write(").value.to");
                 Write(Emitter.GetTypeName(targetType.Type, true, true, false));
                 WriteOpenCloseParentheses();
             }
@@ -23,10 +25,12 @@ namespace Phase.Translator.Kotlin.Expressions
                 WriteType(targetType.Type);
                 Write(".fromValue(");
                 EmitTree(Node.Expression, cancellationToken);
-                Write(")");
+                Write(".toInt())");
             }
             else
             {
+                EmitTree(Node.Expression, cancellationToken);
+             
                 switch (targetType.Type.SpecialType)
                 {
                     case SpecialType.System_Boolean:
@@ -39,21 +43,21 @@ namespace Phase.Translator.Kotlin.Expressions
                     case SpecialType.System_UInt32:
                     case SpecialType.System_Int64:
                     case SpecialType.System_UInt64:
+                    case SpecialType.System_Single:
+                    case SpecialType.System_Double:
                         if (Emitter.IsIConvertible(sourceType.Type))
                         {
-                            EmitTree(Node.Expression, cancellationToken);
                             WriteDot();
                             Write("to" + Emitter.GetTypeName(targetType.Type, true, true, false));
                             WriteOpenCloseParentheses();
+
                             return AutoCastMode.Default;
                         }
                         break;
                 }
-
-                Write("(");
+                Write(" as ");
                 WriteType(targetType.Type);
-                Write(")");
-                EmitTree(Node.Expression, cancellationToken);
+
                 return AutoCastMode.AddParenthesis;
             }
             return AutoCastMode.Default;

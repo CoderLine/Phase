@@ -32,7 +32,9 @@ namespace Phase.Translator.Kotlin
 
             Write(" : ");
             WriteEventType(((INamedTypeSymbol)_eventSymbol.Type));
-            WriteNewLine();
+
+            Write(" = null");
+            WriteSemiColon(true);
 
             WriteComments(_eventSymbol, false, cancellationToken);
         }

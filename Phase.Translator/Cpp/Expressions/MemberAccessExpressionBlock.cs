@@ -168,11 +168,11 @@ namespace Phase.Translator.Cpp.Expressions
                         WriteMethodInvocation(getMethod, new ParameterInvocationInfo[0], Node, cancellationToken);
                         break;
                     case SymbolKind.Field:
-                        Write(Emitter.GetSymbolName(member.Symbol));
+                        Write(EmitterContext.GetSymbolName(member.Symbol));
                         EmitterContext.ImportType(((IFieldSymbol)member.Symbol).Type);
                         break;
                     default:
-                        Write(Emitter.GetSymbolName(member.Symbol));
+                        Write(EmitterContext.GetSymbolName(member.Symbol));
                         break;
                 }
             }

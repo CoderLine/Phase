@@ -50,6 +50,9 @@ namespace Phase.Translator.Kotlin
                 WriteNewLine();
             }
 
+            Write("import phase.extensions.*;");
+            WriteNewLine();
+
             EmitNested(cancellationToken);
         }
 

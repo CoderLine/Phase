@@ -292,6 +292,7 @@ namespace Phase.Translator.Utils
 
             private string _targetType;
             private string _platform;
+            private string _fallbackAssemblyName;
 
             public string TaskName => "Csc";
 
@@ -302,6 +303,7 @@ namespace Phase.Translator.Utils
 
             public CSharpCompilationHost(string projectFile)
             {
+                _fallbackAssemblyName = Path.GetFileNameWithoutExtension(projectFile);
                 _baseDirectory = Path.GetDirectoryName(projectFile);
 
                 CommandLineArgs = new List<string>();
@@ -318,7 +320,13 @@ namespace Phase.Translator.Utils
                 var resolver = new MetadataFileReferenceResolver(_baseDirectory);
                 var references = args.ResolveMetadataReferences(resolver);
 
-                return Compile(_baseDirectory, args.CompilationOptions, args.ParseOptions, Sources, references,
+                var moduleName = Path.GetFileNameWithoutExtension(args.CompilationOptions.ModuleName);
+                if (string.IsNullOrEmpty(moduleName))
+                {
+                    moduleName = _fallbackAssemblyName;
+                }
+
+                return Compile(_baseDirectory, args.CompilationOptions.WithModuleName(moduleName), args.ParseOptions, Sources, references,
                     cancellationToken);
             }
 
