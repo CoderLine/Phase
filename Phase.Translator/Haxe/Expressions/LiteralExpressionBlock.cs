@@ -22,11 +22,11 @@ namespace Phase.Translator.Haxe.Expressions
                 case SyntaxKind.StringLiteralExpression:
                     if (Node.Token.Text.StartsWith("@"))
                     {
-                        var text = Node.Token.Text.Substring(1)
+                        var text = "\"" + Node.Token.Text.Substring(2, Node.Token.Text.Length - 3)
                             .Replace("\\", "\\\\")
-                            .Replace("\"\"", "\"")
+                            .Replace("\"\"", "\\\"")
                             .Replace("\r", "\\r")
-                            .Replace("\n", "\\n");
+                            .Replace("\n", "\\n") + "\"";
                         Write(text);
                     }
                     else
