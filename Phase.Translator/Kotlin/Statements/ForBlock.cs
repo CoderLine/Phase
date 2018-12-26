@@ -39,6 +39,7 @@ namespace Phase.Translator.Kotlin.Statements
             }
             else
             {
+                // TODO: continue statements can spoil incrementors!
                 EmitTree(Node.Statement, cancellationToken);
             }
 
