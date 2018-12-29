@@ -165,7 +165,6 @@ namespace Phase.MsBuild
                 }
             }
 
-
             try
             {
                 ImmutableArray.Create(1, 2, 3);

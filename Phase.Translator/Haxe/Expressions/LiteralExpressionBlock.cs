@@ -17,7 +17,14 @@ namespace Phase.Translator.Haxe.Expressions
             switch (Node.Kind())
             {
                 case SyntaxKind.NumericLiteralExpression:
-                    Write(Node.Token.Text.TrimEnd('f'));
+                    if (Node.Token.Text.ToLowerInvariant().StartsWith("0x"))
+                    {
+                        Write(Node.Token.Text);
+                    }
+                    else
+                    {
+                        Write(Node.Token.Text.TrimEnd('f'));
+                    }
                     break;
                 case SyntaxKind.StringLiteralExpression:
                     if (Node.Token.Text.StartsWith("@"))

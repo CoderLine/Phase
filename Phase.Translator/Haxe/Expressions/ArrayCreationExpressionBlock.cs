@@ -30,7 +30,7 @@ namespace Phase.Translator.Haxe.Expressions
                 var elementType = Emitter.GetTypeSymbol(Node.Type.ElementType);
                 var specialArray = Emitter.GetSpecialArrayName(elementType);
 
-                if (specialArray != null && Node.Type.RankSpecifiers.Count == 1)
+                if (specialArray != null)
                 {
                     Write(specialArray);
                     WriteDot();
