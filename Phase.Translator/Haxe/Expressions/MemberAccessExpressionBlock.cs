@@ -6,6 +6,7 @@ using Haxe;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.VisualBasic;
 using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe.Expressions
@@ -95,6 +96,25 @@ namespace Phase.Translator.Haxe.Expressions
                 Write(EmitterContext.GetSymbolName(member.Symbol));
             }
 
+            return AutoCastMode.Default;
+        }
+    }
+    
+    public class MemberBindingExpressionBlock : AutoCastBlockBase<MemberBindingExpressionSyntax>
+    {
+        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
+        {
+            var member = Emitter.GetSymbolInfo(Node);
+            if (member.Symbol == null)
+            {
+                WriteDot();
+                Write(Node.Name.Identifier);
+            }
+            else
+            {
+                WriteDot();
+                Write(EmitterContext.GetSymbolName(member.Symbol));
+            }
             return AutoCastMode.Default;
         }
     }

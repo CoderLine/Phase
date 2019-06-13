@@ -243,6 +243,11 @@ namespace Phase.Translator.Haxe
                 Emit<MemberAccessExpressionBlock, MemberAccessExpressionSyntax>(node);
             }
 
+            public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+            {
+                Emit<ConditionalAccessBlock, ConditionalAccessExpressionSyntax>(node);
+            }
+
             public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node)
             {
                 Emit<ElementAccessExpressionBlock, ElementAccessExpressionSyntax>(node);
@@ -266,6 +271,11 @@ namespace Phase.Translator.Haxe
             public override void VisitParenthesizedLambdaExpression(ParenthesizedLambdaExpressionSyntax node)
             {
                 Emit<ParenthesizedLambdaExpressionBlock, ParenthesizedLambdaExpressionSyntax>(node);
+            }
+
+            public override void VisitMemberBindingExpression(MemberBindingExpressionSyntax node)
+            {
+                Emit<MemberBindingExpressionBlock, MemberBindingExpressionSyntax>(node);
             }
 
             public override void VisitCastExpression(CastExpressionSyntax node)

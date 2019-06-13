@@ -296,5 +296,41 @@ namespace Phase.Translator.Haxe
             nss.Reverse();
             return string.Join(".", nss);
         }
+
+        public bool AreTypesEqual(ITypeSymbol a, ITypeSymbol b)
+        {
+            if (a.Equals(b))
+            {
+                return true;
+            }
+
+            if (a.TypeKind != b.TypeKind)
+            {
+                return false;
+            }
+
+            switch (a.TypeKind)
+            {
+                case TypeKind.Array:
+                    var aat = (IArrayTypeSymbol) a;
+                    var bat = (IArrayTypeSymbol) a;
+                    if (aat.Rank != bat.Rank)
+                    {
+                        return false;
+                    }
+                    if (aat.Sizes.Length != bat.Sizes.Length)
+                    {
+                        return false;
+                    }
+                    if (aat.Sizes.Where((t, i) => t != bat.Sizes[i]).Any())
+                    {
+                        return false;
+                    }
+
+                    return AreTypesEqual(aat.ElementType, bat.ElementType);
+                default:
+                    return SymbolEquivalenceComparer.Instance.Equals(a, b);
+            }
+        }
     }
 }

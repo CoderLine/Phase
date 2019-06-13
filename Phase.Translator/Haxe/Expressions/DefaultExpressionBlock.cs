@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -9,7 +10,7 @@ namespace Phase.Translator.Haxe.Expressions
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             var type = Emitter.GetTypeSymbol(Node.Type);
-            Write(Emitter.GetDefaultValue(type));
+            Write(Emitter.GetDefaultValue(type));    
         }
     }
 }

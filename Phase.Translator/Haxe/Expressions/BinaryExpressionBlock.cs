@@ -159,10 +159,9 @@ namespace Phase.Translator.Haxe.Expressions
                 case SyntaxKind.CoalesceExpression:
                     // TODO: this way the left expression is executed twice, 
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" ? ");
-                    EmitTree(Node.Left, cancellationToken);
-                    Write(" : ");
+                    Write(".Coalesce(");
                     EmitTree(Node.Right, cancellationToken);
+                    Write(")");
                     break;
                 case SyntaxKind.SimpleMemberAccessExpression:
                 case SyntaxKind.PointerMemberAccessExpression:

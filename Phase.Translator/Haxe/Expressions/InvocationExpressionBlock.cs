@@ -114,6 +114,7 @@ namespace Phase.Translator.Haxe.Expressions
                                 if (values.Length == 1)
                                 {
                                     var singleParamType = Emitter.GetTypeInfo(values[0]);
+                                    
                                     if (singleParamType.ConvertedType.Equals(param.Type))
                                     {
                                         EmitTree(values[0], cancellationToken);

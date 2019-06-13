@@ -24,6 +24,7 @@ using NLog;
 using Roslyn.Utilities;
 using HostServices = Microsoft.Build.Execution.HostServices;
 using ILogger = Microsoft.Build.Framework.ILogger;
+using LanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 
 namespace Phase.Translator.Utils
 {
@@ -336,7 +337,10 @@ namespace Phase.Translator.Utils
                 var trees = new SyntaxTree[sources.Length];
                 var parseErrors = new ConcurrentBag<Exception>();
 
+                compilationOptions = compilationOptions.WithNullableContextOptions(NullableContextOptions.Enable);
+
                 parseOptions = parseOptions
+                    .WithLanguageVersion(LanguageVersion.CSharp8)
                     .WithDocumentationMode(DocumentationMode.Parse)
                     .WithPreprocessorSymbols(
                         parseOptions.PreprocessorSymbolNames.Concat(new[] {PhaseCompiler.Preprocessor}));

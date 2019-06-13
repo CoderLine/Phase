@@ -877,7 +877,7 @@ namespace Phase.Translator.Haxe
                             if (value.Length == 1)
                             {
                                 var singleParamType = Emitter.GetTypeInfo(value[0]);
-                                if (singleParamType.ConvertedType.Equals(param.Type))
+                                if (Emitter.AreTypesEqual(singleParamType.ConvertedType, param.Type))
                                 {
                                     EmitTree(value[0], cancellationToken);
                                 }

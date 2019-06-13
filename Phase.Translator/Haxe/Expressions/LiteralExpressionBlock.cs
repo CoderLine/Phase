@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -81,6 +82,10 @@ namespace Phase.Translator.Haxe.Expressions
                     break;
                 case SyntaxKind.NullLiteralExpression:
                     Write("null");
+                    break;
+                case SyntaxKind.DefaultLiteralExpression:
+                    var type = Emitter.GetTypeInfo(Node);
+                    Write(Emitter.GetDefaultValue(type.Type));    
                     break;
             }
         }
