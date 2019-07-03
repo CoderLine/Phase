@@ -8,69 +8,177 @@ namespace Phase.Translator.Kotlin.Statements
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            Write("run ");
-            BeginBlock();
+            if (DetectSimpleFor(out var type, out var step))
+            {
+                Write("for");
+                WriteOpenParentheses();
+                
+                Write(Node.Declaration.Variables[0].Identifier.Text);
+                
+                Write(" in ");
 
-            if (Node.Declaration != null)
-            {
-                EmitTree(Node.Declaration, cancellationToken);
-            }
-            else if (Node.Initializers.Count > 0)
-            {
-                foreach (var initializer in Node.Initializers)
+                EmitTree(Node.Declaration.Variables[0].Initializer, cancellationToken);
+
+                switch (type)
                 {
-                    EmitTree(initializer, cancellationToken);
-                    WriteSemiColon(true);
+                    case SyntaxKind.LessThanExpression:
+                        Write(" until ");
+                        break;          
+                    case SyntaxKind.LessThanOrEqualExpression:
+                        Write("..");
+                        break;          
                 }
-            }
+                
+                EmitTree(((BinaryExpressionSyntax)Node.Condition).Right, cancellationToken);
 
-
-            PushWriter();
-            BeginBlock();
-
-            EmitterContext.CurrentForIncrementors.Push(Node.Incrementors);
-
-            if (Node.Statement.Kind() == SyntaxKind.Block)
-            {
-                foreach (var statement in ((BlockSyntax)Node.Statement).Statements)
+                if (step != null)
                 {
-                    EmitTree(statement, cancellationToken);
+                    Write(" step ");
+                    EmitTree(step, cancellationToken);
                 }
+
+                
+                WriteCloseParentheses();
+
+                if (Node.Statement is BlockSyntax)
+                {
+                    WriteNewLine();
+                }
+
+                EmitTree(Node.Statement, cancellationToken);
             }
             else
             {
-                // TODO: continue statements can spoil incrementors!
-                EmitTree(Node.Statement, cancellationToken);
-            }
+                    
+                Write("run ");
+                BeginBlock();
 
-            foreach (var incrementor in Node.Incrementors)
+                if (Node.Declaration != null)
+                {
+                    EmitTree(Node.Declaration, cancellationToken);
+                }
+                else if (Node.Initializers.Count > 0)
+                {
+                    foreach (var initializer in Node.Initializers)
+                    {
+                        EmitTree(initializer, cancellationToken);
+                        WriteSemiColon(true);
+                    }
+                }
+
+
+                PushWriter();
+                BeginBlock();
+
+                EmitterContext.CurrentForIncrementors.Push(Node.Incrementors);
+
+                if (Node.Statement.Kind() == SyntaxKind.Block)
+                {
+                    foreach (var statement in ((BlockSyntax)Node.Statement).Statements)
+                    {
+                        EmitTree(statement, cancellationToken);
+                    }
+                }
+                else
+                {
+                    // TODO: continue statements can spoil incrementors!
+                    EmitTree(Node.Statement, cancellationToken);
+                }
+
+                foreach (var incrementor in Node.Incrementors)
+                {
+                    EmitTree(incrementor, cancellationToken);
+                    WriteSemiColon(true);
+                }
+
+                EmitterContext.CurrentForIncrementors.Pop();
+
+                EndBlock();
+                var body = PopWriter();
+
+
+                if (EmitterContext.LoopNames.TryGetValue(Node, out var name))
+                {
+                    Write(name, "@ ");
+                    EmitterContext.LoopNames.Remove(Node);
+                }
+
+                WriteWhile();
+                WriteOpenParentheses();
+                EmitTree(Node.Condition, cancellationToken);
+                WriteCloseParentheses();
+
+                WriteNewLine();
+
+                Write(body);
+
+                EndBlock();
+            }
+            
+        
+        }
+
+        private bool DetectSimpleFor(out SyntaxKind expressionKind, out ExpressionSyntax step)
+        {
+            expressionKind = SyntaxKind.None;
+            step = null;
+            if (Node.Declaration == null || Node.Declaration.Variables.Count != 1 || Node.Declaration.Variables[0].Initializer == null)
             {
-                EmitTree(incrementor, cancellationToken);
-                WriteSemiColon(true);
+                return false;
             }
 
-            EmitterContext.CurrentForIncrementors.Pop();
-
-            EndBlock();
-            var body = PopWriter();
-
-
-            if (EmitterContext.LoopNames.TryGetValue(Node, out var name))
+            if (!(Node.Condition is BinaryExpressionSyntax binary))
             {
-                Write(name, "@ ");
-                EmitterContext.LoopNames.Remove(Node);
+                return false;
             }
 
-            WriteWhile();
-            WriteOpenParentheses();
-            EmitTree(Node.Condition, cancellationToken);
-            WriteCloseParentheses();
+            var binaryKind = binary.Kind();
+            switch (binaryKind)
+            {
+                case SyntaxKind.LessThanExpression:
+                case SyntaxKind.LessThanOrEqualExpression:
+                    if (!(binary.Left is IdentifierNameSyntax leftIdent))
+                    {
+                        return false;
+                    }
 
-            WriteNewLine();
+                    if (leftIdent.Identifier.Text != Node.Declaration.Variables[0].Identifier.Text)
+                    {
+                        return false;
+                    }
+                        
+                    expressionKind = binaryKind;
+                    break;
+                default:
+                    return false;
+            }
 
-            Write(body);
+            
+            if (Node.Incrementors.Count > 1)
+            {
+                return false;
+            }
 
-            EndBlock();
+            switch (Node.Incrementors[0].Kind())
+            {
+                case SyntaxKind.PreIncrementExpression:
+                case SyntaxKind.PostIncrementExpression:
+                    return binaryKind == SyntaxKind.LessThanExpression || binaryKind == SyntaxKind.LessThanOrEqualExpression;
+                case SyntaxKind.AddAssignmentExpression:
+                    var addIncr = ((AssignmentExpressionSyntax) Node.Incrementors[0]).Right;
+                    var addAssignmentValue = Emitter.GetConstantValue(addIncr);
+                    if (addAssignmentValue.HasValue && 1.Equals(addAssignmentValue.Value))
+                    {
+                        step = null;
+                    }
+                    else
+                    {
+                        step = addIncr;
+                    }
+                    return binaryKind == SyntaxKind.LessThanExpression || binaryKind == SyntaxKind.LessThanOrEqualExpression;
+            }
+
+            return false;
         }
     }
 }

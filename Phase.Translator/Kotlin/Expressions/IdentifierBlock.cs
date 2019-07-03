@@ -40,7 +40,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 {
                     if (resolve.Symbol.IsStatic)
                     {
-                        Write(Emitter.GetTypeName(resolve.Symbol.ContainingType, false, false, false));
+                        Write(Emitter.GetTypeName(resolve.Symbol.ContainingType, false, false));
                         Write(".");
                     }
                     else if (!resolve.Symbol.IsStatic && (resolve.Symbol.Kind == SymbolKind.Field || resolve.Symbol.Kind == SymbolKind.Property) && EmitterContext.RecursiveObjectCreation == 0)

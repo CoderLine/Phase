@@ -245,7 +245,7 @@ namespace Phase.Translator.Haxe
 
             public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
             {
-                Emit<ConditionalAccessBlock, ConditionalAccessExpressionSyntax>(node);
+                Emit<ConditionalAccessExpressionBlock, ConditionalAccessExpressionSyntax>(node);
             }
 
             public override void VisitElementAccessExpression(ElementAccessExpressionSyntax node)

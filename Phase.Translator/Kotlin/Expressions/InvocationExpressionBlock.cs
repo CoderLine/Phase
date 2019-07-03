@@ -91,7 +91,7 @@ namespace Phase.Translator.Kotlin.Expressions
                         PushWriter();
                         if (methodSymbol.IsStatic)
                         {
-                            Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true, false));
+                            Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                         }
                         else
                         {
@@ -168,7 +168,7 @@ namespace Phase.Translator.Kotlin.Expressions
                         var param = methodSymbol.TypeParameters[i];
                         if (template.Variables.TryGetValue(param.Name, out var variable))
                         {
-                            variable.RawValue = Emitter.GetTypeName(argument, false, false, false);
+                            variable.RawValue = Emitter.GetTypeName(argument, false, false);
                         }
                     }
 
@@ -191,7 +191,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 }
                 else if (methodSymbol.IsStatic)
                 {
-                    Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true, false));
+                    Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     Write(".");
                     Write(Emitter.GetMethodName(methodSymbol));
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);

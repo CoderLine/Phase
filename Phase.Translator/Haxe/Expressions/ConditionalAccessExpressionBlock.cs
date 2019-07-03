@@ -6,7 +6,7 @@ using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe.Expressions
 {
-    class ConditionalAccessBlock : AutoCastBlockBase<ConditionalAccessExpressionSyntax>
+    class ConditionalAccessExpressionBlock : AutoCastBlockBase<ConditionalAccessExpressionSyntax>
     {
         protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
         {

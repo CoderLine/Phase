@@ -38,6 +38,7 @@ namespace Phase
             context.Attributes.Member((object s) => s.GetHashCode())
                 .Add(new NameAttribute("hashCode"));
             context.Attributes.Type<string>().Add(new RedirectMethodsToAttribute("system.StringExtensions"));
+            context.Attributes.Member(()=>string.Empty).Add(new TemplateAttribute("\"\""));
             context.Attributes.Type<byte>().Add(new RedirectMethodsToAttribute("system.ByteExtensions"));
             context.Attributes.Type<short>().Add(new RedirectMethodsToAttribute("system.ShortExtensions"));
             context.Attributes.Type<int>().Add(new RedirectMethodsToAttribute("system.IntegerExtensions"));

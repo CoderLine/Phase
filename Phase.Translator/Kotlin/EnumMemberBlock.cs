@@ -20,7 +20,7 @@ namespace Phase.Translator.Kotlin
             Write("@JvmStatic");
             WriteNewLine();
             Write("public val ", Emitter.GetFieldName(_field), " = ");
-            Write(Emitter.GetTypeName(_field.ContainingType, true, true, false));
+            Write(Emitter.GetTypeName(_field.ContainingType, true, true));
             WriteOpenParentheses();
             Write(_field.ConstantValue);
             WriteCloseParentheses();

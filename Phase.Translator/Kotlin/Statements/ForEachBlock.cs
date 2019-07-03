@@ -16,7 +16,7 @@ namespace Phase.Translator.Kotlin.Statements
             var type = Emitter.GetTypeInfo(Node.Expression);
             var foreachMode = Emitter.GetForeachMode(type.Type) ?? ForeachMode.AsIterable;
 
-            if (foreachMode == ForeachMode.Native)
+            if (foreachMode == ForeachMode.Native || foreachMode == ForeachMode.AsIterable)
             {
                 PushWriter();
                 EmitTree(Node.Statement, cancellationToken);
@@ -31,17 +31,24 @@ namespace Phase.Translator.Kotlin.Statements
 
                 WriteOpenParentheses();
 
-                Write(Node.Identifier.ValueText, " : ");
-                WriteType(Node.Type);
+                Write(Node.Identifier.ValueText);
 
                 Write(" in ");
 
                 EmitTree(Node.Expression, cancellationToken);
-                Write("!!");
+                if (foreachMode == ForeachMode.AsIterable)
+                {
+                    Write(".wrapAsIterable()");
+                }
 
                 WriteCloseParentheses();
 
-                Write(body);
+                if (Node.Statement is BlockSyntax)
+                {
+                    WriteNewLine();
+                }
+
+                Write(body.TrimStart());
 
                 WriteNewLine();
 
@@ -61,7 +68,7 @@ namespace Phase.Translator.Kotlin.Statements
                 Write("var ", enumeratorVariable, " = ");
                 Write("(");
                 EmitTree(Node.Expression, cancellationToken);
-                Write(")!!.getEnumerator()");
+                Write(").getEnumerator()");
                 WriteSemiColon(true);
 
                 Write("try");
@@ -70,7 +77,7 @@ namespace Phase.Translator.Kotlin.Statements
                 PushWriter();
                 BeginBlock();
 
-                Write("var ", Node.Identifier.ValueText, " = ", enumeratorVariable, "!!.current");
+                Write("var ", Node.Identifier.ValueText, " = ", enumeratorVariable, ".current");
                 WriteSemiColon(true);
 
                 if (Node.Statement is BlockSyntax block)
@@ -96,7 +103,7 @@ namespace Phase.Translator.Kotlin.Statements
 
                 WriteWhile();
                 WriteOpenParentheses();
-                Write(enumeratorVariable, "!!.moveNext()");
+                Write(enumeratorVariable, ".moveNext()");
                 WriteCloseParentheses();
                 WriteNewLine();
 
@@ -106,7 +113,7 @@ namespace Phase.Translator.Kotlin.Statements
                 EndBlock();
                 WriteFinally();
                 BeginBlock();
-                Write(enumeratorVariable, "!!.dispose()");
+                Write(enumeratorVariable, ".dispose()");
                 WriteSemiColon(true);
                 EndBlock();
                 EndBlock();

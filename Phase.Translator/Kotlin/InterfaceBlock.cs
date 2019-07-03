@@ -22,7 +22,7 @@ namespace Phase.Translator.Kotlin
             : base(emitter)
         {
             _type = (PhaseInterface)type;
-            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true, false);
+            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true);
             var packageEnd = fullName.LastIndexOf(".", StringComparison.Ordinal);
             if (packageEnd == -1)
             {
@@ -94,7 +94,7 @@ namespace Phase.Translator.Kotlin
                 {
                     if (i > 0) WriteComma();
                     INamedTypeSymbol type = _type.TypeSymbol.Interfaces[i];
-                    Write(Emitter.GetTypeName(type, false, false, false));
+                    Write(Emitter.GetTypeName(type, false, false));
                 }
             }
 

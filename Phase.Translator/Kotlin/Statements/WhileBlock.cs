@@ -22,7 +22,7 @@ namespace Phase.Translator.Kotlin.Statements
             EmitTree(Node.Condition, cancellationToken);
             WriteCloseParentheses();
             WriteNewLine();
-            Write(body);
+            Write(body.TrimStart());
         }
     }
 }

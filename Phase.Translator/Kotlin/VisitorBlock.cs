@@ -198,6 +198,16 @@ namespace Phase.Translator.Kotlin
                 Emit<LiteralExpressionBlock, LiteralExpressionSyntax>(node);
             }
 
+            public override void VisitConditionalAccessExpression(ConditionalAccessExpressionSyntax node)
+            {
+                Emit<ConditionalAccessExpressionBlock, ConditionalAccessExpressionSyntax>(node);
+            }
+
+            public override void VisitMemberBindingExpression(MemberBindingExpressionSyntax node)
+            {
+                Emit<MemberBindingExpressionBlock, MemberBindingExpressionSyntax>(node);
+            }
+
             public override void VisitAssignmentExpression(AssignmentExpressionSyntax node)
             {
                 Emit<AssignmentExpressionBlock, AssignmentExpressionSyntax>(node);

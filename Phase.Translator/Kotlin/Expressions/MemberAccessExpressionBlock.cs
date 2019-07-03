@@ -35,7 +35,7 @@ namespace Phase.Translator.Kotlin.Expressions
                         PushWriter();
                         if (member.Symbol.IsStatic)
                         {
-                            Write(Emitter.GetTypeName(member.Symbol.ContainingType, false, true, false));
+                            Write(Emitter.GetTypeName(member.Symbol.ContainingType, false, true));
                         }
                         else
                         {
@@ -79,7 +79,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 switch (kind)
                 {
                     case SymbolKind.NamedType:
-                        Write(Emitter.GetTypeName((INamedTypeSymbol)leftHandSide.Symbol, false, false, false));
+                        Write(Emitter.GetTypeName((INamedTypeSymbol)leftHandSide.Symbol, false, false));
                         break;
                     default:
                         EmitTree(expression, cancellationToken);
@@ -90,7 +90,7 @@ namespace Phase.Translator.Kotlin.Expressions
 
             if (member.Symbol == null)
             {
-                Write("!!.");
+                Write(".");
                 Write(Node.Name.Identifier);
             }
             else
@@ -98,7 +98,6 @@ namespace Phase.Translator.Kotlin.Expressions
                 if (member.Symbol.Name == "Value" && member.Symbol.ContainingType.OriginalDefinition.SpecialType ==
                     SpecialType.System_Nullable_T)
                 {
-                    Write("!!");
                 }
                 else
                 {
@@ -108,21 +107,14 @@ namespace Phase.Translator.Kotlin.Expressions
                         var typeInfo = Emitter.GetTypeInfo(Node, cancellationToken);
                         if (typeInfo.ConvertedType?.TypeKind == TypeKind.Delegate)
                         {
-                            Write("!!::");
+                            Write("::");
                             accessOpWritten = true;
                         }
                     }
 
                     if (!accessOpWritten)
                     {
-                        if (member.Symbol.IsStatic || Node.Expression.Kind() == SyntaxKind.BaseExpression)
-                        {
-                            Write(".");
-                        }
-                        else
-                        {
-                            Write("!!.");
-                        }
+                        Write(".");
                     }
                     Write(EmitterContext.GetSymbolName(member.Symbol));
                 }

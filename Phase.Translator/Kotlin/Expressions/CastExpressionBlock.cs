@@ -17,7 +17,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 Write("(");
                 EmitTree(Node.Expression, cancellationToken);
                 Write(").value.to");
-                Write(Emitter.GetTypeName(targetType.Type, true, true, false));
+                Write(Emitter.GetTypeName(targetType.Type, true, true));
                 WriteOpenCloseParentheses();
             }
             else if (targetType.Type.TypeKind == TypeKind.Enum)
@@ -48,7 +48,7 @@ namespace Phase.Translator.Kotlin.Expressions
                         if (Emitter.IsIConvertible(sourceType.Type))
                         {
                             WriteDot();
-                            Write("to" + Emitter.GetTypeName(targetType.Type, true, true, false));
+                            Write("to" + Emitter.GetTypeName(targetType.Type, true, true));
                             WriteOpenCloseParentheses();
 
                             return AutoCastMode.Default;

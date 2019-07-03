@@ -83,15 +83,30 @@ namespace Phase.Translator.Kotlin.Expressions
 
                     if (ranks.Sizes.Count == 1)
                     {
+                       
                         string arrayClass = Emitter.GetSpecialArrayName(elementType);
+                        var emitParam = true;
                         if (arrayClass == null)
                         {
-                            arrayClass = "arrayOfNulls<" + Emitter.GetTypeName(elementType, false, false, true) + ">";
+                            var size = Node.Type.RankSpecifiers[0].Sizes[0];
+                            var constSize = Emitter.GetConstantValue(size);
+                            if (constSize.HasValue && 0.CompareTo(constSize.Value) == 0)
+                            {
+                                arrayClass = "emptyArray";
+                                emitParam = false;
+                            }
+                            else
+                            {
+                                arrayClass = "arrayOfNulls<" + Emitter.GetTypeName(elementType, false, false) + ">";
+                            }
                         }
 
                         Write(arrayClass);
                         WriteOpenParentheses();
-                        EmitTree(Node.Type.RankSpecifiers[0].Sizes[0], cancellationToken);
+                        if (emitParam)
+                        {
+                            EmitTree(Node.Type.RankSpecifiers[0].Sizes[0], cancellationToken);
+                        }
                         WriteCloseParentheses();
                     }
                     else
@@ -140,7 +155,7 @@ namespace Phase.Translator.Kotlin.Expressions
                                 break;
                             default:
                                 Write("matrixOf", ranks.Sizes.Count, "<",
-                                    Emitter.GetTypeName(elementType, false, false, true), ">");
+                                    Emitter.GetTypeName(elementType, false, false), ">");
                                 emptyArrayParam = true;
                                 break;
                         }
@@ -214,7 +229,7 @@ namespace Phase.Translator.Kotlin.Expressions
                             break;
                         default:
                             Write("jaggedArrayOf", Node.Type.RankSpecifiers.Count, "<",
-                                Emitter.GetTypeName(elementType, false, false, true), ">");
+                                Emitter.GetTypeName(elementType, false, false), ">");
                             emptyArrayParam = true;
                             break;
                     }

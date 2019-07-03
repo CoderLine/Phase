@@ -19,7 +19,7 @@ namespace Phase.Translator.Kotlin
             : base(emitter)
         {
             _type = (PhaseDelegate)type;
-            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true, false);
+            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true);
             var packageEnd = fullName.LastIndexOf(".", StringComparison.Ordinal);
             if (packageEnd == -1)
             {
@@ -96,14 +96,14 @@ namespace Phase.Translator.Kotlin
 
                 Write(method.Parameters[i].Name);
                 Write(" : ");
-                Write(Emitter.GetTypeName(method.Parameters[i].Type, false, false, true));
+                Write(Emitter.GetTypeName(method.Parameters[i].Type, false, false));
             }
 
             WriteCloseParentheses();
 
             Write("->");
 
-            Write(Emitter.GetTypeName(method.ReturnType, false, false, true));
+            Write(Emitter.GetTypeName(method.ReturnType, false, false));
 
             WriteNewLine();
 

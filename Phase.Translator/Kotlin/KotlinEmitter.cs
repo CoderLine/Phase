@@ -33,10 +33,10 @@ namespace Phase.Translator.Kotlin
 
         public override string GetTypeName(ITypeSymbol type, bool simple = false, bool noTypeArguments = false)
         {
-            return GetTypeName(type, simple, noTypeArguments, true);
+            return GetTypeName(type, simple, noTypeArguments, false);
         }
-
-        public string GetTypeName(ITypeSymbol type, bool simple, bool noTypeArguments, bool nullable)
+        
+        public string GetTypeName(ITypeSymbol type, bool simple = false, bool noTypeArguments = false, bool nullable = false)
         {
             if (type is IArrayTypeSymbol array)
             {
@@ -46,17 +46,18 @@ namespace Phase.Translator.Kotlin
                     return nullable ? specialArray + "?" : specialArray;
                 }
 
+                var elementNullable = array.ElementNullableAnnotation == NullableAnnotation.Annotated;
                 if (simple)
                 {
                     return GetTypeName(array.ElementType, true);
                 }
                 else if (noTypeArguments)
                 {
-                    return GetTypeName(array.ElementType, false, true);
+                    return GetTypeName(array.ElementType, false, true, elementNullable);
                 }
                 else
                 {
-                    var x = GetTypeName(array.ElementType, false, false, true);
+                    var x = GetTypeName(array.ElementType, false, false, elementNullable);
 
                     var arrayName = new StringBuilder();
                     for (int i = 0; i < array.Rank; i++)
@@ -82,7 +83,7 @@ namespace Phase.Translator.Kotlin
 
             if (type is ITypeParameterSymbol)
             {
-                if (nullable && IsNullable(type))
+                if (nullable)
                 {
                     return type.Name + "?";
                 }
@@ -158,7 +159,7 @@ namespace Phase.Translator.Kotlin
                     for (int i = 0; i < typeArgs.Length; i++)
                     {
                         if (i > 0) name += ", ";
-                        name += GetTypeName(typeArgs[i], false, false);
+                        name += GetTypeName(typeArgs[i], false, false, named.TypeArgumentsNullableAnnotations[i] == NullableAnnotation.Annotated);
                     }
                     name += ">";
                 }

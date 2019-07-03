@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -21,7 +22,7 @@ namespace Phase.Translator.Kotlin
             : base(emitter)
         {
             _type = type;
-            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true, false);
+            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true);
             var packageEnd = fullName.LastIndexOf(".", StringComparison.Ordinal);
             if (packageEnd == -1)
             {
@@ -91,6 +92,12 @@ namespace Phase.Translator.Kotlin
                 {
                     if (i > 0) Write(", ");
                     Write(typeParameters[i].Name);
+
+                    if (typeParameters[i].ReferenceTypeConstraintNullableAnnotation != NullableAnnotation.Annotated &&
+                        typeParameters[i].HasReferenceTypeConstraint)
+                    {
+                        Write(" : Any");
+                    }
                 }
 
                 Write(">");
@@ -104,7 +111,7 @@ namespace Phase.Translator.Kotlin
                 {
                     Write(" : ");
                     colonWritten = true;
-                    Write(Emitter.GetTypeName(_type.TypeSymbol.BaseType, false, false, false));
+                    Write(Emitter.GetTypeName(_type.TypeSymbol.BaseType, false, false));
                 }
 
                 if (_type.TypeSymbol.Interfaces.Length > 0)
@@ -115,7 +122,7 @@ namespace Phase.Translator.Kotlin
                     {
                         if (i > 0) WriteComma();
                         INamedTypeSymbol type = _type.TypeSymbol.Interfaces[i];
-                        Write(Emitter.GetTypeName(type, false, false, false));
+                        Write(Emitter.GetTypeName(type, false, false));
                     }
                 }
             }

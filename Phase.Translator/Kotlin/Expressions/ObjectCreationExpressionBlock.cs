@@ -24,7 +24,7 @@ namespace Phase.Translator.Kotlin.Expressions
             }
 
             var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
-            var typeName = Emitter.GetTypeName(type, false, false, false);
+            var typeName = Emitter.GetTypeName(type, false, false);
             Write(typeName);
             WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
 

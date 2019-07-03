@@ -22,7 +22,7 @@ namespace Phase.Translator.Kotlin
             PropertyDeclarationSyntax declaration = null;
             foreach (var d in _property.DeclaringSyntaxReferences)
             {
-                var syntax = (PropertyDeclarationSyntax)d.GetSyntax(cancellationToken);
+                var syntax = (PropertyDeclarationSyntax) d.GetSyntax(cancellationToken);
                 if (!syntax.Modifiers.Any(SyntaxKind.PartialKeyword))
                 {
                     declaration = syntax;
@@ -46,13 +46,29 @@ namespace Phase.Translator.Kotlin
             {
                 Write("open ");
             }
+
             if (_property.IsAbstract && _property.ContainingType.TypeKind != TypeKind.Interface)
             {
                 Write("abstract ");
             }
-            
 
             WriteAccessibility(_property.DeclaredAccessibility);
+
+            bool lateInit = false;
+            if (declaration != null && _property.ContainingType.TypeKind != TypeKind.Interface && !_property.IsAbstract)
+            {
+                if (declaration.Initializer != null)
+                {
+                    if (declaration.Initializer.Value.Kind() == SyntaxKind.SuppressNullableWarningExpression &&
+                        ((PostfixUnaryExpressionSyntax) declaration.Initializer.Value).Operand.Kind() ==
+                        SyntaxKind.NullLiteralExpression)
+                    {
+                        Write("lateinit ");
+                        lateInit = true;
+                    }
+                }
+            }
+
             if (_property.SetMethod != null)
             {
                 Write("var ");
@@ -65,20 +81,31 @@ namespace Phase.Translator.Kotlin
             var autoProperty = Emitter.IsAutoProperty(_property);
             var propertyName = Emitter.GetPropertyName(_property);
             Write(" ", propertyName, " : ");
-            WriteType(_property.Type);
+            WriteType(_property.Type, _property.NullableAnnotation == NullableAnnotation.Annotated);
 
             if (declaration != null && _property.ContainingType.TypeKind != TypeKind.Interface && !_property.IsAbstract)
             {
-                if (declaration.Initializer != null)
+                if (!lateInit)
                 {
-                    Write(" = ");
-                    EmitTree(declaration.Initializer.Value);
+                    if (declaration.Initializer != null)
+                    {
+                        if (CanHaveInitializer(declaration, autoProperty))
+                        {
+                            Write(" = ");
+                            EmitTree(declaration.Initializer.Value);
+                        }
+                    }
+                    else if (autoProperty && _property.SetMethod != null)
+                    {
+                        if (_property.NullableAnnotation != NullableAnnotation.Annotated ||
+                            !_property.Type.IsReferenceType)
+                        {
+                            Write(" = ");
+                            Write(Emitter.GetDefaultValue(_property.Type));
+                        }
+                    }
                 }
-                else if (autoProperty && _property.SetMethod != null)
-                {
-                    Write(" = ");
-                    Write(Emitter.GetDefaultValue(_property.Type));
-                }
+
                 WriteNewLine();
 
                 if (declaration.ExpressionBody != null)
@@ -105,7 +132,8 @@ namespace Phase.Translator.Kotlin
 
                     if (getter != null)
                     {
-                        if (getter.Modifiers.Any(SyntaxKind.PrivateKeyword) || getter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
+                        if (getter.Modifiers.Any(SyntaxKind.PrivateKeyword) ||
+                            getter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
                         {
                             Write("protected ");
                             if (autoProperty)
@@ -128,7 +156,7 @@ namespace Phase.Translator.Kotlin
                             {
                                 EmitTree(getter.Body);
                             }
-                            else if(!_property.IsAbstract)
+                            else if (!_property.IsAbstract)
                             {
                                 Write(" = ");
                                 var backingField = _property.ContainingType
@@ -144,13 +172,15 @@ namespace Phase.Translator.Kotlin
                                     Write(Emitter.GetFieldName(backingField));
                                 }
                             }
+
                             WriteNewLine();
                         }
                     }
 
                     if (setter != null)
                     {
-                        if (setter.Modifiers.Any(SyntaxKind.PrivateKeyword) || setter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
+                        if (setter.Modifiers.Any(SyntaxKind.PrivateKeyword) ||
+                            setter.Modifiers.Any(SyntaxKind.ProtectedKeyword))
                         {
                             Write("protected ");
                             if (autoProperty)
@@ -194,14 +224,80 @@ namespace Phase.Translator.Kotlin
                                     Write(Emitter.GetFieldName(backingField), " = v");
                                     WriteSemiColon();
                                 }
+
                                 WriteNewLine();
                             }
+
                             EndBlock(true);
                         }
                     }
                 }
             }
+
             WriteNewLine();
+        }
+
+        private bool CanHaveInitializer(PropertyDeclarationSyntax declaration, bool autoProperty)
+        {
+            if (declaration.ExpressionBody != null)
+            {
+                return false;
+            }
+
+            AccessorDeclarationSyntax getter = null;
+            AccessorDeclarationSyntax setter = null;
+            foreach (var accessor in declaration.AccessorList.Accessors)
+            {
+                if (accessor.Keyword.Kind() == SyntaxKind.GetKeyword)
+                {
+                    getter = accessor;
+                }
+                else if (accessor.Keyword.Kind() == SyntaxKind.SetKeyword)
+                {
+                    setter = accessor;
+                }
+            }
+
+
+            if (getter != null)
+            {
+                if (!autoProperty)
+                {
+                    if (getter.ExpressionBody != null)
+                    {
+                        return false;
+                    }
+                    if (getter.Body != null)
+                    {
+                        return false;
+                    }
+                    if (!_property.IsAbstract)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            if (setter != null)
+            {
+                if (!autoProperty)
+                {
+                    if (setter.ExpressionBody != null)
+                    {
+                        return false;
+                    }
+                    if (setter.Body != null)
+                    {
+                        return false;
+                    }
+                    if (!_property.IsAbstract)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
     }
 }

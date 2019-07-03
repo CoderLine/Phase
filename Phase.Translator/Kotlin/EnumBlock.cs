@@ -21,7 +21,7 @@ namespace Phase.Translator.Kotlin
             : base(emitter)
         {
             _type = (PhaseEnum)type;
-            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true, false);
+            var fullName = Emitter.GetTypeName(_type.TypeSymbol, false, true);
             var packageEnd = fullName.LastIndexOf(".", StringComparison.Ordinal);
             if (packageEnd == -1)
             {

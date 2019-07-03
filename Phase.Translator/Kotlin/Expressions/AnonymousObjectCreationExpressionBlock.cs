@@ -10,7 +10,7 @@ namespace Phase.Translator.Kotlin.Expressions
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             // TODO: new Object() {}
-            throw new PhaseCompilerException("Anonymous objects not supported in C++");
+            throw new PhaseCompilerException("Anonymous objects not supported in Kotlin");
         }
     }
 }

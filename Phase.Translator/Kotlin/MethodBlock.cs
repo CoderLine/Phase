@@ -99,6 +99,7 @@ namespace Phase.Translator.Kotlin
                 WriteAccessibility(_method.DeclaredAccessibility);
             }
 
+            var methodName = Emitter.GetMethodName(_method);
 
             if (isReifiedExtensionMethod)
             {
@@ -175,12 +176,11 @@ namespace Phase.Translator.Kotlin
             {
                 if (isReifiedExtensionMethod)
                 {
-                    Write(Emitter.GetTypeName(_method.ContainingType, true, false, false));
+                    Write(Emitter.GetTypeName(_method.ContainingType, true, false));
                     WriteDot();
                 }
 
 
-                var methodName = Emitter.GetMethodName(_method);
                 Write(methodName);
                 WriteOpenParentheses();
                 WriteParameterDeclarations(_method.Parameters, cancellationToken);
@@ -214,7 +214,7 @@ namespace Phase.Translator.Kotlin
                             }
                             else
                             {
-                                Write(Emitter.GetTypeName(_method.ReturnType, false, false, _method.Name != "ToString"));
+                                Write(Emitter.GetTypeName(_method.ReturnType, false, false, _method.ReturnNullableAnnotation == NullableAnnotation.Annotated));
                             }
                         }
                         break;
@@ -246,7 +246,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteNewLine();
                             BeginBlock();
-
+                            
                             if (methodDeclarationSyntax.ExpressionBody != null)
                             {
                                 if (!_method.ReturnsVoid)
@@ -467,12 +467,7 @@ namespace Phase.Translator.Kotlin
             foreach (var parameter in EmitterContext.ParameterNames)
             {
                 Write("var ", EmitterContext.GetSymbolName(parameter.Key));
-                WriteSpace();
-                WriteColon();
-                WriteType(parameter.Key.Type);
-
                 Write(" = ");
-
                 Write(parameter.Key.Name);
                 WriteSemiColon(true);
             }

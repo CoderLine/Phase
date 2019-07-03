@@ -39,7 +39,7 @@ namespace Phase.Translator.Kotlin.Statements
                         }
 
                         Write(" : ");
-                        Write(Emitter.GetTypeName(exceptionType, false, false, false));
+                        Write(Emitter.GetTypeName(exceptionType, false, false));
 
                         WriteCloseParentheses();
                     }

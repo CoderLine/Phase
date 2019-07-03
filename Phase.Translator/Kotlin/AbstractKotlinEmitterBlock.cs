@@ -496,7 +496,7 @@ namespace Phase.Translator.Kotlin
                         {
                             WriteDot();
                             Write("to");
-                            Write(Emitter.GetTypeName(convertedType, true, true, false));
+                            Write(Emitter.GetTypeName(convertedType, true, true));
                             WriteOpenCloseParentheses();
                         }
                         else if (type.TypeKind == TypeKind.Enum)
@@ -554,9 +554,9 @@ namespace Phase.Translator.Kotlin
             Write(result);
         }
 
-        protected void WriteType(ITypeSymbol type)
+        protected void WriteType(ITypeSymbol type, bool nullable = false)
         {
-            Write(Emitter.GetTypeName(type));
+            Write(Emitter.GetTypeName(type, nullable:nullable));
         }
 
         protected void WriteEventType(INamedTypeSymbol delegateType, bool includeTypeParameters = true)
@@ -776,7 +776,21 @@ namespace Phase.Translator.Kotlin
                     throw new PhaseCompilerException("ref parameters are not supported");
                     Write("CsRef<");
                 }
-                WriteType(methodParameters[i].Type);
+
+                bool nullable = false;
+                foreach (var syntaxReference in methodParameters[i].DeclaringSyntaxReferences)
+                {
+                    var syntax = syntaxReference.GetSyntax();
+                    if (syntax is ParameterSyntax parameterSyntax)
+                    {
+                        if (parameterSyntax.Type is NullableTypeSyntax)
+                        {
+                            nullable = true;
+                        }
+                    }
+                }
+                
+                WriteType(methodParameters[i].Type, nullable);
                 if (param.RefKind != RefKind.None)
                 {
                     Write(">");
@@ -806,10 +820,24 @@ namespace Phase.Translator.Kotlin
                     Write((decimal)constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Single:
-                    Write((float)constField.ConstantValue);
+                    if (float.IsNaN((float)constField.ConstantValue))
+                    {
+                        Write("Float.NaN");
+                    }
+                    else
+                    {
+                        Write((float)constField.ConstantValue);
+                    }
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Double:
-                    Write((double)constField.ConstantValue);
+                    if (double.IsNaN((double)constField.ConstantValue))
+                    {
+                        Write("Double.NaN");
+                    }
+                    else
+                    {
+                        Write((double)constField.ConstantValue);
+                    }
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_String:
                     Write("\"" + constField.ConstantValue + "\"");

@@ -78,7 +78,7 @@ namespace Phase.Translator.Kotlin.Expressions
                     break;
                 case SyntaxKind.CoalesceExpression:
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" ?? ");
+                    Write(" ?: ");
                     EmitTree(Node.Right, cancellationToken);
                     break;
                 case SyntaxKind.SimpleMemberAccessExpression:

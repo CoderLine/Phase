@@ -11,7 +11,15 @@ namespace Phase.Translator.Kotlin.Expressions
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             EmitTree(Node.Operand, cancellationToken);
-            Write(Node.OperatorToken.Text);
+            switch (Node.Kind())
+            {
+                case SyntaxKind.SuppressNullableWarningExpression:
+                    Write("!!");
+                    break;
+                default:
+                    Write(Node.OperatorToken.Text);
+                    break;
+            }
         }
     }
 }

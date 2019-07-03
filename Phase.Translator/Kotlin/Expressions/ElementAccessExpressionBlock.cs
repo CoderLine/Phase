@@ -66,7 +66,6 @@ namespace Phase.Translator.Kotlin.Expressions
             {
                 foreach (var t in Node.ArgumentList.Arguments)
                 {
-                    Write("!!");
                     WriteOpenBracket();
                     EmitTree(t, cancellationToken);
                     WriteCloseBracket();

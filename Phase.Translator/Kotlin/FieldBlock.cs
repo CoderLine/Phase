@@ -1,5 +1,7 @@
-﻿using System.Threading;
+﻿using System.Linq;
+using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Kotlin
@@ -16,11 +18,18 @@ namespace Phase.Translator.Kotlin
 
         protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (_field.AssociatedSymbol is IPropertySymbol property && Emitter.IsAutoProperty(property))
+            var property = _field.AssociatedSymbol as IPropertySymbol;
+            if (property != null && Emitter.IsAutoProperty(property))
             {
                 return;
             }
 
+            var declaration = _field.DeclaringSyntaxReferences
+                .Select(r => r.GetSyntax(cancellationToken))
+                .OfType<VariableDeclaratorSyntax>()
+                .FirstOrDefault();
+
+            
             WriteComments(_field, cancellationToken);
 
             if (_field.IsStatic)
@@ -32,7 +41,23 @@ namespace Phase.Translator.Kotlin
             WriteMeta(_field, cancellationToken);
             WriteAccessibility(_field.DeclaredAccessibility);
 
-            
+            bool lateInit = false;
+            if (declaration?.Initializer != null)
+            {
+                if (declaration.Initializer.Value.Kind() == SyntaxKind.SuppressNullableWarningExpression)
+                {
+                    switch (((PostfixUnaryExpressionSyntax) declaration.Initializer.Value).Operand.Kind())
+                    {
+                        case SyntaxKind.NullLiteralExpression:
+                        case SyntaxKind.DefaultLiteralExpression:
+                            Write("lateinit ");
+                            lateInit = true;
+                            break;
+                    }
+                }
+            }
+
+
             if (_field.IsConst)
             {
                 Write("val "); // kotlin const is not properly compatible with @JvmStatic
@@ -44,33 +69,47 @@ namespace Phase.Translator.Kotlin
 
             var fieldName = Emitter.GetFieldName(_field);
             Write(" ", fieldName, " : ");
-            Write(Emitter.GetTypeName(_field.Type, false, false, !_field.IsConst));
-      
+            Write(Emitter.GetTypeName(_field.Type, false, false,
+                _field.NullableAnnotation == NullableAnnotation.Annotated));
+
             EmitterContext.IsConstInitializer = _field.IsConst;
 
-            ExpressionSyntax initializer = null;
-            foreach (var reference in _field.DeclaringSyntaxReferences)
+            if (!lateInit)
             {
-                var node = reference.GetSyntax(cancellationToken);
-                var variable = node as VariableDeclaratorSyntax;
-                if (variable != null)
+                if (declaration != null && declaration.Initializer != null)
                 {
-                    initializer = variable.Initializer?.Value;
-                    if (initializer != null)
+                    Write(" = ");
+                    EmitTree(declaration.Initializer, cancellationToken);
+                }
+                else if (property != null)
+                {
+                    var propertyInitializer = property.DeclaringSyntaxReferences
+                        .Select(r => r.GetSyntax(cancellationToken))
+                        .OfType<PropertyDeclarationSyntax>()
+                        .Select(p => p.Initializer)
+                        .FirstOrDefault(p => p != null);
+                    if (propertyInitializer != null)
                     {
-                        break;
+                        Write(" = ");
+                        EmitTree(propertyInitializer, cancellationToken);
+                    }
+                    else
+                    {
+                        var defaultValue = Emitter.GetDefaultValue(_field.Type);
+                        if (defaultValue != "null")
+                        {
+                            Write(" = ", defaultValue);
+                        }
                     }
                 }
-            }
-
-            Write(" = ");
-            if (initializer != null)
-            {
-                EmitTree(initializer, cancellationToken);
-            }
-            else
-            {
-                Write(Emitter.GetDefaultValue(_field.Type));
+                else
+                {
+                    var defaultValue = Emitter.GetDefaultValue(_field.Type);
+                    if (defaultValue != "null")
+                    {
+                        Write(" = ", defaultValue);
+                    }
+                }
             }
 
             EmitterContext.IsConstInitializer = false;
