@@ -117,6 +117,19 @@ namespace Phase.Translator.Kotlin.Expressions
                         Write(".");
                     }
                     Write(EmitterContext.GetSymbolName(member.Symbol));
+                    
+                    
+                    if (member.Symbol.Kind == SymbolKind.Method && ((IMethodSymbol)member.Symbol).IsGenericMethod &&
+                        Node.Name is GenericNameSyntax genericName)
+                    {
+                        Write("<");
+                        for (int i = 0; i < genericName.TypeArgumentList.Arguments.Count; i++)
+                        {
+                            if (i > 0) Write(", ");
+                            WriteType(genericName.TypeArgumentList.Arguments[i]);
+                        }
+                        Write(">");
+                    }
                 }
             }
 

@@ -199,7 +199,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 else
                 {
                     EmitTree(Node.Expression, cancellationToken);
-
+                    
                     if (isDelegateInvocation)
                     {
                         Write("!!");
