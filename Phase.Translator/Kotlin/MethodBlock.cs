@@ -183,7 +183,7 @@ namespace Phase.Translator.Kotlin
 
                 Write(methodName);
                 WriteOpenParentheses();
-                WriteParameterDeclarations(_method.Parameters, cancellationToken);
+                WriteParameterDeclarations(_method, _method.Parameters, cancellationToken);
                 WriteCloseParentheses();
                 WriteSpace();
 

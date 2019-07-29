@@ -28,40 +28,45 @@ namespace Phase.Translator.Kotlin.Expressions
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" or ");
+                    Write(" or (");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
+                    Write(")");
                     assignmentHandled = true;
                     break;
                 case SyntaxKind.AndAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" and ");
+                    Write(" and (");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
+                    Write(")");
                     assignmentHandled = true;
                     break;
                 case SyntaxKind.ExclusiveOrAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" xor ");
+                    Write(" xor (");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
+                    Write(")");
                     assignmentHandled = true;
                     break;
                 case SyntaxKind.LeftShiftAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" shl ");
+                    Write(" shl (");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
+                    Write(")");
                     assignmentHandled = true;
                     break;
                 case SyntaxKind.RightShiftAssignmentExpression:
                     EmitTree(Node.Left, cancellationToken);
                     Write(" = ");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(" shr ");
+                    Write(" shr (");
                     EmitValue(leftType.Type, rightType.Type, cancellationToken);
+                    Write(")");
                     assignmentHandled = true;
                     break;
             }

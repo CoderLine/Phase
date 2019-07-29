@@ -168,6 +168,11 @@ namespace Phase.Translator.Kotlin
 
             #region Expressions
 
+            public override void VisitQualifiedName(QualifiedNameSyntax node)
+            {
+                Emit<QualifiedNameBlock, QualifiedNameSyntax>(node);
+            }
+
             public override void VisitInterpolatedStringExpression(InterpolatedStringExpressionSyntax node)
             {
                 Emit<InterpolatedStringExpressionBlock, InterpolatedStringExpressionSyntax>(node);

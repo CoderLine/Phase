@@ -81,6 +81,7 @@ namespace Phase.Translator
         public bool InjectAtBeginning { get; set; }
         public string Name { get; set; }
         public ExpressionSyntax Expression { get; set; }
+        public bool EnforceNotNull { get; set; }
 
         public ParameterInvocationInfo(ArgumentSyntax syntax)
         {

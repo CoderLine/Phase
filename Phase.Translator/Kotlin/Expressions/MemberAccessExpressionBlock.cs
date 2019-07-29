@@ -116,7 +116,15 @@ namespace Phase.Translator.Kotlin.Expressions
                     {
                         Write(".");
                     }
-                    Write(EmitterContext.GetSymbolName(member.Symbol));
+
+                    if (member.Symbol.Kind == SymbolKind.NamedType)
+                    {
+                        Write(Emitter.GetTypeName((INamedTypeSymbol)member.Symbol, true, true));
+                    }
+                    else
+                    {
+                        Write(EmitterContext.GetSymbolName(member.Symbol));
+                    }
                     
                     
                     if (member.Symbol.Kind == SymbolKind.Method && ((IMethodSymbol)member.Symbol).IsGenericMethod &&

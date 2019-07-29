@@ -36,7 +36,7 @@ namespace Phase.Translator.Kotlin.Expressions
                     {
                         var text = Node.Token.Text.Substring(1)
                             .Replace("\\", "\\\\")
-                            .Replace("\"\"", "\"")
+                            .Replace("\"\"", "\\\"")
                             .Replace("\r", "\\r")
                             .Replace("\n", "\\n");
                         Write(text);

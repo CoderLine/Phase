@@ -11,6 +11,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
 using Phase.Attributes;
 using Phase.Translator.Kotlin.Expressions;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.Kotlin
 {
@@ -700,7 +701,7 @@ namespace Phase.Translator.Kotlin
                             if (value.Length == 1)
                             {
                                 var singleParamType = Emitter.GetTypeInfo(value[0]);
-                                if (singleParamType.ConvertedType.Equals(param.Type))
+                                if (SymbolEquivalenceComparer.Instance.Equals(singleParamType.ConvertedType, param.Type))
                                 {
                                     Write("*");
                                     EmitTree(value[0], cancellationToken);
@@ -755,7 +756,7 @@ namespace Phase.Translator.Kotlin
             EmitterContext.IsMethodInvocation = false;
         }
 
-        protected void WriteParameterDeclarations(ImmutableArray<IParameterSymbol> methodParameters, CancellationToken cancellationToken)
+        protected void WriteParameterDeclarations(IMethodSymbol method, ImmutableArray<IParameterSymbol> methodParameters, CancellationToken cancellationToken)
         {
             for (int i = 0; i < methodParameters.Length; i++)
             {
@@ -763,9 +764,14 @@ namespace Phase.Translator.Kotlin
                 {
                     WriteComma();
                 }
-
+                
                 var param = methodParameters[i];
+                
                 WriteSpace();
+                if (param.IsParams)
+                {
+                    Write("vararg ");
+                }
                 Write(param.Name);
                 WriteSpace();
 
@@ -789,8 +795,30 @@ namespace Phase.Translator.Kotlin
                         }
                     }
                 }
-                
-                WriteType(methodParameters[i].Type, nullable);
+
+                if (methodParameters.Length == 1 && 
+                    param.Type.SpecialType == SpecialType.System_Object &&
+                    method.Name == "Equals" &&
+                    method.ReturnType.SpecialType == SpecialType.System_Boolean)
+                {
+                    nullable = true;
+                }
+
+                if (param.IsParams)
+                {
+                    if (methodParameters[i].Type is IArrayTypeSymbol array)
+                    {
+                        WriteType(array.ElementType, false);
+                    }
+                    else if(methodParameters[i].Type is INamedTypeSymbol namedType && namedType.IsGenericType)
+                    {
+                        WriteType(namedType.TypeArguments[0], false);
+                    }
+                }
+                else
+                {
+                    WriteType(methodParameters[i].Type, nullable);
+                }
                 if (param.RefKind != RefKind.None)
                 {
                     Write(">");
