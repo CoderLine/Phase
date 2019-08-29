@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -37,6 +38,11 @@ namespace Phase.Translator
                 if (config.ProcessorCount == 0)
                 {
                     config.ProcessorCount = -1;
+                }
+
+                if (Debugger.IsAttached)
+                {
+                    config.ProcessorCount = 1;
                 }
 
                 Environment.CurrentDirectory = currentWorkingDirectory;

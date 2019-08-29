@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.Haxe
 {
@@ -374,6 +375,10 @@ namespace Phase.Translator.Haxe
 
                             // write default initializers
                             WriteDefaultInitializers(_method.ContainingType, _method.IsStatic, cancellationToken);
+                            if (_method.IsStatic)
+                            {
+                                WriteES5PropertyDeclarations(_method.ContainingType);
+                            }
 
                             if (constructorDeclarationSyntax.ExpressionBody != null)
                             {
@@ -392,13 +397,51 @@ namespace Phase.Translator.Haxe
                         {
                             if (accessorDeclarationSyntax.ExpressionBody != null)
                             {
-                                if (!_method.ReturnsVoid || _method.MethodKind == MethodKind.PropertySet)
+                                if (_method.MethodKind == MethodKind.PropertyGet)
                                 {
                                     WriteReturn(true);
+                                    EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
+                                        cancellationToken);
+                                    WriteSemiColon(true);
                                 }
-                                EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
-                                    cancellationToken);
-                                WriteSemiColon(true);
+                                else if(_method.MethodKind == MethodKind.PropertySet)
+                                {
+                                    var property = (IPropertySymbol)_method.AssociatedSymbol;
+                                    if (property.GetMethod != null)
+                                    {
+                                        var typeInfo =
+                                            Emitter.GetTypeInfo(accessorDeclarationSyntax.ExpressionBody.Expression);
+                                        if (SymbolEquivalenceComparer.Instance.Equals(typeInfo.Type, property.Type))
+                                        {
+                                            WriteReturn(true);
+                                            EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
+                                                cancellationToken);
+                                            WriteSemiColon(true);
+                                        }
+                                        else
+                                        {
+                                            EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
+                                                cancellationToken);
+                                            WriteSemiColon(true);
+
+                                            WriteReturn(true);
+                                            Write(Emitter.GetSymbolName(property.GetMethod));
+                                            WriteOpenParentheses();
+                                            for (int i = 0; i < _method.Parameters.Length - 1; i++)
+                                            {
+                                                Write(Emitter.GetSymbolName(_method.Parameters[i]));
+                                            }
+                                            WriteCloseParentheses();
+                                            WriteSemiColon(true);
+                                        }
+                                    }                                    
+                                }
+                                else
+                                {
+                                    EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
+                                        cancellationToken);
+                                    WriteSemiColon(true);
+                                }
                             }
                             else if (accessorDeclarationSyntax.Body != null)
                             {

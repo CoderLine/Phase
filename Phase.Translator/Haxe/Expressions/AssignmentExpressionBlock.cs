@@ -152,7 +152,7 @@ namespace Phase.Translator.Haxe.Expressions
                     if (Emitter.IsIConvertible(rightType.Type))
                     {
                         WriteDot();
-                        Write("To" + leftType.Type.Name + "_IFormatProvider");
+                        Write("to" + leftType.Type.Name + "_IFormatProvider");
                         WriteOpenParentheses();
                         Write("null");
                         WriteCloseParentheses();

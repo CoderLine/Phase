@@ -33,7 +33,7 @@ namespace Phase.Translator.Haxe
                 case ForeachMode.GetEnumerator:
                     Write("(");
                     EmitTree(Node.Expression, cancellationToken);
-                    Write(").GetEnumerator()");
+                    Write(").getEnumerator()");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException("Unexpected foreachMode '" + foreachMode + "'");

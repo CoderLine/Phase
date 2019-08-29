@@ -87,7 +87,7 @@ namespace Phase.Translator.Haxe.Expressions
             if (member.Symbol == null)
             {
                 WriteDot();
-                Write(Node.Name.Identifier);
+                Write(Node.Name.Identifier.Text.ToCamelCase());
             }
             else
             {

@@ -11,6 +11,7 @@ namespace Phase.Translator.Haxe.Expressions
         {
             WriteOpenBrace();
             WriteNewLine();
+            EmitterContext.InitializerCount++;
             for (int i = 0; i < Node.Initializers.Count; i++)
             {
                 if (i > 0)
@@ -58,7 +59,7 @@ namespace Phase.Translator.Haxe.Expressions
 
                 EmitTree(init.Expression, cancellationToken);
             }
-
+            EmitterContext.InitializerCount--;
             WriteCloseBrace();
         }
     }

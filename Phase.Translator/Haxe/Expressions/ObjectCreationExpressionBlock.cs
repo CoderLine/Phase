@@ -61,6 +61,7 @@ namespace Phase.Translator.Haxe.Expressions
             if (Node.Initializer != null)
             {
                 WriteSemiColon(true);
+                EmitterContext.InitializerCount++;
 
                 IMethodSymbol addMethod = null;
                 if (Node.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
@@ -106,6 +107,7 @@ namespace Phase.Translator.Haxe.Expressions
                 }
 
                 EmitterContext.RecursiveObjectCreation--;
+                EmitterContext.InitializerCount--;
 
                 WriteReturn(true);
                 Write(tmpvar);

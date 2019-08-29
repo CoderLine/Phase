@@ -37,7 +37,7 @@ namespace Phase.Translator.Haxe.Expressions
                         EmitTree(Node.Expression, cancellationToken);
                         WriteCloseParentheses();
                         WriteDot();
-                        Write("To" + targetType.Type.Name + "_IFormatProvider");
+                        Write("to" + targetType.Type.Name + "_IFormatProvider");
                         WriteOpenParentheses();
                         Write("null");
                         WriteCloseParentheses();

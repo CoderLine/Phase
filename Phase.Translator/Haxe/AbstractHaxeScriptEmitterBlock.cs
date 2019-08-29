@@ -45,7 +45,8 @@ namespace Phase.Translator.Haxe
             base.BeginEmit(cancellationToken);
         }
 
-        protected AbstractHaxeScriptEmitterBlock EmitTree(SyntaxNode value, CancellationToken cancellationToken = default(CancellationToken))
+        protected AbstractHaxeScriptEmitterBlock EmitTree(SyntaxNode value,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var expressionBlock = new VisitorBlock(EmitterContext, value);
             expressionBlock.DoEmit(cancellationToken);
@@ -96,6 +97,7 @@ namespace Phase.Translator.Haxe
                         }
                     }
                 }
+
                 IsNewLine = true;
             }
         }
@@ -134,10 +136,10 @@ namespace Phase.Translator.Haxe
             switch (node.NodeType)
             {
                 case XmlNodeType.Comment:
-                    Write(((XComment)node).Value);
+                    Write(((XComment) node).Value);
                     break;
                 case XmlNodeType.Element:
-                    var element = (XElement)node;
+                    var element = (XElement) node;
 
                     void WriteChildren()
                     {
@@ -145,6 +147,7 @@ namespace Phase.Translator.Haxe
                         {
                             WriteDocumentation(crefs, child);
                         }
+
                         WriteNewLine();
                     }
 
@@ -158,6 +161,7 @@ namespace Phase.Translator.Haxe
                                 WriteNewLine();
                                 Write(" * ");
                             }
+
                             Write(lines[i].Trim());
                         }
                     }
@@ -169,6 +173,7 @@ namespace Phase.Translator.Haxe
                             {
                                 WriteDocumentation(crefs, child);
                             }
+
                             break;
 
                         case "c":
@@ -192,7 +197,8 @@ namespace Phase.Translator.Haxe
 
                             var exceptionType = element.Attribute("cref")?.Value ?? string.Empty;
 
-                            if (crefs.TryGetValue(exceptionType, out var exceptionTypeCref) && exceptionTypeCref != null)
+                            if (crefs.TryGetValue(exceptionType, out var exceptionTypeCref) &&
+                                exceptionTypeCref != null)
                             {
                                 WriteCref(exceptionTypeCref);
                             }
@@ -305,7 +311,8 @@ namespace Phase.Translator.Haxe
                             var typeparamref = element.Attribute("name")?.Value;
                             Write(typeparamref);
 
-                            Write("}"); break;
+                            Write("}");
+                            break;
                         case "value":
                             break;
                         default:
@@ -319,7 +326,7 @@ namespace Phase.Translator.Haxe
 
                     break;
                 case XmlNodeType.Text:
-                    WriteDocLines(((XText)node).Value);
+                    WriteDocLines(((XText) node).Value);
                     break;
             }
         }
@@ -342,25 +349,25 @@ namespace Phase.Translator.Haxe
                 case SymbolKind.ArrayType:
                 case SymbolKind.ErrorType:
                 case SymbolKind.PointerType:
-                    WriteType((ITypeSymbol)value);
+                    WriteType((ITypeSymbol) value);
                     break;
                 case SymbolKind.Event:
-                    Write(Emitter.GetEventName((IEventSymbol)value));
+                    Write(Emitter.GetEventName((IEventSymbol) value));
                     break;
                 case SymbolKind.Field:
-                    Write(Emitter.GetFieldName((IFieldSymbol)value));
+                    Write(Emitter.GetFieldName((IFieldSymbol) value));
                     break;
                 case SymbolKind.Local:
                     Write(value.Name);
                     break;
                 case SymbolKind.Method:
-                    Write(Emitter.GetMethodName((IMethodSymbol)value));
+                    Write(Emitter.GetMethodName((IMethodSymbol) value));
                     break;
                 case SymbolKind.Parameter:
                     Write(Emitter.GetNameFromAttribute(value) ?? value.Name);
                     break;
                 case SymbolKind.Property:
-                    Write(Emitter.GetPropertyName((IPropertySymbol)value));
+                    Write(Emitter.GetPropertyName((IPropertySymbol) value));
                     break;
                 case SymbolKind.TypeParameter:
                     Write("<");
@@ -383,7 +390,6 @@ namespace Phase.Translator.Haxe
         }
 
 
-
         protected void WriteMeta(ISymbol node, CancellationToken cancellationToken)
         {
             var native = Emitter.GetNative(node);
@@ -392,6 +398,7 @@ namespace Phase.Translator.Haxe
                 Write("@:native('", native, ")");
                 WriteNewLine();
             }
+
             foreach (var attribute in node.GetAttributes())
             {
                 var meta = Emitter.GetHaxeMeta(attribute.AttributeClass);
@@ -408,7 +415,7 @@ namespace Phase.Translator.Haxe
                             switch (attribute.ConstructorArguments[0].Type.SpecialType)
                             {
                                 case SpecialType.System_Boolean:
-                                    Write((bool)attribute.ConstructorArguments[0].Value ? "true" : "false");
+                                    Write((bool) attribute.ConstructorArguments[0].Value ? "true" : "false");
                                     break;
                                 case SpecialType.System_Char:
                                 case SpecialType.System_SByte:
@@ -419,27 +426,29 @@ namespace Phase.Translator.Haxe
                                 case SpecialType.System_UInt32:
                                 case SpecialType.System_Int64:
                                 case SpecialType.System_UInt64:
-                                    Write((int)attribute.ConstructorArguments[0].Value);
+                                    Write((int) attribute.ConstructorArguments[0].Value);
                                     break;
                                 case SpecialType.System_Decimal:
-                                    Write((decimal)attribute.ConstructorArguments[0].Value);
+                                    Write((decimal) attribute.ConstructorArguments[0].Value);
                                     break;
                                 case SpecialType.System_Single:
-                                    Write((float)attribute.ConstructorArguments[0].Value);
+                                    Write((float) attribute.ConstructorArguments[0].Value);
                                     break;
                                 case SpecialType.System_Double:
-                                    Write((double)attribute.ConstructorArguments[0].Value);
+                                    Write((double) attribute.ConstructorArguments[0].Value);
                                     break;
                                 case SpecialType.System_String:
                                     Write("\"" + attribute.ConstructorArguments[0].Value + "\"");
                                     break;
                                 default:
-                                    throw new PhaseCompilerException("Only built-in types supported for meta constructor");
+                                    throw new PhaseCompilerException(
+                                        "Only built-in types supported for meta constructor");
                             }
                         }
 
                         Write(")");
                     }
+
                     WriteNewLine();
                 }
             }
@@ -455,7 +464,8 @@ namespace Phase.Translator.Haxe
             WriteType(Emitter.GetTypeSymbol(syntax));
         }
 
-        protected void WriteDefaultInitializers(INamedTypeSymbol type, bool forStaticMembers, CancellationToken cancellationToken)
+        protected void WriteDefaultInitializers(INamedTypeSymbol type, bool forStaticMembers,
+            CancellationToken cancellationToken)
         {
             foreach (var members in type.GetMembers().Where(f => f.IsStatic == forStaticMembers))
             {
@@ -470,8 +480,8 @@ namespace Phase.Translator.Haxe
                             if (fieldReference.GetSyntax(cancellationToken) is VariableDeclaratorSyntax declaration)
                             {
                                 hasInitializer = declaration.Initializer != null;
-                                memberType = ((IFieldSymbol)members).Type;
-                                memberName = Emitter.GetFieldName((IFieldSymbol)members);
+                                memberType = ((IFieldSymbol) members).Type;
+                                memberName = Emitter.GetFieldName((IFieldSymbol) members);
                                 break;
                             }
                         }
@@ -484,7 +494,7 @@ namespace Phase.Translator.Haxe
                             continue;
                         }
 
-                        memberType = ((IPropertySymbol)members).Type;
+                        memberType = ((IPropertySymbol) members).Type;
 
                         if (!Emitter.IsAutoProperty(prop) && prop.SetMethod == null)
                         {
@@ -509,6 +519,16 @@ namespace Phase.Translator.Haxe
                 if (!hasInitializer)
                 {
                     var defaultValue = Emitter.GetDefaultValue(memberType);
+                    if (!members.IsStatic)
+                    {
+                        Write("this.");
+                    }
+                    else
+                    {
+                        WriteType(type);
+                        Write(".");
+                    }
+
                     Write(memberName);
                     Write(" = ");
                     Write(defaultValue);
@@ -532,7 +552,7 @@ namespace Phase.Translator.Haxe
                     ? ((IArrayTypeSymbol) convertedType).ElementType
                     : convertedType;
                 type = type.TypeKind == TypeKind.Array
-                    ? ((IArrayTypeSymbol)type).ElementType
+                    ? ((IArrayTypeSymbol) type).ElementType
                     : type;
 
                 switch (convertedType.SpecialType)
@@ -562,11 +582,12 @@ namespace Phase.Translator.Haxe
                         if (Emitter.IsIConvertible(type))
                         {
                             WriteDot();
-                            Write("To" + convertedType.Name + "_IFormatProvider");
+                            Write("to" + convertedType.Name + "_IFormatProvider");
                             WriteOpenParentheses();
                             Write("null");
                             WriteCloseParentheses();
                         }
+
                         return;
                 }
 
@@ -596,10 +617,9 @@ namespace Phase.Translator.Haxe
                             }
 
                             WriteDot();
-                            Write("ToHaxeInt()");
+                            Write("toHaxeInt()");
                             return;
                     }
-
                 }
 
                 if (convertedType.Equals(Emitter.GetPhaseType("Haxe.HaxeFloat")))
@@ -629,7 +649,7 @@ namespace Phase.Translator.Haxe
                             }
 
                             WriteDot();
-                            Write("ToHaxeFloat()");
+                            Write("toHaxeFloat()");
                             return;
                     }
                 }
@@ -650,11 +670,12 @@ namespace Phase.Translator.Haxe
                     }
 
                     WriteDot();
-                    Write("ToHaxeString()");
+                    Write("toHaxeString()");
                     return;
                 }
 
-                if (convertedType.OriginalDefinition.SpecialType == SpecialType.System_Collections_Generic_IEnumerable_T)
+                if (convertedType.OriginalDefinition.SpecialType ==
+                    SpecialType.System_Collections_Generic_IEnumerable_T)
                 {
                     bool needsToEnumerable = false;
                     ForeachMode? foreachMode = null;
@@ -692,7 +713,7 @@ namespace Phase.Translator.Haxe
                         }
 
                         WriteDot();
-                        Write("ToEnumerable()");
+                        Write("toEnumerable()");
                         return;
                     }
                 }
@@ -768,10 +789,12 @@ namespace Phase.Translator.Haxe
             SyntaxNode callerNode = null,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            WriteMethodInvocation(method, argumentList?.Arguments.Select(a => new ParameterInvocationInfo(a)), callerNode, cancellationToken);
+            WriteMethodInvocation(method, argumentList?.Arguments.Select(a => new ParameterInvocationInfo(a)),
+                callerNode, cancellationToken);
         }
 
-        protected void WriteMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList, SyntaxNode callerNode = null, CancellationToken cancellationToken = default(CancellationToken))
+        protected void WriteMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList,
+            SyntaxNode callerNode = null, CancellationToken cancellationToken = default(CancellationToken))
         {
             EmitterContext.IsMethodInvocation = true;
             WriteOpenParentheses();
@@ -842,6 +865,7 @@ namespace Phase.Translator.Haxe
                                     if (j > 0) WriteComma();
                                     EmitTree(value[j], cancellationToken);
                                 }
+
                                 if (!isRawParams) Write("]");
                             }
                         }
@@ -853,13 +877,15 @@ namespace Phase.Translator.Haxe
                             }
                             else if (param.IsOptional)
                             {
-                                if (Emitter.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode, out var callerValue))
+                                if (Emitter.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode,
+                                    out var callerValue))
                                 {
                                     Write(callerValue);
                                 }
                                 else if (methodDeclaration != null)
                                 {
-                                    var parameterDeclaration = methodDeclaration.ParameterList.Parameters[i].Default.Value;
+                                    var parameterDeclaration =
+                                        methodDeclaration.ParameterList.Parameters[i].Default.Value;
                                     EmitTree(parameterDeclaration, cancellationToken);
                                 }
                                 else if (param.HasExplicitDefaultValue && param.ExplicitDefaultValue != null)
@@ -881,7 +907,8 @@ namespace Phase.Translator.Haxe
             EmitterContext.IsMethodInvocation = false;
         }
 
-        protected static Dictionary<string, IEnumerable<ExpressionSyntax>> BuildMethodInvocation(IMethodSymbol method, IEnumerable<ParameterInvocationInfo> argumentList)
+        protected static Dictionary<string, IEnumerable<ExpressionSyntax>> BuildMethodInvocation(IMethodSymbol method,
+            IEnumerable<ParameterInvocationInfo> argumentList)
         {
             var arguments = new Dictionary<string, IEnumerable<ExpressionSyntax>>();
             var varArgs = new List<ExpressionSyntax>();
@@ -904,7 +931,7 @@ namespace Phase.Translator.Haxe
 
                 if (argument.Name != null && argument.Name != varArgsName)
                 {
-                    arguments[argument.Name] = new[] { argument.Expression };
+                    arguments[argument.Name] = new[] {argument.Expression};
                 }
                 else if (isVarArgs)
                 {
@@ -922,7 +949,7 @@ namespace Phase.Translator.Haxe
                     }
                     else
                     {
-                        arguments[param.Name] = new[] { argument.Expression };
+                        arguments[param.Name] = new[] {argument.Expression};
                         parameterIndex++;
                     }
                 }
@@ -931,7 +958,38 @@ namespace Phase.Translator.Haxe
             return arguments;
         }
 
-        protected async Task WriteParameterDeclarations(ImmutableArray<IParameterSymbol> methodParameters, CancellationToken cancellationToken)
+
+        protected void WriteES5PropertyDeclarations(INamedTypeSymbol type)
+        {
+            if (Emitter.IsAbstract(type) || type.DeclaredAccessibility != Accessibility.Public) return;
+            var prototype = Emitter.GetTypeName(type, true, true) + ".prototype";
+            foreach (var property in type.GetMembers()
+                .OfType<IPropertySymbol>()
+                .Where(p => !p.IsIndexer && !Emitter.IsAutoProperty(p)))
+            {
+                Write(
+                    "untyped Object.defineProperty(",prototype, 
+                    ", \"", Emitter.GetPropertyName(property), "\", {"
+                );
+                if (property.GetMethod != null)
+                {
+                    Write("get: ", prototype, ".", Emitter.GetMethodName(property.GetMethod));
+                }
+                if (property.SetMethod != null)
+                {
+                    if (property.GetMethod != null)
+                    {
+                        Write(",");
+                    }
+                    Write("set: ", prototype, ".", Emitter.GetMethodName(property.SetMethod));
+                }
+                Write("});");
+                WriteNewLine();
+            }
+        }
+
+        protected void WriteParameterDeclarations(ImmutableArray<IParameterSymbol> methodParameters,
+            CancellationToken cancellationToken)
         {
             for (int i = 0; i < methodParameters.Length; i++)
             {
@@ -950,6 +1008,7 @@ namespace Phase.Translator.Haxe
                     throw new PhaseCompilerException("ref parameters are not supported");
                     Write("CsRef<");
                 }
+
                 WriteType(methodParameters[i].Type);
                 if (param.RefKind != RefKind.None)
                 {
@@ -960,7 +1019,8 @@ namespace Phase.Translator.Haxe
                 {
                     Write(" = ");
 
-                    var parameterSyntax = (ParameterSyntax)await methodParameters[i].DeclaringSyntaxReferences.First().GetSyntaxAsync(cancellationToken);
+                    var parameterSyntax = (ParameterSyntax) methodParameters[i].DeclaringSyntaxReferences.First()
+                        .GetSyntax(cancellationToken);
                     EmitTree(parameterSyntax.Default.Value, cancellationToken);
                 }
             }
@@ -971,7 +1031,7 @@ namespace Phase.Translator.Haxe
             switch (constField.Type.SpecialType)
             {
                 case SpecialType.System_Boolean:
-                    Write((bool)constField.ConstantValue ? "true" : "false");
+                    Write((bool) constField.ConstantValue ? "true" : "false");
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Char:
                 case SpecialType.System_SByte:
@@ -982,16 +1042,16 @@ namespace Phase.Translator.Haxe
                 case SpecialType.System_UInt32:
                 case SpecialType.System_Int64:
                 case SpecialType.System_UInt64:
-                    Write((int)constField.ConstantValue);
+                    Write((int) constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Decimal:
-                    Write((decimal)constField.ConstantValue);
+                    Write((decimal) constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Single:
-                    Write((float)constField.ConstantValue);
+                    Write((float) constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Double:
-                    Write((double)constField.ConstantValue);
+                    Write((double) constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_String:
                     Write("\"" + constField.ConstantValue + "\"");
@@ -1021,8 +1081,10 @@ namespace Phase.Translator.Haxe
             {
                 Name = syntax.NameColon.Name.Identifier.ValueText;
             }
+
             Expression = syntax.Expression;
         }
+
         public ParameterInvocationInfo(ExpressionSyntax expression, bool injected = false)
         {
             Expression = expression;
@@ -1038,7 +1100,8 @@ namespace Phase.Translator.Haxe
         {
         }
 
-        public virtual void Emit(HaxeEmitterContext context, T node, CancellationToken cancellationToken = default(CancellationToken))
+        public virtual void Emit(HaxeEmitterContext context, T node,
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             EmitterContext = context;
             Node = node;

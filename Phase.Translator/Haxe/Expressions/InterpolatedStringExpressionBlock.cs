@@ -12,7 +12,7 @@ namespace Phase.Translator.Haxe.Expressions
         {
             var num = 0;
             var formatArguments = new List<ExpressionSyntax>();
-            Write("system.CsString.Format(");
+            Write("system.CsString.format(");
             Write("\"");
             foreach (var content in Node.Contents)
             {

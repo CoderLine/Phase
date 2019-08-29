@@ -491,6 +491,38 @@ namespace Phase.Translator.Haxe
                     x.Append(GetTypeName(method.ContainingType, true));
                 }
             }
+            else if (method.MethodKind == MethodKind.PropertyGet)
+            {
+                var prop = (IPropertySymbol) method.AssociatedSymbol;
+                if (prop.IsIndexer)
+                {
+                    x.Append("get");
+                }
+                else
+                {
+                    x.Append("get_" + GetSymbolName(method.AssociatedSymbol));
+                }
+            }
+            else if (method.MethodKind == MethodKind.PropertySet)
+            {
+                var prop = (IPropertySymbol) method.AssociatedSymbol;
+                if (prop.IsIndexer)
+                {
+                    x.Append("set");
+                }
+                else
+                {
+                    x.Append("set_" + GetSymbolName(method.AssociatedSymbol));
+                }
+            }
+            else if (method.MethodKind == MethodKind.EventAdd)
+            {
+                x.Append("add" + GetSymbolName(method.AssociatedSymbol).ToPascalCase());
+            }
+            else if (method.MethodKind == MethodKind.EventRemove)
+            {
+                x.Append("remove" + GetSymbolName(method.AssociatedSymbol).ToPascalCase());
+            }
             else
             {
                 x.Append(method.Name);
@@ -549,6 +581,10 @@ namespace Phase.Translator.Haxe
             }
             _reservedMethodNames[typeName + "." + methodName] = method;
 
+            if (method.MethodKind != MethodKind.Constructor)
+            {
+                methodName = methodName.ToCamelCase();
+            }
             return methodName;
         }
 
@@ -603,7 +639,7 @@ namespace Phase.Translator.Haxe
                 return GetTypeName(impl.ContainingType, true) + "_" + GetPropertyName(impl);
             }
 
-            return property.Name;
+            return property.Name.ToCamelCase();
         }
 
 
@@ -615,7 +651,7 @@ namespace Phase.Translator.Haxe
                 return GetTypeName(impl.ContainingType, true) + "_" + GetEventName(impl);
             }
 
-            return eventSymbol.Name;
+            return eventSymbol.Name.ToCamelCase();
         }
 
         public string GetDelegateName(INamedTypeSymbol delegateSymbol)

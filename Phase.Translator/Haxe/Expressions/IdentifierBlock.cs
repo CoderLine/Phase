@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading;
 using Microsoft.Build.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe.Expressions
@@ -32,13 +33,23 @@ namespace Phase.Translator.Haxe.Expressions
                 }
                 else
                 {
-                    if (resolve.Symbol.IsStatic &&
-                        !resolve.Symbol.ContainingType.Equals(EmitterContext.CurrentType.TypeSymbol))
+                    if (resolve.Symbol.IsStatic)
                     {
                         WriteType(resolve.Symbol.ContainingType);
                         WriteDot();
                     }
 
+                    if(EmitterContext.InitializerCount == 0 && !resolve.Symbol.IsStatic)
+                    {
+                        switch (resolve.Symbol.Kind)
+                        {
+                            case SymbolKind.Field:
+                            case SymbolKind.Property:
+                            case SymbolKind.Method:
+                                Write("this.");
+                                break;
+                        }
+                    }
 
                     if (EmitterContext.IsAssignmentLeftHand && resolve.Symbol.Kind == SymbolKind.Property
                         && !Emitter.IsAutoProperty((IPropertySymbol)resolve.Symbol)

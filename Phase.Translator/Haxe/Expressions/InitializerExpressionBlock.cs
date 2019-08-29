@@ -9,6 +9,7 @@ namespace Phase.Translator.Haxe.Expressions
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
             WriteOpenBracket();
+            EmitterContext.InitializerCount++;
 
             for (int i = 0; i < Node.Expressions.Count; i++)
             {
@@ -19,6 +20,7 @@ namespace Phase.Translator.Haxe.Expressions
                 EmitTree(Node.Expressions[i], cancellationToken);
             }
 
+            EmitterContext.InitializerCount--;
             WriteCloseBracket();
         }
     }

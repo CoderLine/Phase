@@ -12,7 +12,6 @@ namespace Phase.Translator.Haxe
     {
         public const string Phase = "Phase";
         public const string ConstructorPrefix = "__Init";
-
     }
 
     public class ClassBlock : AbstractHaxeScriptEmitterBlock
@@ -31,6 +30,7 @@ namespace Phase.Translator.Haxe
             {
                 return;
             }
+
             var abstractType = Emitter.GetAbstract(_type.TypeSymbol);
 
             var fullName = Emitter.GetTypeName(_type.TypeSymbol, noTypeArguments: true);
@@ -97,6 +97,7 @@ namespace Phase.Translator.Haxe
                     if (i > 0) Write(", ");
                     Write(typeParameters[i].Name);
                 }
+
                 Write(">");
             }
 
@@ -116,7 +117,8 @@ namespace Phase.Translator.Haxe
             }
             else if (!_type.TypeSymbol.IsStatic)
             {
-                if (_type.TypeSymbol.BaseType != null && _type.TypeSymbol.BaseType.SpecialType != SpecialType.System_Object)
+                if (_type.TypeSymbol.BaseType != null &&
+                    _type.TypeSymbol.BaseType.SpecialType != SpecialType.System_Object)
                 {
                     Write(" extends ");
                     WriteType(_type.TypeSymbol.BaseType);
@@ -132,6 +134,7 @@ namespace Phase.Translator.Haxe
             WriteNewLine();
             BeginBlock();
 
+            bool hasStaticConstructor = false;
             foreach (var member in _type.TypeSymbol.GetMembers())
             {
                 EmitterContext.CurrentMember = member;
@@ -149,6 +152,10 @@ namespace Phase.Translator.Haxe
                 {
                     var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol) member);
                     methodBlock.Emit(cancellationToken);
+                    if (((IMethodSymbol) member).MethodKind == MethodKind.StaticConstructor)
+                    {
+                        hasStaticConstructor = true;
+                    }
                 }
                 else if (member.Kind == SymbolKind.Event)
                 {
@@ -166,7 +173,8 @@ namespace Phase.Translator.Haxe
                 WriteOpenCloseParentheses();
                 WriteNewLine();
                 BeginBlock();
-                if (_type.TypeSymbol.BaseType != null && _type.TypeSymbol.BaseType.SpecialType != SpecialType.System_Object &&
+                if (_type.TypeSymbol.BaseType != null &&
+                    _type.TypeSymbol.BaseType.SpecialType != SpecialType.System_Object &&
                     !Emitter.IsAbstract(_type.TypeSymbol))
                 {
                     Write("super();");
@@ -177,6 +185,20 @@ namespace Phase.Translator.Haxe
 
                 EndBlock();
             }
+
+            if (!Emitter.IsAbstract(_type.TypeSymbol)
+                && !hasStaticConstructor
+                && _type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
+            {
+                Write("static function __init__()");
+                WriteNewLine();
+                BeginBlock();
+
+                WriteES5PropertyDeclarations(_type.TypeSymbol);
+
+                EndBlock();
+            }
+
             EndBlock();
 
             WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);

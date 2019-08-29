@@ -69,6 +69,11 @@ namespace Phase.Translator.Haxe
                 Write(" = ");
                 EmitTree(initializer, cancellationToken);
             }
+            else if (_field.IsStatic)
+            {
+                Write(" = ");
+                Write(Emitter.GetDefaultValue(_field.Type));
+            }
 
             EmitterContext.IsConstInitializer = false;
 
