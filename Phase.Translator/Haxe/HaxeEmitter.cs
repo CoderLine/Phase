@@ -195,6 +195,12 @@ namespace Phase.Translator.Haxe
                 }
             }
 
+            var j = name.IndexOf("<");
+            if (noTypeArguments && j != -1)
+            {
+                name = name.Substring(0, j);
+            }
+
             return name;
         }
 
@@ -241,7 +247,7 @@ namespace Phase.Translator.Haxe
             return Tuple.Create(GetNamespace(type), BuildTypeName(type));
         }
 
-        private IEnumerable<AttributeData> GetAttributes(ISymbol type)
+        public IEnumerable<AttributeData> GetAttributes(ISymbol type)
         {
             return Compiler.Translator.Attributes.GetAttributes(type);
         }
@@ -381,7 +387,7 @@ namespace Phase.Translator.Haxe
 
         private string GetHaxeMetaInternal(ISymbol symbol)
         {
-            var attr = symbol.GetAttributes()
+            var attr = GetAttributes(symbol)
                 .FirstOrDefault(s => s.AttributeClass.Equals(GetPhaseType("Phase.Attributes.MetaAttribute")));
             if (attr == null)
             {
@@ -1078,11 +1084,22 @@ namespace Phase.Translator.Haxe
                 return false;
             }
 
-            var declaration = (BasePropertyDeclarationSyntax)property.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
-            if (declaration != null)
+            foreach (var fieldReference in property.DeclaringSyntaxReferences)
             {
-                return IsAutoProperty(declaration);
+                if (fieldReference.GetSyntax() is PropertyDeclarationSyntax declaration)
+                {
+                    if (declaration.Initializer != null)
+                    {
+                        return false;
+                    }
+
+                    if (IsAutoProperty(declaration))
+                    {
+                        return true;
+                    }
+                }
             }
+
             return false;
         }
 

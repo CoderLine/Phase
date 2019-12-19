@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Phase.Attributes;
 using Phase.CompilerServices;
 
@@ -11,6 +12,8 @@ namespace Phase
         {
             context.Attributes.Type<object>()
                 .Add(new RedirectMethodsToAttribute("system.ObjectExtensions"));
+            context.Attributes.Type<Type>()
+                .Add(new NameAttribute("system.CsType"));
             context.Attributes.Type<string>()
                 .Add(new NameAttribute("system.CsString"));
             context.Attributes.Type<bool>()

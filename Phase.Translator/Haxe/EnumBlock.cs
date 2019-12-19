@@ -50,6 +50,8 @@ namespace Phase.Translator.Haxe
 
             WriteComments(_type.TypeSymbol, cancellationToken);
 
+            WriteMeta(_type.TypeSymbol, cancellationToken);
+
             Write("@:enum");
             WriteNewLine();
 
@@ -147,6 +149,29 @@ namespace Phase.Translator.Haxe
             EndBlock();
 
             Write("return \"\";");
+            WriteNewLine();
+
+            EndBlock();
+
+
+            Write("@:from public static function fromString(str:system.CsString) : ", name);
+            WriteNewLine();
+
+            BeginBlock();
+
+            Write("switch(str.toLower().toHaxeString())");
+            WriteNewLine();
+            BeginBlock();
+
+            foreach (var enumMember in _type.TypeSymbol.GetMembers().OfType<IFieldSymbol>())
+            {
+                Write("case \"", enumMember.Name.ToLowerInvariant(), "\": return ", enumMember.Name, ";");
+                WriteNewLine();
+            }
+
+            EndBlock();
+
+            Write("throw new system.ArgumentException().ArgumentException_CsString_CsString('Unsupported string value', 'str');");
             WriteNewLine();
 
             EndBlock();

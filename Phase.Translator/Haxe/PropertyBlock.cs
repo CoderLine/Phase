@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.Haxe
 {
@@ -74,6 +76,17 @@ namespace Phase.Translator.Haxe
                 WriteSpace();
                 WriteColon();
                 WriteType(_property.Type);
+
+                var initializer = _property.DeclaringSyntaxReferences
+                    .Select(r => ((PropertyDeclarationSyntax)r.GetSyntax(cancellationToken)).Initializer)
+                    .FirstOrDefault(p=>p != null);
+
+                if (initializer != null)
+                {
+                    Write(" = ");
+                    EmitTree(initializer);
+                }
+
                 WriteSemiColon(true);
                 WriteNewLine();
 

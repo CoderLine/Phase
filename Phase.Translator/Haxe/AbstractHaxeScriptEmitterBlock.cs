@@ -399,50 +399,45 @@ namespace Phase.Translator.Haxe
                 WriteNewLine();
             }
 
-            foreach (var attribute in node.GetAttributes())
+            foreach (var attribute in Emitter.GetAttributes(node))
             {
-                var meta = Emitter.GetHaxeMeta(attribute.AttributeClass);
+                string meta;
+                bool printArguments;
+                if (attribute.AttributeClass.Equals(Emitter.GetPhaseType("Phase.Attributes.MetaAttribute")))
+                {
+                    meta = attribute.ConstructorArguments[0].Value.ToString();
+                    printArguments = false;
+                }
+                else
+                {
+                    meta = Emitter.GetHaxeMeta(attribute.AttributeClass);
+                    printArguments = true;
+                }
+
                 if (!string.IsNullOrEmpty(meta))
                 {
                     Write(meta);
-                    if (!meta.Contains("(") && attribute.ConstructorArguments.Length > 0)
+                    if (printArguments && !meta.Contains("(") && attribute.ConstructorArguments.Length > 0)
                     {
                         Write("(");
 
                         for (int i = 0; i < attribute.ConstructorArguments.Length; i++)
                         {
                             if (i > 0) WriteComma();
-                            switch (attribute.ConstructorArguments[0].Type.SpecialType)
+
+                            var argument = attribute.ConstructorArguments[i];
+
+                            if (argument.Type.TypeKind == TypeKind.Array)
                             {
-                                case SpecialType.System_Boolean:
-                                    Write((bool) attribute.ConstructorArguments[0].Value ? "true" : "false");
-                                    break;
-                                case SpecialType.System_Char:
-                                case SpecialType.System_SByte:
-                                case SpecialType.System_Byte:
-                                case SpecialType.System_Int16:
-                                case SpecialType.System_UInt16:
-                                case SpecialType.System_Int32:
-                                case SpecialType.System_UInt32:
-                                case SpecialType.System_Int64:
-                                case SpecialType.System_UInt64:
-                                    Write((int) attribute.ConstructorArguments[0].Value);
-                                    break;
-                                case SpecialType.System_Decimal:
-                                    Write((decimal) attribute.ConstructorArguments[0].Value);
-                                    break;
-                                case SpecialType.System_Single:
-                                    Write((float) attribute.ConstructorArguments[0].Value);
-                                    break;
-                                case SpecialType.System_Double:
-                                    Write((double) attribute.ConstructorArguments[0].Value);
-                                    break;
-                                case SpecialType.System_String:
-                                    Write("\"" + attribute.ConstructorArguments[0].Value + "\"");
-                                    break;
-                                default:
-                                    throw new PhaseCompilerException(
-                                        "Only built-in types supported for meta constructor");
+                                for (var j = 0; j < argument.Values.Length; j++)
+                                {
+                                    if (j > 0) WriteComma();
+                                    WriteMetaArgument(argument.Values[j].Value, argument.Values[j].Type);
+                                }
+                            }
+                            else
+                            {
+                                WriteMetaArgument(argument.Value, argument.Type);
                             }
                         }
 
@@ -451,6 +446,42 @@ namespace Phase.Translator.Haxe
 
                     WriteNewLine();
                 }
+            }
+        }
+
+        private void WriteMetaArgument(object argumentValue, ITypeSymbol argumentType)
+        {
+            switch (argumentType.SpecialType)
+            {
+                case SpecialType.System_Boolean:
+                    Write((bool)argumentValue ? "true" : "false");
+                    break;
+                case SpecialType.System_Char:
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                    Write((int)argumentValue);
+                    break;
+                case SpecialType.System_Decimal:
+                    Write((decimal)argumentValue);
+                    break;
+                case SpecialType.System_Single:
+                    Write((float)argumentValue);
+                    break;
+                case SpecialType.System_Double:
+                    Write((double)argumentValue);
+                    break;
+                case SpecialType.System_String:
+                    Write("\"" + argumentValue + "\"");
+                    break;
+                default:
+                    throw new PhaseCompilerException(
+                        "Only built-in types supported for meta constructor");
             }
         }
 

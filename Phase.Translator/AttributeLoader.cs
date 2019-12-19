@@ -122,6 +122,7 @@ namespace Phase.Translator
             var isExtension = type.Interfaces.Any(i => i.Equals(_compilerExtensionType));
             if (isExtension)
             {
+                Log.Info($"Found compiler extension class '{type.Name}'");
                 foreach (var member in node.Members)
                 {
                     if (member.Kind() == SyntaxKind.MethodDeclaration)
@@ -173,6 +174,7 @@ namespace Phase.Translator
 
     class CompilerExtensionInterpreter : CSharpSyntaxWalker
     {
+        private static readonly Logger Log = LogManager.GetCurrentClassLogger();
         private readonly AttributeRegistry Attributes;
         private readonly SemanticModel _semanticModel;
         private readonly BlockSyntax _body;
@@ -740,6 +742,7 @@ namespace Phase.Translator
 
         private void RegisterAttribute(AttributeBuilderDetails variableDetails, AttributeData attribute)
         {
+            Log.Info($"Registering attribute '{attribute.AttributeClass}' on element '{variableDetails.Symbol}'");
             switch (variableDetails.Target)
             {
                 case AttributeTarget.ReturnValue:
