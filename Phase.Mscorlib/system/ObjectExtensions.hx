@@ -6,6 +6,9 @@ class ObjectExtensions
 	public static inline function ReferenceEquals(a:system.Object, b:system.Object) : system.Boolean return a == b;
 	public static inline function GetType<T>(a:T) : system.CsType<T> return new system.CsType<T>(Type.getClass(a));
 	
+	public static inline function forIn(obj:Any, body:CsString->Void) : Void
+        untyped __js__( "for( var $k in {0} ) {1}", obj, body(untyped $k) );
+	
 	public static function Equals_Object<T1, T2>(left:T1, right:T2) : Bool
 	{
 		var equals = Reflect.field(left, "Equals");

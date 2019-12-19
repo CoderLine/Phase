@@ -41,7 +41,7 @@ namespace Phase.Translator
         public async Task LoadAsync(CancellationToken cancellationToken)
         {
             _cancellationToken = cancellationToken;
-
+            
             // add all compiler extensions to the project
             var trees = new ConcurrentBag<SyntaxTree>();
             Parallel.ForEach(Compilation.References.OfType<PortableExecutableReference>(), r =>
@@ -50,7 +50,7 @@ namespace Phase.Translator
                 {
                     try
                     {
-                        trees.Add(CSharpSyntaxTree.ParseText(source.source));
+                        trees.Add(CSharpSyntaxTree.ParseText(source.source, CSharpParseOptions.Default.WithLanguageVersion(Compilation.LanguageVersion)));
                     }
                     catch (Exception e)
                     {
@@ -58,9 +58,14 @@ namespace Phase.Translator
                     }
                 }
             });
+
+            var assemblyName = Compilation.AssemblyName.EndsWith(".dll")
+                ? Compilation.AssemblyName.Substring(0, Compilation.AssemblyName.Length - 4)
+                : Compilation.AssemblyName;
+            
             Compilation = Compilation
                 .AddSyntaxTrees(trees)
-                .WithAssemblyName(Compilation.AssemblyName);
+                .WithAssemblyName(assemblyName);
 
             _semanticModel = new ConcurrentDictionary<SyntaxTree, SemanticModel>(SyntaxTreeComparer.Instance);
 
