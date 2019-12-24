@@ -246,14 +246,14 @@ namespace Phase.Translator.Cpp
         }
 
 
-        protected override string GetMethodNameInternal(IMethodSymbol method)
+        protected override string GetMethodNameInternal(IMethodSymbol method, BaseEmitterContext context)
         {
             method = method.OriginalDefinition;
 
             if (!method.ExplicitInterfaceImplementations.IsEmpty)
             {
                 var impl = method.ExplicitInterfaceImplementations[0];
-                return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl);
+                return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl, context);
             }
 
             var attributeName = GetNameFromAttribute(method);
@@ -264,7 +264,7 @@ namespace Phase.Translator.Cpp
 
             if (method.OverriddenMethod != null)
             {
-                return GetMethodName(method.OverriddenMethod);
+                return GetMethodName(method.OverriddenMethod, context);
             }
 
             switch (method.MethodKind)

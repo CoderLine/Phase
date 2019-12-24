@@ -35,18 +35,18 @@ namespace Phase.Translator.Cpp.Expressions
                     case SyntaxKind.SubtractAssignmentExpression:
                         if (((AssignmentExpressionSyntax) Node.Parent).Left == Node)
                         {
-                            Write(Emitter.GetMethodName(property.SetMethod));
+                            Write(EmitterContext.GetMethodName(property.SetMethod));
                             WriteOpenParentheses();
                         }
                         else
                         {
-                            Write(Emitter.GetMethodName(property.GetMethod));
+                            Write(EmitterContext.GetMethodName(property.GetMethod));
                             WriteOpenParentheses();
                             writeCloseParenthesis = true;
                         }
                         break;
                     default:
-                        Write(Emitter.GetMethodName(property.GetMethod));
+                        Write(EmitterContext.GetMethodName(property.GetMethod));
                         WriteOpenParentheses();
                         writeCloseParenthesis = true; 
                         break;

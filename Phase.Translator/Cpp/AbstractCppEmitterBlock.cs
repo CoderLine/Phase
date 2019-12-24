@@ -431,7 +431,7 @@ namespace Phase.Translator.Cpp
                                 .GetSymbolInfo(constructorDeclarationSyntax.Initializer)
                                 .Symbol;
 
-                            var x = Emitter.GetMethodName(ctor);
+                            var x = EmitterContext.GetMethodName(ctor);
                             Write(x);
 
                             WriteMethodInvocation(ctor,
@@ -569,7 +569,7 @@ namespace Phase.Translator.Cpp
                                 var property = (IPropertySymbol)_method.AssociatedSymbol;
                                 if (property.GetMethod != null)
                                 {
-                                    Write(Emitter.GetMethodName(property.GetMethod));
+                                    Write(EmitterContext.GetMethodName(property.GetMethod));
                                     WriteOpenParentheses();
                                     if (property.IsIndexer)
                                     {

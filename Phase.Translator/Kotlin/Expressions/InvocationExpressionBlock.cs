@@ -178,7 +178,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 {
                     Write(targetType);
                     Write(".");
-                    Write(Emitter.GetMethodName(methodSymbol));
+                    Write(EmitterContext.GetMethodName(methodSymbol));
                     if (methodSymbol.IsStatic)
                     {
                         WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
@@ -193,7 +193,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 {
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     Write(".");
-                    Write(Emitter.GetMethodName(methodSymbol));
+                    Write(EmitterContext.GetMethodName(methodSymbol));
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }
                 else

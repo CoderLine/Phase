@@ -159,7 +159,7 @@ namespace Phase.Translator.Kotlin
                     for (int i = 0; i < typeArgs.Length; i++)
                     {
                         if (i > 0) name += ", ";
-                        name += GetTypeName(typeArgs[i], false, false, named.TypeArgumentsNullableAnnotations[i] == NullableAnnotation.Annotated);
+                        name += GetTypeName(typeArgs[i], false, false, named.TypeArgumentNullableAnnotations[i] == NullableAnnotation.Annotated);
                     }
                     name += ">";
                 }
@@ -168,14 +168,14 @@ namespace Phase.Translator.Kotlin
             return name + (nullable && type.IsReferenceType ? "?" : "");
         }
 
-        protected override string GetMethodNameInternal(IMethodSymbol method)
+        protected override string GetMethodNameInternal(IMethodSymbol method, BaseEmitterContext context)
         {
             method = method.OriginalDefinition;
 
             if (!method.ExplicitInterfaceImplementations.IsEmpty)
             {
                 var impl = method.ExplicitInterfaceImplementations[0];
-                return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl);
+                return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl, context);
             }
 
             var attributeName = GetNameFromAttribute(method);
@@ -186,7 +186,7 @@ namespace Phase.Translator.Kotlin
 
             if (method.OverriddenMethod != null)
             {
-                return GetMethodName(method.OverriddenMethod);
+                return GetMethodName(method.OverriddenMethod, context);
             }
 
             switch (method.MethodKind)

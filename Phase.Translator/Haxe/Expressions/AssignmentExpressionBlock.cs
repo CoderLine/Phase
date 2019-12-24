@@ -64,7 +64,7 @@ namespace Phase.Translator.Haxe.Expressions
                     {
                         EmitTree(elementAccess.Expression, cancellationToken);
                         WriteDot();
-                        Write(Emitter.GetMethodName(property.GetMethod));
+                        Write(EmitterContext.GetMethodName(property.GetMethod));
                         WriteOpenParentheses();
 
                         for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
@@ -112,7 +112,7 @@ namespace Phase.Translator.Haxe.Expressions
                         EmitTree(member.Expression, cancellationToken);
                         WriteDot();
                     }
-                    Write(Emitter.GetMethodName(method));
+                    Write(EmitterContext.GetMethodName(method));
                     WriteMethodInvocation(method, new[]
                     {
                         new ParameterInvocationInfo(Node.Right)

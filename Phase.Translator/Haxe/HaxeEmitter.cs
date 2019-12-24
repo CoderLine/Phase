@@ -23,7 +23,7 @@ namespace Phase.Translator.Haxe
 
         protected override IEnumerable<HaxeEmitterContext> BuildEmitterContexts(PhaseType type)
         {
-            return new[]{new HaxeEmitterContext(this, type)};
+            return new[] {new HaxeEmitterContext(this, type)};
         }
 
         public override string GetTypeName(ITypeSymbol type, bool simple = false, bool noTypeArguments = false)
@@ -36,7 +36,9 @@ namespace Phase.Translator.Haxe
                     return specialArray;
                 }
 
-                return simple ? GetTypeName(array.ElementType, true) + "Array" : "system.FixedArray<" + GetTypeName(array.ElementType) + ">";
+                return simple
+                    ? GetTypeName(array.ElementType, true) + "Array"
+                    : "system.FixedArray<" + GetTypeName(array.ElementType) + ">";
             }
 
             if (type is IDynamicTypeSymbol)
@@ -62,7 +64,8 @@ namespace Phase.Translator.Haxe
             {
                 var typeArgs = GetTypeArguments(named);
 
-                if (name == "system.Action" || name == "system.Func" || TypeLookup.ContainsKey(fullName) && TypeLookup[fullName].Count > 1)
+                if (name == "system.Action" || name == "system.Func" ||
+                    TypeLookup.ContainsKey(fullName) && TypeLookup[fullName].Count > 1)
                 {
                     name += typeArgs.Length;
                 }
@@ -76,6 +79,7 @@ namespace Phase.Translator.Haxe
                         if (i > 0) name += ", ";
                         name += GetTypeName(typeArgs[i]);
                     }
+
                     name += ">";
                 }
             }
@@ -96,10 +100,11 @@ namespace Phase.Translator.Haxe
                 case "dynamic":
                     return true;
             }
+
             return false;
         }
 
-        protected override string GetMethodNameInternal(IMethodSymbol method)
+        protected override string GetMethodNameInternal(IMethodSymbol method, BaseEmitterContext context)
         {
             method = method.OriginalDefinition;
 
@@ -111,7 +116,7 @@ namespace Phase.Translator.Haxe
             if (!method.ExplicitInterfaceImplementations.IsEmpty)
             {
                 var impl = method.ExplicitInterfaceImplementations[0];
-                return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl);
+                return GetTypeName(impl.ContainingType, true) + "_" + GetMethodName(impl, context);
             }
 
             var attributeName = GetNameFromAttribute(method);
@@ -122,7 +127,7 @@ namespace Phase.Translator.Haxe
 
             if (method.OverriddenMethod != null)
             {
-                return GetMethodName(method.OverriddenMethod);
+                return GetMethodName(method.OverriddenMethod, context);
             }
 
             var x = new StringBuilder();
@@ -146,7 +151,7 @@ namespace Phase.Translator.Haxe
                 }
                 else
                 {
-                    x.Append("get_" + GetSymbolName(method.AssociatedSymbol));
+                    x.Append("get_" + GetSymbolName(method.AssociatedSymbol, context));
                 }
             }
             else if (method.MethodKind == MethodKind.PropertySet)
@@ -158,16 +163,16 @@ namespace Phase.Translator.Haxe
                 }
                 else
                 {
-                    x.Append("set_" + GetSymbolName(method.AssociatedSymbol));
+                    x.Append("set_" + GetSymbolName(method.AssociatedSymbol, context));
                 }
             }
             else if (method.MethodKind == MethodKind.EventAdd)
             {
-                x.Append("add" + GetSymbolName(method.AssociatedSymbol).ToPascalCase());
+                x.Append("add" + GetSymbolName(method.AssociatedSymbol, context).ToPascalCase());
             }
             else if (method.MethodKind == MethodKind.EventRemove)
             {
-                x.Append("remove" + GetSymbolName(method.AssociatedSymbol).ToPascalCase());
+                x.Append("remove" + GetSymbolName(method.AssociatedSymbol, context).ToPascalCase());
             }
             else
             {
@@ -224,12 +229,14 @@ namespace Phase.Translator.Haxe
                 methodName = originalMethodName + suffix;
                 suffix++;
             }
+
             _reservedMethodNames[typeName + "." + methodName] = method;
 
             if (method.MethodKind != MethodKind.Constructor)
             {
                 methodName = methodName.ToCamelCase();
             }
+
             return methodName;
         }
 
@@ -253,11 +260,14 @@ namespace Phase.Translator.Haxe
 
         protected override Tuple<string, string> GetNamespaceAndTypeName(ITypeSymbol type)
         {
-            var nameAttribute = GetAttributes(type).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NameAttribute")));
+            var nameAttribute = GetAttributes(type)
+                .FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.NameAttribute")));
             if (nameAttribute != null)
             {
                 var name = nameAttribute.ConstructorArguments[0].Value.ToString();
-                var keepNamespace = nameAttribute.ConstructorArguments.Length > 1 ? (bool)nameAttribute.ConstructorArguments[1].Value : false;
+                var keepNamespace = nameAttribute.ConstructorArguments.Length > 1
+                    ? (bool) nameAttribute.ConstructorArguments[1].Value
+                    : false;
                 var pkgEnd = name.LastIndexOf(".", StringComparison.OrdinalIgnoreCase);
                 if (pkgEnd == -1)
                 {
@@ -281,6 +291,7 @@ namespace Phase.Translator.Haxe
                 s = type.ContainingType.Name + "_" + s;
                 type = type.ContainingType;
             }
+
             return s;
         }
 
@@ -293,6 +304,7 @@ namespace Phase.Translator.Haxe
                 nss.Add(SafeName(ns.Name.ToCamelCase()));
                 ns = ns.ContainingNamespace;
             }
+
             nss.Reverse();
             return string.Join(".", nss);
         }
@@ -318,10 +330,12 @@ namespace Phase.Translator.Haxe
                     {
                         return false;
                     }
+
                     if (aat.Sizes.Length != bat.Sizes.Length)
                     {
                         return false;
                     }
+
                     if (aat.Sizes.Where((t, i) => t != bat.Sizes[i]).Any())
                     {
                         return false;

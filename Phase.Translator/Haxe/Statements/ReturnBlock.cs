@@ -21,7 +21,7 @@ namespace Phase.Translator.Haxe
                 var property = (IPropertySymbol)EmitterContext.SetterMethod.AssociatedSymbol;
                 if (property.GetMethod != null)
                 {
-                    Write(Emitter.GetMethodName(property.GetMethod));
+                    Write(EmitterContext.GetMethodName(property.GetMethod));
                     WriteOpenParentheses();
                     if (property.IsIndexer)
                     {

@@ -33,7 +33,7 @@ namespace Phase.Translator.Kotlin.Expressions
                 else if (resolve.Symbol is IMethodSymbol method && Node.Parent.Kind() != SyntaxKind.InvocationExpression)
                 {
                     Write("::");
-                    Write(Emitter.GetMethodName(method));
+                    Write(EmitterContext.GetMethodName(method));
                     return AutoCastMode.SkipCast;
                 }
                 else
@@ -57,7 +57,7 @@ namespace Phase.Translator.Kotlin.Expressions
                         Write(" != null) ");
                         Write(EmitterContext.GetSymbolName(resolve.Symbol));
                         Write("!!::");
-                        Write(Emitter.GetMethodName(((INamedTypeSymbol)evt.Type).DelegateInvokeMethod));
+                        Write(EmitterContext.GetMethodName(((INamedTypeSymbol)evt.Type).DelegateInvokeMethod));
                         Write(" else null");
                     }
                     else

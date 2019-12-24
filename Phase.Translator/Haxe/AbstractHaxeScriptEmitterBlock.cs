@@ -361,7 +361,7 @@ namespace Phase.Translator.Haxe
                     Write(value.Name);
                     break;
                 case SymbolKind.Method:
-                    Write(Emitter.GetMethodName((IMethodSymbol) value));
+                    Write(EmitterContext.GetMethodName((IMethodSymbol) value));
                     break;
                 case SymbolKind.Parameter:
                     Write(Emitter.GetNameFromAttribute(value) ?? value.Name);
@@ -1004,7 +1004,7 @@ namespace Phase.Translator.Haxe
                 );
                 if (property.GetMethod != null)
                 {
-                    Write("get: ", prototype, ".", Emitter.GetMethodName(property.GetMethod));
+                    Write("get: ", prototype, ".", EmitterContext.GetMethodName(property.GetMethod));
                 }
                 if (property.SetMethod != null)
                 {
@@ -1012,7 +1012,7 @@ namespace Phase.Translator.Haxe
                     {
                         Write(",");
                     }
-                    Write("set: ", prototype, ".", Emitter.GetMethodName(property.SetMethod));
+                    Write("set: ", prototype, ".", EmitterContext.GetMethodName(property.SetMethod));
                 }
                 Write("});");
                 WriteNewLine();

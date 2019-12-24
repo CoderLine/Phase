@@ -85,7 +85,7 @@ namespace Phase.Translator.Kotlin.Expressions
                         Write("!!.");
                     }
 
-                    Write(Emitter.GetMethodName(method));
+                    Write(EmitterContext.GetMethodName(method));
                     WriteMethodInvocation(method, new List<ParameterInvocationInfo>
                     {
                         new ParameterInvocationInfo(Node.Right)

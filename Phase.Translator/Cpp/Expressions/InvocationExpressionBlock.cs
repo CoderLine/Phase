@@ -214,7 +214,7 @@ namespace Phase.Translator.Cpp.Expressions
                 {
                     Write(targetType);
                     Write("::");
-                    Write(Emitter.GetMethodName(methodSymbol));
+                    Write(EmitterContext.GetMethodName(methodSymbol));
                     if (methodSymbol.IsStatic)
                     {
                         WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
@@ -230,7 +230,7 @@ namespace Phase.Translator.Cpp.Expressions
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, false, CppEmitter.TypeNamePointerKind.NoPointer));
                     EmitterContext.ImportType(methodSymbol.ContainingType);
                     Write("::");
-                    Write(Emitter.GetMethodName(methodSymbol));
+                    Write(EmitterContext.GetMethodName(methodSymbol));
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }
                 else
@@ -239,7 +239,7 @@ namespace Phase.Translator.Cpp.Expressions
                     if (isEventInvocation)
                     {
                         Write("::");
-                        Write(Emitter.GetMethodName(methodSymbol));
+                        Write(EmitterContext.GetMethodName(methodSymbol));
                     }
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }

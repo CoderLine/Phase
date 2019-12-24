@@ -93,7 +93,7 @@ namespace Phase.Translator.Cpp
             }
 
             var typeName = Emitter.GetTypeName(_method.ContainingType, false, true, CppEmitter.TypeNamePointerKind.NoPointer);
-            var methodName = Emitter.GetMethodName(_method);
+            var methodName = EmitterContext.GetMethodName(_method);
 
             Write(typeName);
             Write("::");

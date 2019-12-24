@@ -54,7 +54,7 @@ namespace Phase.Translator.Haxe.Expressions
                 WriteOpenCloseParentheses();
                 WriteDot();
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
-                Write(Emitter.GetMethodName(ctor));
+                Write(EmitterContext.GetMethodName(ctor));
                 WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
             }
 

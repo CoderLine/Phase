@@ -355,7 +355,7 @@ namespace Phase.Translator.Kotlin
                     Write(value.Name);
                     break;
                 case SymbolKind.Method:
-                    Write(Emitter.GetMethodName((IMethodSymbol)value));
+                    Write(EmitterContext.GetMethodName((IMethodSymbol)value));
                     break;
                 case SymbolKind.Parameter:
                     Write(Emitter.GetNameFromAttribute(value) ?? value.Name);

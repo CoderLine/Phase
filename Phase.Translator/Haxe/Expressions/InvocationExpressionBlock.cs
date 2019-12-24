@@ -190,7 +190,7 @@ namespace Phase.Translator.Haxe.Expressions
                 {
                     Write(targetType);
                     WriteDot();
-                    Write(Emitter.GetMethodName(methodSymbol));
+                    Write(EmitterContext.GetMethodName(methodSymbol));
                     if (methodSymbol.IsStatic)
                     {
                         WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
@@ -205,7 +205,7 @@ namespace Phase.Translator.Haxe.Expressions
                 {
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
                     WriteDot();
-                    Write(Emitter.GetMethodName(methodSymbol));
+                    Write(EmitterContext.GetMethodName(methodSymbol));
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }
                 else
@@ -214,7 +214,7 @@ namespace Phase.Translator.Haxe.Expressions
                     if (isEventInvocation)
                     {
                         WriteDot();
-                        Write(Emitter.GetMethodName(methodSymbol));
+                        Write(EmitterContext.GetMethodName(methodSymbol));
                     }
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
                 }

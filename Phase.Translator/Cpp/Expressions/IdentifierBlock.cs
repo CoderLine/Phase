@@ -64,7 +64,7 @@ namespace Phase.Translator.Cpp.Expressions
                                 }
                                 else
                                 {
-                                    Write(Emitter.GetMethodName(property.GetMethod));
+                                    Write(EmitterContext.GetMethodName(property.GetMethod));
 
                                     WriteOpenParentheses();
                                     writeCloseParenthesis = true;
@@ -77,7 +77,7 @@ namespace Phase.Translator.Cpp.Expressions
                                 WriteSetterAccess(property);
                                 break;
                             default:
-                                Write(Emitter.GetMethodName(property.GetMethod));
+                                Write(EmitterContext.GetMethodName(property.GetMethod));
                                 WriteOpenParentheses();
                                 writeCloseParenthesis = true;
                                 break;
@@ -126,7 +126,7 @@ namespace Phase.Translator.Cpp.Expressions
             }
             else
             {
-                Write(Emitter.GetMethodName(property.SetMethod));
+                Write(EmitterContext.GetMethodName(property.SetMethod));
                 WriteOpenParentheses();
             }
         }

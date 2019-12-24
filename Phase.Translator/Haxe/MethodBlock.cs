@@ -126,7 +126,7 @@ namespace Phase.Translator.Haxe
 
             Write("function ");
 
-            var methodName = Emitter.GetMethodName(_method);
+            var methodName = EmitterContext.GetMethodName(_method);
             Write(methodName);
 
             var typeParameters = new List<ITypeSymbol>(_method.TypeParameters);
@@ -203,7 +203,7 @@ namespace Phase.Translator.Haxe
                 if (_method.DeclaringSyntaxReferences.IsEmpty && _method.MethodKind == MethodKind.Constructor && !_method.IsStatic && _method.ContainingType.BaseType != null && _method.ContainingType.BaseType.SpecialType != SpecialType.System_Object)
                 {
                     // default constructor 
-                    var x = Emitter.GetMethodName(_method);
+                    var x = EmitterContext.GetMethodName(_method);
                     if (x == "new")
                     {
                         if (!Emitter.HasNoConstructor(_method.ContainingType.BaseType))
@@ -326,7 +326,7 @@ namespace Phase.Translator.Haxe
                                         .GetSymbolInfo(constructorDeclarationSyntax.Initializer)
                                         .Symbol;
 
-                                    var x = Emitter.GetMethodName(ctor);
+                                    var x = EmitterContext.GetMethodName(ctor);
                                     if (x == "new")
                                     {
                                         Write("super");
@@ -349,7 +349,7 @@ namespace Phase.Translator.Haxe
                                         c => c.Parameters.Length == 0);
                                     if (ctor != null)
                                     {
-                                        var x = Emitter.GetMethodName(ctor);
+                                        var x = EmitterContext.GetMethodName(ctor);
                                         if (x == "new")
                                         {
                                             if (!Emitter.HasNoConstructor(_method.ContainingType.BaseType))
@@ -425,11 +425,11 @@ namespace Phase.Translator.Haxe
                                             WriteSemiColon(true);
 
                                             WriteReturn(true);
-                                            Write(Emitter.GetSymbolName(property.GetMethod));
+                                            Write(EmitterContext.GetSymbolName(property.GetMethod));
                                             WriteOpenParentheses();
                                             for (int i = 0; i < _method.Parameters.Length - 1; i++)
                                             {
-                                                Write(Emitter.GetSymbolName(_method.Parameters[i]));
+                                                Write(EmitterContext.GetSymbolName(_method.Parameters[i]));
                                             }
                                             WriteCloseParentheses();
                                             WriteSemiColon(true);
@@ -460,7 +460,7 @@ namespace Phase.Translator.Haxe
                                     var property = (IPropertySymbol)_method.AssociatedSymbol;
                                     if (property.GetMethod != null)
                                     {
-                                        Write(Emitter.GetMethodName(property.GetMethod));
+                                        Write(EmitterContext.GetMethodName(property.GetMethod));
                                         WriteOpenParentheses();
                                         if (property.IsIndexer)
                                         {

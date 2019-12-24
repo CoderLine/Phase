@@ -87,6 +87,10 @@ namespace Phase.Translator
         }
 
 
+        public string GetMethodName(IMethodSymbol method)
+        {
+            return Emitter.GetMethodName(method, this);
+        }
 
 
         public bool TryGetCallerMemberInfo(IParameterSymbol parameter, ISymbol callerMember, SyntaxNode callerNode, out string value)

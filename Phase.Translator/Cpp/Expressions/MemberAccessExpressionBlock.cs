@@ -80,12 +80,12 @@ namespace Phase.Translator.Cpp.Expressions
                     case SyntaxKind.SubtractAssignmentExpression:
                         if (((AssignmentExpressionSyntax)Node.Parent).Left == Node)
                         {
-                            Write(Emitter.GetMethodName(property.SetMethod));
+                            Write(EmitterContext.GetMethodName(property.SetMethod));
                             WriteOpenParentheses();
                         }
                         else
                         {
-                            Write(Emitter.GetMethodName(property.GetMethod));
+                            Write(EmitterContext.GetMethodName(property.GetMethod));
                             WriteOpenParentheses();
                             writeCloseParenthesis = true;
                         }
@@ -94,11 +94,11 @@ namespace Phase.Translator.Cpp.Expressions
                     case SyntaxKind.PreDecrementExpression:
                     case SyntaxKind.PostIncrementExpression:
                     case SyntaxKind.PostDecrementExpression:
-                        Write(Emitter.GetMethodName(property.SetMethod));
+                        Write(EmitterContext.GetMethodName(property.SetMethod));
                         WriteOpenParentheses();
                         break;
                     default:
-                        Write(Emitter.GetMethodName(property.GetMethod));
+                        Write(EmitterContext.GetMethodName(property.GetMethod));
                         WriteOpenParentheses();
                         writeCloseParenthesis = true;
                         break;
@@ -164,7 +164,7 @@ namespace Phase.Translator.Cpp.Expressions
                     case SymbolKind.Property:
                         var getMethod = ((IPropertySymbol)member.Symbol).GetMethod;
                         EmitterContext.ImportType(((IPropertySymbol)member.Symbol).Type);
-                        Write(Emitter.GetMethodName(getMethod));
+                        Write(EmitterContext.GetMethodName(getMethod));
                         WriteMethodInvocation(getMethod, new ParameterInvocationInfo[0], Node, cancellationToken);
                         break;
                     case SymbolKind.Field:

@@ -109,7 +109,7 @@ namespace Phase.Translator.Cpp
                     break;
             }
 
-            var methodName = Emitter.GetMethodName(_method);
+            var methodName = EmitterContext.GetMethodName(_method);
             Write(methodName);
 
             WriteOpenParentheses();

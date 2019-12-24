@@ -220,7 +220,7 @@ namespace Phase.Translator
             }
         }
 
-        public string GetMethodName(IMethodSymbol method)
+        public string GetMethodName(IMethodSymbol method, BaseEmitterContext context)
         {
             lock (method)
             {
@@ -230,7 +230,7 @@ namespace Phase.Translator
                     return meta.OutputName;
                 }
 
-                return meta.OutputName = GetMethodNameInternal(method);
+                return meta.OutputName = GetMethodNameInternal(method, context);
             }
         }
 
@@ -283,7 +283,7 @@ namespace Phase.Translator
             }
         }
 
-        protected abstract string GetMethodNameInternal(IMethodSymbol method);
+        protected abstract string GetMethodNameInternal(IMethodSymbol method, BaseEmitterContext context);
 
         public virtual string GetSymbolName(ISymbol symbol, BaseEmitterContext context)
         {
@@ -312,7 +312,7 @@ namespace Phase.Translator
                 case SymbolKind.Field:
                     return GetFieldName((IFieldSymbol)symbol);
                 case SymbolKind.Method:
-                    return GetMethodName((IMethodSymbol)symbol);
+                    return GetMethodName((IMethodSymbol)symbol, context);
                 case SymbolKind.Property:
                     return GetPropertyName((IPropertySymbol)symbol);
                 default:
@@ -1006,50 +1006,6 @@ namespace Phase.Translator
             }
             return false;
         }
-        
-        public bool NeedsDefaultInitializer(IPropertySymbol property)
-        {
-            lock (this)
-            {
-                var meta = GetOrCreateMeta(property);
-
-                if (meta.NeedsDefaultInitializer.HasValue)
-                {
-                    return meta.NeedsDefaultInitializer.Value;
-                }
-
-                return (meta.NeedsDefaultInitializer = InternalNeedsDefaultInitializer(property)).Value;
-            }
-
-        }
-
-        private bool InternalNeedsDefaultInitializer(IPropertySymbol property)
-        {
-            var attr = property.GetAttributes().FirstOrDefault(a =>
-                a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.AutoPropertyAttribute")));
-            if (attr != null)
-            {
-                return true;
-            }
-
-            if (property.ContainingType.TypeKind != TypeKind.Class && property.ContainingType.TypeKind != TypeKind.Struct)
-            {
-                return false;
-            }
-
-            if (property.IsAbstract || property.IsExtern)
-            {
-                return false;
-            }
-
-            var declaration = (BasePropertyDeclarationSyntax)property.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
-            if (declaration != null)
-            {
-                return IsAutoProperty(declaration);
-            }
-            return false;
-        }
-
 
         public string GetMeta(ISymbol symbol)
         {
@@ -1073,53 +1029,6 @@ namespace Phase.Translator
                 return string.Empty;
             }
             return (string)attr.ConstructorArguments[0].Value;
-        }
-
-        public bool TryGetCallerMemberInfo(IParameterSymbol parameter, ISymbol callerMember, SyntaxNode callerNode, out string value)
-        {
-            var callerAttribute = parameter.GetAttributes().FirstOrDefault(
-                a => a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerMemberNameAttribute"))
-                    || a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerLineNumberAttribute"))
-                    || a.AttributeClass.Equals(GetPhaseType("System.Runtime.CompilerServices.CallerFilePathAttribute"))
-            );
-            if (callerAttribute == null)
-            {
-                value = null;
-                return false;
-            }
-            switch (callerAttribute.AttributeClass.Name)
-            {
-                case "CallerMemberNameAttribute":
-                    if (callerMember == null)
-                    {
-                        value = null;
-                        Log.Warn("Could not get caller member name");
-                        return false;
-                    }
-                    value = "\"" + GetSymbolName(callerMember) + "\"";
-                    return true;
-                case "CallerLineNumberAttribute":
-                    if (callerNode == null)
-                    {
-                        value = null;
-                        Log.Warn("Could not get caller line number");
-                        return false;
-                    }
-                    value = callerNode.GetText().Lines[0].LineNumber.ToString();
-                    return true;
-                case "CallerFilePathAttribute":
-                    if (callerNode == null)
-                    {
-                        value = null;
-                        Log.Warn("Could not get caller file path");
-                        return false;
-                    }
-                    value = "\"" + callerNode.SyntaxTree.FilePath.Replace("\\", "\\\\") + "\"";
-                    return true;
-            }
-
-            value = null;
-            return false;
         }
     }
 

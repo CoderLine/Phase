@@ -99,7 +99,7 @@ namespace Phase.Translator.Kotlin
                 WriteAccessibility(_method.DeclaredAccessibility);
             }
 
-            var methodName = Emitter.GetMethodName(_method);
+            var methodName = EmitterContext.GetMethodName(_method);
 
             if (isReifiedExtensionMethod)
             {
@@ -407,7 +407,7 @@ namespace Phase.Translator.Kotlin
                                     var property = (IPropertySymbol)_method.AssociatedSymbol;
                                     if (property.GetMethod != null)
                                     {
-                                        Write(Emitter.GetMethodName(property.GetMethod));
+                                        Write(EmitterContext.GetMethodName(property.GetMethod));
                                         WriteOpenParentheses();
                                         if (property.IsIndexer)
                                         {

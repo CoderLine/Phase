@@ -101,7 +101,7 @@ namespace Phase.Translator.Cpp.Expressions
                         {
                             Write(tmpvar);
                             Write("->");
-                            Write(Emitter.GetMethodName(((IPropertySymbol)left.Symbol).SetMethod));
+                            Write(EmitterContext.GetMethodName(((IPropertySymbol)left.Symbol).SetMethod));
                             WriteOpenParentheses();
                             EmitTree(assignment.Right);
                             WriteCloseParentheses();

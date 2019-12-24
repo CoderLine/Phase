@@ -64,7 +64,7 @@ namespace Phase.Translator.Cpp.Expressions
                     {
                         EmitTree(elementAccess.Expression, cancellationToken);
                         WriteDot();
-                        Write(Emitter.GetMethodName(property.GetMethod));
+                        Write(EmitterContext.GetMethodName(property.GetMethod));
                         WriteOpenParentheses();
 
                         for (int i = 0; i < elementAccess.ArgumentList.Arguments.Count; i++)
