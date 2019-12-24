@@ -14,6 +14,7 @@ using NLog;
 using Phase.Translator.Cpp;
 using Phase.Translator.Haxe;
 using Phase.Translator.Kotlin;
+using Phase.Translator.TypeScript;
 using Phase.Translator.Utils;
 
 namespace Phase.Translator
@@ -60,6 +61,9 @@ namespace Phase.Translator
                         break;
                     case PhaseLanguage.Kotlin:
                         emitter = new KotlinEmitter(Compiler);
+                        break;
+                    case PhaseLanguage.TypeScript:
+                        emitter = new TypeScriptEmitter(Compiler);
                         break;
                     default:
                         Log.Error("Invalid compilation language");

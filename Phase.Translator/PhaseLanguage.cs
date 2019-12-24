@@ -4,6 +4,7 @@
     {
         Haxe = 0,
         Cpp,
-        Kotlin
+        Kotlin,
+        TypeScript
     }
 }

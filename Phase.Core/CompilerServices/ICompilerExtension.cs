@@ -13,4 +13,7 @@
     public interface IKotlinCompilerExtension : ICompilerExtension
     {
     }
+    public interface ITypeScriptCompilerExtension : ICompilerExtension
+    {
+    }
 }

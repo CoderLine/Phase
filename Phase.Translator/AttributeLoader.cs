@@ -45,6 +45,9 @@ namespace Phase.Translator
                 case PhaseLanguage.Kotlin:
                     _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.IKotlinCompilerExtension");
                     break;
+                case PhaseLanguage.TypeScript:
+                    _compilerExtensionType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ITypeScriptCompilerExtension");
+                    break;
             }
             _compilerContextType = compilation.GetTypeByMetadataName("Phase.CompilerServices.ICompilerContext");
         }
