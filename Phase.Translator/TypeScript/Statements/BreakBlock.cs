@@ -10,11 +10,8 @@ namespace Phase.Translator.TypeScript
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            if (Node.Parent.Kind() != SyntaxKind.SwitchSection)
-            {
-                Write("break");
-                WriteSemiColon(true);
-            }
+            Write("break");
+            WriteSemiColon(true);
         }
     }
 }

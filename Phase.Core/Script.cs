@@ -9,7 +9,7 @@ namespace Phase
         public static extern void Write(string code);
         [Template("{code:raw}", SkipSemicolonOnStatements = true)]
         public static extern T Write<T>(string code);
-        [Template("cast ({v})")]
+        [Template("{v} as {T}")]
         public static extern T As<T>(this object v);
         public static extern object AbstractThis
         {

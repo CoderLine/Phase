@@ -29,7 +29,7 @@ namespace Phase.Translator.TypeScript
             WriteAccessibility(_field.DeclaredAccessibility);
             if (_field.IsConst)
             {
-                Write("static inline ");
+                Write("static readonly ");
             }
             else if (_field.IsStatic)
             {
@@ -37,7 +37,7 @@ namespace Phase.Translator.TypeScript
             }
 
             var fieldName = Emitter.GetFieldName(_field);
-            Write("var ", fieldName, " ");
+            Write(fieldName, " ");
 
             if (_field.IsConst)
             {
@@ -45,7 +45,8 @@ namespace Phase.Translator.TypeScript
             }
 
             WriteColon();
-            WriteType(_field.Type);
+            Write(Emitter.GetTypeNameWithNullability(_field.Type));
+            EmitterContext.ImportType(_field.Type);
 
             EmitterContext.IsConstInitializer = _field.IsConst;
 

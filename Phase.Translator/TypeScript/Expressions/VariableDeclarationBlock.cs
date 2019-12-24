@@ -11,12 +11,13 @@ namespace Phase.Translator.TypeScript.Expressions
         {
             for (int i = 0; i < Node.Variables.Count; i++)
             {
-                WriteVar();
                 var variable = Node.Variables[i];
-                Write(variable.Identifier.Text);
+                Write("let ", variable.Identifier.Text);
 
                 WriteColon();
-                WriteType(Node.Type);
+                var type = Emitter.GetTypeSymbol(Node.Type);
+                WriteType(type);
+                EmitterContext.ImportType(type);
 
                 if (variable.Initializer != null)
                 {

@@ -80,25 +80,6 @@ namespace Phase.Translator.TypeScript
             WriteComments(_method, cancellationToken);
             WriteMeta(_method, cancellationToken);
 
-            if (Emitter.IsFrom(_method))
-            {
-                Write("@:from ");
-            }
-
-            if (Emitter.IsTo(_method))
-            {
-                Write("@:to ");
-            }
-
-            var op = Emitter.GetOp(_method);
-            if (op != null)
-            {
-                Write("@:op");
-                WriteOpenParentheses();
-                Write(op);
-                WriteCloseParentheses();
-            }
-
             if (_method.MethodKind == MethodKind.StaticConstructor || _method.ContainingType.TypeKind == TypeKind.Interface)
             {
                 WriteAccessibility(Accessibility.Public);
@@ -108,23 +89,23 @@ namespace Phase.Translator.TypeScript
                 WriteAccessibility(_method.DeclaredAccessibility);
             }
 
+            if (_method.AssociatedSymbol is IPropertySymbol prop && !prop.IsIndexer)
+            {
+                switch (_method.MethodKind)
+                {
+                    case MethodKind.PropertyGet:
+                        Write("get ");
+                        break;
+                    case MethodKind.PropertySet:
+                        Write("set ");
+                        break;
+                }
+            }
+
             if (_method.IsStatic)
             {
                 Write("static ");
             }
-
-            if (Emitter.IsInline(_method))
-            {
-                Write("inline ");
-            }
-
-            if (_method.OverriddenMethod != null && _method.OverriddenMethod.ContainingType.SpecialType != SpecialType.System_Object && !Emitter.IsAbstract(_method.ContainingType))
-            {
-                Write("override ");
-            }
-
-
-            Write("function ");
 
             var methodName = EmitterContext.GetMethodName(_method);
             Write(methodName);
@@ -163,7 +144,8 @@ namespace Phase.Translator.TypeScript
                 case MethodKind.PropertyGet:
                 case MethodKind.PropertySet:
                     WriteColon();
-                    WriteType(((IPropertySymbol)_method.AssociatedSymbol).Type);
+                    Write(Emitter.GetTypeNameWithNullability(((IPropertySymbol)_method.AssociatedSymbol).Type));
+                    EmitterContext.ImportType(((IPropertySymbol)_method.AssociatedSymbol).Type);
                     break;
                 case MethodKind.EventAdd:
                 case MethodKind.EventRemove:
@@ -180,11 +162,13 @@ namespace Phase.Translator.TypeScript
                         Write("Iterable<");
                         var generic = ((INamedTypeSymbol)_method.ReturnType).TypeArguments[0];
                         WriteType(generic);
+                        EmitterContext.ImportType(generic);
                         Write(">");
                     }
                     else
                     {
-                        WriteType(_method.ReturnType);
+                        Write(Emitter.GetTypeNameWithNullability(_method.ReturnType));
+                        EmitterContext.ImportType(_method.ReturnType);
                     }
 
                     Write(" ");
@@ -197,14 +181,13 @@ namespace Phase.Translator.TypeScript
             }
             else
             {
-                WriteNewLine();
                 BeginBlock();
 
                 if (_method.DeclaringSyntaxReferences.IsEmpty && _method.MethodKind == MethodKind.Constructor && !_method.IsStatic && _method.ContainingType.BaseType != null && _method.ContainingType.BaseType.SpecialType != SpecialType.System_Object)
                 {
                     // default constructor 
                     var x = EmitterContext.GetMethodName(_method);
-                    if (x == "new")
+                    if (x == "constructor")
                     {
                         if (!Emitter.HasNoConstructor(_method.ContainingType.BaseType))
                         {
@@ -327,7 +310,7 @@ namespace Phase.Translator.TypeScript
                                         .Symbol;
 
                                     var x = EmitterContext.GetMethodName(ctor);
-                                    if (x == "new")
+                                    if (x == "constructor")
                                     {
                                         Write("super");
                                     }
@@ -350,7 +333,7 @@ namespace Phase.Translator.TypeScript
                                     if (ctor != null)
                                     {
                                         var x = EmitterContext.GetMethodName(ctor);
-                                        if (x == "new")
+                                        if (x == "constructor")
                                         {
                                             if (!Emitter.HasNoConstructor(_method.ContainingType.BaseType))
                                             {

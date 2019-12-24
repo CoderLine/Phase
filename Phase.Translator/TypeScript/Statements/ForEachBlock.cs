@@ -17,8 +17,9 @@ namespace Phase.Translator.TypeScript
 
             WriteFor();
             WriteOpenParentheses();
+            Write("let ");
             Write(Node.Identifier.ValueText);
-            Write(" in ");
+            Write(" of ");
 
             switch (foreachMode)
             {

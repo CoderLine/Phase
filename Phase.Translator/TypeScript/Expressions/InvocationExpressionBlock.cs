@@ -1,8 +1,10 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.TypeScript.Expressions
 {
@@ -103,80 +105,11 @@ namespace Phase.Translator.TypeScript.Expressions
                     }
 
                     var methodInvocation = BuildMethodInvocation(methodSymbol, arguments);
-                    foreach (var param in methodSymbol.Parameters)
-                    {
-                        if (template.Variables.TryGetValue(param.Name, out var variable))
-                        {
-                            var values = methodInvocation[param.Name].ToArray();
-                            PushWriter();
-                            if (param.IsParams)
-                            {
-                                if (values.Length == 1)
-                                {
-                                    var singleParamType = Emitter.GetTypeInfo(values[0]);
-                                    
-                                    if (singleParamType.ConvertedType.Equals(param.Type))
-                                    {
-                                        EmitTree(values[0], cancellationToken);
-                                    }
-                                    else
-                                    {
-                                        if (variable.Modifier != "raw")
-                                        {
-                                            Write("[");
-                                        }
-                                        EmitTree(values[0], cancellationToken);
-                                        if (variable.Modifier != "raw")
-                                        {
-                                            Write("]");
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    if (variable.Modifier != "raw")
-                                    {
-                                        Write("[");
-                                    }
-                                    for (int j = 0; j < values.Length; j++)
-                                    {
-                                        if (j > 0) WriteComma();
-                                        EmitTree(values[0], cancellationToken);
-                                    }
-                                    if (variable.Modifier != "raw")
-                                    {
-                                        Write("]");
-                                    }
-                                }
-
-                            }
-                            else
-                            {
-                                if (variable.Modifier == "raw")
-                                {
-                                    var constValue = Emitter.GetConstantValue(values[0], cancellationToken);
-                                    if (constValue.HasValue)
-                                    {
-                                        Write(constValue);
-                                    }
-                                    else
-                                    {
-                                        EmitTree(values[0], cancellationToken);
-                                    }
-                                }
-                                else
-                                {
-                                    EmitTree(values[0], cancellationToken);
-                                }
-                            }
-                            var paramOutput = PopWriter();
-                            variable.RawValue = paramOutput;
-                        }
-                    }
-
+                    ApplyExpressions(template,methodSymbol.Parameters, methodInvocation, cancellationToken);
+                    
                     for (int i = 0; i < methodSymbol.TypeArguments.Length; i++)
                     {
-                        var argument = methodSymbol.TypeArguments[i];
+                        var argument = ((IMethodSymbol)symbol).TypeArguments[i];
                         var param = methodSymbol.TypeParameters[i];
                         if (template.Variables.TryGetValue(param.Name, out var variable))
                         {
@@ -204,6 +137,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 else if (methodSymbol.IsStatic)
                 {
                     Write(Emitter.GetTypeName(methodSymbol.ContainingType, false, true));
+                    EmitterContext.ImportType(methodSymbol.ContainingType);
                     WriteDot();
                     Write(EmitterContext.GetMethodName(methodSymbol));
                     WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);
@@ -228,6 +162,8 @@ namespace Phase.Translator.TypeScript.Expressions
 
             return AutoCastMode.Default;
         }
+
+    
 
         private ExpressionSyntax GetInvokeExpression(ExpressionSyntax e)
         {

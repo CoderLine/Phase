@@ -35,19 +35,23 @@ namespace Phase.Translator.TypeScript.Expressions
                     Write(specialArray);
                     WriteDot();
                     Write("empty");
+                    if (Node.Type.RankSpecifiers.Count > 1)
+                    {
+                        Write(Node.Type.RankSpecifiers.Count);
+                    }
                 }
                 else
                 {
-                    Write("system.FixedArray");
+                    Write("phase.FixedArray");
                     WriteDot();
                     Write("empty");
+                    if (Node.Type.RankSpecifiers.Count > 1)
+                    {
+                        Write(Node.Type.RankSpecifiers.Count);
+                    }
+                    Write("<", Emitter.GetTypeName(elementType), ">");
                 }
-
-                if (Node.Type.RankSpecifiers.Count > 1)
-                {
-                    Write(Node.Type.RankSpecifiers.Count);
-                }
-
+                
                 WriteOpenParentheses();
 
                 var x = 0;

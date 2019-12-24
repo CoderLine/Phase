@@ -19,7 +19,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 WriteOpenCloseParentheses();
                 BeginBlock();
 
-                WriteVar();
+                Write("let ");
 
                 tmpvar = "_tmp";
                 if (EmitterContext.RecursiveObjectCreation > 0)
@@ -43,7 +43,8 @@ namespace Phase.Translator.TypeScript.Expressions
             else if (Emitter.HasNativeConstructors(type) || !Emitter.HasConstructorOverloads(type))
             {
                 WriteNew();
-                WriteType(Node.Type);
+                WriteType(type);
+                EmitterContext.ImportType(type);
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
                 WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
             }
@@ -51,6 +52,7 @@ namespace Phase.Translator.TypeScript.Expressions
             {
                 WriteNew();
                 WriteType(Node.Type);
+                EmitterContext.ImportType(type);
                 WriteOpenCloseParentheses();
                 WriteDot();
                 var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;

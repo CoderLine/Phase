@@ -42,7 +42,6 @@ namespace Phase.Translator.TypeScript
 
             if (_type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
             {
-                Write("@:expose");
                 WriteNewLine();
             }
 

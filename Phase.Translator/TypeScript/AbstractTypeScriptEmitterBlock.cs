@@ -13,6 +13,7 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using NLog;
 using Phase.Attributes;
 using Phase.Translator.TypeScript.Expressions;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.TypeScript
 {
@@ -43,6 +44,21 @@ namespace Phase.Translator.TypeScript
         protected override void BeginEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             base.BeginEmit(cancellationToken);
+        }
+
+
+        protected void WriteImport(ITypeSymbol type)
+        {
+            var prefix = IsBuiltInType(type) ? "@mscorlib/" : "@root/";
+            Write("import { ", Emitter.GetTypeName(type, true, true), " } from '", prefix,
+                Emitter.GetFileName(type, false, '/'),
+                "';");
+            WriteNewLine();
+        }
+
+        private bool IsBuiltInType(ITypeSymbol type)
+        {
+            return type.DeclaringSyntaxReferences.Length == 0;
         }
 
         protected AbstractTypeScriptEmitterBlock EmitTree(SyntaxNode value,
@@ -235,7 +251,7 @@ namespace Phase.Translator.TypeScript
 
                             break;
                         case "paramref":
-                            Write("{@link ");
+                            Write(" {@link ");
                             WriteDocLines(element.Value);
                             Write("}");
                             break;
@@ -251,7 +267,7 @@ namespace Phase.Translator.TypeScript
                             WriteNewLine();
                             break;
                         case "see":
-                            Write("{@link ");
+                            Write(" {@link ");
 
                             var see = element.Attribute("cref")?.Value ?? string.Empty;
                             if (crefs.TryGetValue(see, out var seeName) && seeName != null)
@@ -306,7 +322,8 @@ namespace Phase.Translator.TypeScript
 
                             break;
                         case "typeparamref":
-                            Write("{@link ");
+                            Write(" {@link ");
+                            Write(" {@link ");
 
                             var typeparamref = element.Attribute("name")?.Value;
                             Write(typeparamref);
@@ -328,6 +345,84 @@ namespace Phase.Translator.TypeScript
                 case XmlNodeType.Text:
                     WriteDocLines(((XText) node).Value);
                     break;
+            }
+        }
+
+        protected void ApplyExpressions(CodeTemplate template, IEnumerable<IParameterSymbol> parameters,
+            Dictionary<string, IEnumerable<ExpressionSyntax>> methodInvocation, CancellationToken cancellationToken)
+        {
+            foreach (var param in parameters)
+            {
+                if (template.Variables.TryGetValue(param.Name, out var variable))
+                {
+                    var values = methodInvocation[param.Name].ToArray();
+                    PushWriter();
+                    if (param.IsParams)
+                    {
+                        if (values.Length == 1)
+                        {
+                            var singleParamType = Emitter.GetTypeInfo(values[0]);
+
+                            if (singleParamType.ConvertedType.Equals(param.Type))
+                            {
+                                EmitTree(values[0], cancellationToken);
+                            }
+                            else
+                            {
+                                if (variable.Modifier != "raw")
+                                {
+                                    Write("[");
+                                }
+
+                                EmitTree(values[0], cancellationToken);
+                                if (variable.Modifier != "raw")
+                                {
+                                    Write("]");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (variable.Modifier != "raw")
+                            {
+                                Write("[");
+                            }
+
+                            for (int j = 0; j < values.Length; j++)
+                            {
+                                if (j > 0) WriteComma();
+                                EmitTree(values[0], cancellationToken);
+                            }
+
+                            if (variable.Modifier != "raw")
+                            {
+                                Write("]");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (variable.Modifier == "raw")
+                        {
+                            var constValue = Emitter.GetConstantValue(values[0], cancellationToken);
+                            if (constValue.HasValue)
+                            {
+                                Write(constValue);
+                            }
+                            else
+                            {
+                                EmitTree(values[0], cancellationToken);
+                            }
+                        }
+                        else
+                        {
+                            EmitTree(values[0], cancellationToken);
+                        }
+                    }
+
+                    var paramOutput = PopWriter();
+                    variable.RawValue = paramOutput;
+                }
             }
         }
 
@@ -392,13 +487,6 @@ namespace Phase.Translator.TypeScript
 
         protected void WriteMeta(ISymbol node, CancellationToken cancellationToken)
         {
-            var native = Emitter.GetNative(node);
-            if (native != null)
-            {
-                Write("@:native('", native, ")");
-                WriteNewLine();
-            }
-
             foreach (var attribute in Emitter.GetAttributes(node))
             {
                 string meta;
@@ -454,7 +542,7 @@ namespace Phase.Translator.TypeScript
             switch (argumentType.SpecialType)
             {
                 case SpecialType.System_Boolean:
-                    Write((bool)argumentValue ? "true" : "false");
+                    Write((bool) argumentValue ? "true" : "false");
                     break;
                 case SpecialType.System_Char:
                 case SpecialType.System_SByte:
@@ -465,16 +553,16 @@ namespace Phase.Translator.TypeScript
                 case SpecialType.System_UInt32:
                 case SpecialType.System_Int64:
                 case SpecialType.System_UInt64:
-                    Write((int)argumentValue);
+                    Write((int) argumentValue);
                     break;
                 case SpecialType.System_Decimal:
-                    Write((decimal)argumentValue);
+                    Write((decimal) argumentValue);
                     break;
                 case SpecialType.System_Single:
-                    Write((float)argumentValue);
+                    Write((float) argumentValue);
                     break;
                 case SpecialType.System_Double:
-                    Write((double)argumentValue);
+                    Write((double) argumentValue);
                     break;
                 case SpecialType.System_String:
                     Write("\"" + argumentValue + "\"");
@@ -598,25 +686,46 @@ namespace Phase.Translator.TypeScript
                     case SpecialType.System_UInt32:
                     case SpecialType.System_Int64:
                     case SpecialType.System_UInt64:
-                        switch (mode)
-                        {
-                            case AutoCastMode.AddParenthesis:
-                                Write("(");
-                                Write(result);
-                                Write(")");
-                                break;
-                            default:
-                                Write(result);
-                                break;
-                        }
 
-                        if (Emitter.IsIConvertible(type))
+                        if(Emitter.IsIConvertible(type) && Emitter.AreTypeMethodsRedirected(type, out var redirect))
                         {
+                            Write(redirect);
                             WriteDot();
-                            Write("to" + convertedType.Name + "_IFormatProvider");
+                            Write("to" + convertedType.Name);
                             WriteOpenParentheses();
-                            Write("null");
+                            Write(result);
                             WriteCloseParentheses();
+                        }
+                        else if(type.TypeKind == TypeKind.Enum)
+                        {
+                            WriteType(type);
+                            WriteDot();
+                            Write("to" + convertedType.Name);
+                            WriteOpenParentheses();
+                            Write(result);
+                            WriteCloseParentheses();
+                        }
+                        else
+                        {
+                            switch (mode)
+                            {
+                                case AutoCastMode.AddParenthesis:
+                                    Write("(");
+                                    Write(result);
+                                    Write(")");
+                                    break;
+                                default:
+                                    Write(result);
+                                    break;
+                            }
+
+                            if (Emitter.IsIConvertible(type))
+                            {
+                                WriteDot();
+                                Write("to" + convertedType.Name);
+                                WriteOpenParentheses();
+                                WriteCloseParentheses();
+                            }
                         }
 
                         return;
@@ -800,7 +909,6 @@ namespace Phase.Translator.TypeScript
             {
                 case Accessibility.NotApplicable:
                 case Accessibility.Private:
-                case Accessibility.Protected:
                     Write("private ");
                     break;
                 case Accessibility.ProtectedAndInternal:
@@ -808,6 +916,9 @@ namespace Phase.Translator.TypeScript
                 case Accessibility.ProtectedOrInternal:
                 case Accessibility.Public:
                     Write("public ");
+                    break;
+                case Accessibility.Protected:
+                    Write("protected ");
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -908,7 +1019,8 @@ namespace Phase.Translator.TypeScript
                             }
                             else if (param.IsOptional)
                             {
-                                if (EmitterContext.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember, callerNode,
+                                if (EmitterContext.TryGetCallerMemberInfo(param, EmitterContext.CurrentMember,
+                                    callerNode,
                                     out var callerValue))
                                 {
                                     Write(callerValue);
@@ -941,11 +1053,18 @@ namespace Phase.Translator.TypeScript
         protected static Dictionary<string, IEnumerable<ExpressionSyntax>> BuildMethodInvocation(IMethodSymbol method,
             IEnumerable<ParameterInvocationInfo> argumentList)
         {
+            return BuildMethodInvocation(method.Parameters, argumentList);
+        }
+
+        protected static Dictionary<string, IEnumerable<ExpressionSyntax>> BuildMethodInvocation(
+            ImmutableArray<IParameterSymbol> parameters,
+            IEnumerable<ParameterInvocationInfo> argumentList)
+        {
             var arguments = new Dictionary<string, IEnumerable<ExpressionSyntax>>();
             var varArgs = new List<ExpressionSyntax>();
             var varArgsName = string.Empty;
             // fill expected parameters
-            foreach (var param in method.Parameters)
+            foreach (var param in parameters)
             {
                 arguments[param.Name] = Enumerable.Empty<ExpressionSyntax>();
             }
@@ -968,9 +1087,9 @@ namespace Phase.Translator.TypeScript
                 {
                     varArgs.Add(argument.Expression);
                 }
-                else if (parameterIndex < method.Parameters.Length)
+                else if (parameterIndex < parameters.Length)
                 {
-                    var param = method.Parameters[parameterIndex];
+                    var param = parameters[parameterIndex];
                     if (param.IsParams)
                     {
                         isVarArgs = true;
@@ -999,21 +1118,24 @@ namespace Phase.Translator.TypeScript
                 .Where(p => !p.IsIndexer && !Emitter.IsAutoProperty(p)))
             {
                 Write(
-                    "untyped Object.defineProperty(",prototype, 
+                    "untyped Object.defineProperty(", prototype,
                     ", \"", Emitter.GetPropertyName(property), "\", {"
                 );
                 if (property.GetMethod != null)
                 {
                     Write("get: ", prototype, ".", EmitterContext.GetMethodName(property.GetMethod));
                 }
+
                 if (property.SetMethod != null)
                 {
                     if (property.GetMethod != null)
                     {
                         Write(",");
                     }
+
                     Write("set: ", prototype, ".", EmitterContext.GetMethodName(property.SetMethod));
                 }
+
                 Write("});");
                 WriteNewLine();
             }
@@ -1032,7 +1154,6 @@ namespace Phase.Translator.TypeScript
                 var param = methodParameters[i];
 
                 Write(param.Name);
-                WriteSpace();
                 WriteColon();
                 if (param.RefKind != RefKind.None)
                 {
@@ -1040,7 +1161,9 @@ namespace Phase.Translator.TypeScript
                     Write("CsRef<");
                 }
 
-                WriteType(methodParameters[i].Type);
+                Write(Emitter.GetTypeNameWithNullability(methodParameters[i].Type));
+                EmitterContext.ImportType(methodParameters[i].Type);
+
                 if (param.RefKind != RefKind.None)
                 {
                     Write(">");
@@ -1090,7 +1213,8 @@ namespace Phase.Translator.TypeScript
                 default:
                     if (constField.Type.TypeKind == TypeKind.Enum)
                     {
-                        Write(constField.Name);
+                        Write(Emitter.GetTypeName(constField.ContainingType) + "." +
+                              EmitterContext.GetSymbolName(constField));
                         return AutoCastMode.SkipCast;
                     }
 

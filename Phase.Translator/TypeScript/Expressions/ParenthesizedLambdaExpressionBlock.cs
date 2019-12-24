@@ -10,7 +10,6 @@ namespace Phase.Translator.TypeScript.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            WriteFunction();
             WriteOpenParentheses();
 
             for (int i = 0; i < Node.ParameterList.Parameters.Count; i++)
@@ -29,6 +28,8 @@ namespace Phase.Translator.TypeScript.Expressions
             }
         
             WriteCloseParentheses();
+            
+            Write(" => ");
 
             if (Node.Body.Kind() == SyntaxKind.Block)
             {

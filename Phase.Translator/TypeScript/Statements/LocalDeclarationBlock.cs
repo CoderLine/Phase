@@ -14,11 +14,9 @@ namespace Phase.Translator.TypeScript
             {
                 var isRef = Emitter.IsRefVariable(var);
                 var type = Emitter.GetTypeSymbol(Node.Declaration.Type);
+                EmitterContext.ImportType(type);
 
-                WriteVar();
-                Write(var.Identifier.ValueText);
-
-                WriteSpace();
+                Write("let ", var.Identifier.ValueText);
                 WriteColon();
                 if (isRef)
                 {

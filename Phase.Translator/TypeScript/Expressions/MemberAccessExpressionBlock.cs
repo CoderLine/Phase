@@ -77,6 +77,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 {
                     case SymbolKind.NamedType:
                         Write(Emitter.GetTypeName((INamedTypeSymbol)leftHandSide.Symbol, false, true));
+                        EmitterContext.ImportType((INamedTypeSymbol)leftHandSide.Symbol);
                         break;
                     default:
                         EmitTree(expression, cancellationToken);

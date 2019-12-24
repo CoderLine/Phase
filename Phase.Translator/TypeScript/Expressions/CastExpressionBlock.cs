@@ -33,14 +33,34 @@ namespace Phase.Translator.TypeScript.Expressions
                     }
                     else if (Emitter.IsIConvertible(sourceType.Type))
                     {
-                        WriteOpenParentheses();
-                        EmitTree(Node.Expression, cancellationToken);
-                        WriteCloseParentheses();
-                        WriteDot();
-                        Write("to" + targetType.Type.Name + "_IFormatProvider");
-                        WriteOpenParentheses();
-                        Write("null");
-                        WriteCloseParentheses();
+                        if(Emitter.AreTypeMethodsRedirected(sourceType.Type, out var redirect))
+                        {
+                            Write(redirect);
+                            WriteDot();
+                            Write("to" + targetType.Type.Name);
+                            WriteOpenParentheses();
+                            EmitTree(Node.Expression, cancellationToken);
+                            WriteCloseParentheses();
+                        }
+                        else if(sourceType.Type.TypeKind == TypeKind.Enum)
+                        {
+                            WriteType(sourceType.Type);
+                            WriteDot();
+                            Write("to" + targetType.Type.Name);
+                            WriteOpenParentheses();
+                            EmitTree(Node.Expression, cancellationToken);
+                            WriteCloseParentheses();
+                        }
+                        else
+                        {
+                            WriteOpenParentheses();
+                            EmitTree(Node.Expression, cancellationToken);
+                            WriteCloseParentheses();
+                            WriteDot();
+                            Write("to" + targetType.Type.Name);
+                            WriteOpenParentheses();
+                            WriteCloseParentheses();
+                        }
                     }
                     else
                     {
@@ -60,39 +80,16 @@ namespace Phase.Translator.TypeScript.Expressions
                 switch (castMode)
                 {
                     case CastMode.SafeCast:
-
-                        Write("cast");
-                        WriteOpenParentheses();
-                        EmitTree(Node.Expression, cancellationToken);
-
-                        if (sourceType.Type.SpecialType != SpecialType.System_Object &&
-                            targetType.Type != null && targetType.Type.TypeKind != TypeKind.TypeParameter && !IsSpecialArray(targetType.Type))
-                        {
-                            WriteComma();
-                            WriteType(targetType.Type);
-                        }
-                        WriteCloseParentheses();
-
-                        break;
                     case CastMode.UnsafeCast:
-
-                        Write("cast");
-                        WriteOpenParentheses();
-                        EmitTree(Node.Expression, cancellationToken);
-                        WriteCloseParentheses();
-
-                        break;
                     case CastMode.Untyped:
-
-                        Write("untyped");
                         WriteOpenParentheses();
                         EmitTree(Node.Expression, cancellationToken);
+                        Write(" as ");
+                        WriteType(targetType.Type);
                         WriteCloseParentheses();
-
                         break;
                     case CastMode.Ignore:
                         EmitTree(Node.Expression, cancellationToken);
-
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();

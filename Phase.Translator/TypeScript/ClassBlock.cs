@@ -30,55 +30,43 @@ namespace Phase.Translator.TypeScript
                 return;
             }
 
-            var abstractType = Emitter.GetAbstract(_type.TypeSymbol);
+            PushWriter();
+            EmitClass(cancellationToken);
+
+            var result = PopWriter();
+            
+            Write("import * as phase from '@mscorlib/phase'");
+            WriteNewLine();
+
+            foreach (var importedType in EmitterContext.ImportedTypes.Values)
+            {
+                WriteImport(importedType.Type);
+            }
+
+            WriteNewLine();
+
+            Write(result);
+        }
+        
+        protected void EmitClass(CancellationToken cancellationToken = new CancellationToken())
+        {
+            if (Emitter.IsExternal(_type.TypeSymbol))
+            {
+                return;
+            }
 
             var fullName = Emitter.GetTypeName(_type.TypeSymbol, noTypeArguments: true);
             var packageEnd = fullName.LastIndexOf(".", StringComparison.Ordinal);
-            string package;
-            string name;
 
-            if (packageEnd == -1)
-            {
-                package = "";
-                name = fullName;
-            }
-            else
-            {
-                package = fullName.Substring(0, packageEnd);
-                name = fullName.Substring(packageEnd + 1);
-            }
+            var name = packageEnd == -1 ? fullName : fullName.Substring(packageEnd + 1);
 
             WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken));
-
-            if (package.Length > 1)
-            {
-                Write("package ");
-                Write(package);
-                WriteSemiColon(true);
-                WriteNewLine();
-            }
-
-            Write("using system.TypeScriptExtensions;");
-            WriteNewLine();
 
             WriteComments(_type.TypeSymbol, cancellationToken);
 
             WriteMeta(_type.TypeSymbol, cancellationToken);
 
-            if (_type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
-            {
-                Write("@:expose");
-                WriteNewLine();
-            }
-
-            if (abstractType != null)
-            {
-                Write("abstract ", name);
-            }
-            else
-            {
-                Write("class ", name);
-            }
+            Write("export class ", name);
 
             if (_type.TypeSymbol.IsGenericType)
             {
@@ -100,40 +88,27 @@ namespace Phase.Translator.TypeScript
                 Write(">");
             }
 
-            if (abstractType != null)
-            {
-                WriteOpenParentheses();
-                Write(abstractType.ConstructorArguments[0].Value);
-                WriteCloseParentheses();
-
-                if (abstractType.ConstructorArguments.Length == 3)
-                {
-                    Write(" from ");
-                    Write(abstractType.ConstructorArguments[1].Value);
-                    Write(" to ");
-                    Write(abstractType.ConstructorArguments[2].Value);
-                }
-            }
-            else if (!_type.TypeSymbol.IsStatic)
+            if (!_type.TypeSymbol.IsStatic)
             {
                 if (_type.TypeSymbol.BaseType != null &&
                     _type.TypeSymbol.BaseType.SpecialType != SpecialType.System_Object)
                 {
                     Write(" extends ");
                     WriteType(_type.TypeSymbol.BaseType);
+                    EmitterContext.ImportType(_type.TypeSymbol.BaseType);
                 }
 
                 foreach (var type in _type.TypeSymbol.Interfaces)
                 {
                     Write(" implements ");
                     WriteType(type);
+                    EmitterContext.ImportType(type);
                 }
             }
 
             WriteNewLine();
             BeginBlock();
 
-            bool hasStaticConstructor = false;
             foreach (var member in _type.TypeSymbol.GetMembers())
             {
                 EmitterContext.CurrentMember = member;
@@ -151,10 +126,6 @@ namespace Phase.Translator.TypeScript
                 {
                     var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol) member);
                     methodBlock.Emit(cancellationToken);
-                    if (((IMethodSymbol) member).MethodKind == MethodKind.StaticConstructor)
-                    {
-                        hasStaticConstructor = true;
-                    }
                 }
                 else if (member.Kind == SymbolKind.Event)
                 {
@@ -167,8 +138,7 @@ namespace Phase.Translator.TypeScript
             if (!Emitter.HasNativeConstructors(_type.TypeSymbol) && (Emitter.HasConstructorOverloads(_type.TypeSymbol)))
             {
                 WriteAccessibility(Accessibility.Public);
-                WriteFunction();
-                Write("new");
+                Write("constructor");
                 WriteOpenCloseParentheses();
                 WriteNewLine();
                 BeginBlock();
@@ -181,19 +151,6 @@ namespace Phase.Translator.TypeScript
                 }
 
                 WriteDefaultInitializers(_type.TypeSymbol, false, cancellationToken);
-
-                EndBlock();
-            }
-
-            if (!Emitter.IsAbstract(_type.TypeSymbol)
-                && !hasStaticConstructor
-                && _type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
-            {
-                Write("static function __init__()");
-                WriteNewLine();
-                BeginBlock();
-
-                WriteES5PropertyDeclarations(_type.TypeSymbol);
 
                 EndBlock();
             }

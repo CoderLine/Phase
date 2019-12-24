@@ -32,65 +32,44 @@ namespace Phase.Translator.TypeScript
 
             if (!_property.IsIndexer && _property.OverriddenProperty == null)
             {
-                WriteComments(_property, cancellationToken);
-                WriteMeta(_property, cancellationToken);
-
                 var isAutoProperty = Emitter.IsAutoProperty(_property);
-
-                WriteAccessibility(_property.DeclaredAccessibility);
-
-                if (_property.IsStatic)
+                if (isAutoProperty)
                 {
-                    Write("static ");
+                    WriteComments(_property, cancellationToken);
+                    WriteMeta(_property, cancellationToken);
+                    WriteAccessibility(_property.DeclaredAccessibility);
+
+                    if (_property.IsStatic)
+                    {
+                        Write("static ");
+                    }
+                    
+                    if (_property.SetMethod == null)
+                    {
+                        Write("readonly ");
+                    }
+
+                    var propertyName = Emitter.GetPropertyName(_property);
+                    Write(propertyName);
+                    WriteColon();
+                    Write(Emitter.GetTypeNameWithNullability(_property.Type));
+                    EmitterContext.ImportType(_property.Type);
+
+                    var initializer = _property.DeclaringSyntaxReferences
+                        .Select(r => ((PropertyDeclarationSyntax) r.GetSyntax(cancellationToken)).Initializer)
+                        .FirstOrDefault(p => p != null);
+
+                    if (initializer != null)
+                    {
+                        Write(" = ");
+                        EmitTree(initializer);
+                    }
+
+                    WriteSemiColon(true);
+                    WriteNewLine();
+
+                    WriteComments(_property, false, cancellationToken);
                 }
-
-                var propertyName = Emitter.GetPropertyName(_property);
-                Write("var ", propertyName);
-
-                WriteOpenParentheses();
-                if (_property.GetMethod != null)
-                {
-                    Write(isAutoProperty ? "default" : "get");
-                }
-                else
-                {
-                    Write("never");
-                }
-                Write(", ");
-
-                if (_property.SetMethod != null)
-                {
-                    Write(isAutoProperty ? "default" : "set");
-                }
-                else if(Emitter.IsAbstract(_property.ContainingType))
-                {
-                    Write("never");
-                }
-                else
-                {
-                    Write(isAutoProperty ? "null" : "never");
-                }
-
-                WriteCloseParentheses();
-
-                WriteSpace();
-                WriteColon();
-                WriteType(_property.Type);
-
-                var initializer = _property.DeclaringSyntaxReferences
-                    .Select(r => ((PropertyDeclarationSyntax)r.GetSyntax(cancellationToken)).Initializer)
-                    .FirstOrDefault(p=>p != null);
-
-                if (initializer != null)
-                {
-                    Write(" = ");
-                    EmitTree(initializer);
-                }
-
-                WriteSemiColon(true);
-                WriteNewLine();
-
-                WriteComments(_property, false, cancellationToken);
             }
         }
     }

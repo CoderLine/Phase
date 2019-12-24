@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml;
 using Microsoft.CodeAnalysis;
 using NLog;
 using Phase.Translator.Utils;
@@ -21,9 +23,35 @@ namespace Phase.Translator.TypeScript
             _reservedMethodNames = new ConcurrentDictionary<string, IMethodSymbol>();
         }
 
+
+        public string GetFileName(ITypeSymbol type, bool includeExtension) =>
+            GetFileName(type, includeExtension, Path.DirectorySeparatorChar);
+
+        public string GetFileName(ITypeSymbol type, bool includeExtension, char directorySeparator)
+        {
+            var nsAndName = GetNamespaceAndTypeName(type);
+            var name = nsAndName.Item1 + "." + nsAndName.Item2;
+            var p = name.IndexOf("<");
+            if (p >= 0) name = name.Substring(0, p);
+            return name.Replace('.', directorySeparator) + (includeExtension ? ".ts" : "");
+        }
+
         protected override IEnumerable<TypeScriptEmitterContext> BuildEmitterContexts(PhaseType type)
         {
             return new[] {new TypeScriptEmitterContext(this, type)};
+        }
+
+
+        public string GetTypeNameWithNullability(ITypeSymbol type, bool simple = false, bool noTypeArguments = false)
+        {
+            var name = GetTypeName(type, simple, noTypeArguments);
+            // if (!simple && !noTypeArguments && (IsNullable(type) || type.IsReferenceType ||
+            //                                     type.SpecialType == SpecialType.System_String))
+            // {
+            //     name += " | null";
+            // }
+
+            return name;
         }
 
         public override string GetTypeName(ITypeSymbol type, bool simple = false, bool noTypeArguments = false)
@@ -38,12 +66,12 @@ namespace Phase.Translator.TypeScript
 
                 return simple
                     ? GetTypeName(array.ElementType, true) + "Array"
-                    : "system.FixedArray<" + GetTypeName(array.ElementType) + ">";
+                    : "Array<" + GetTypeName(array.ElementType) + ">";
             }
 
             if (type is IDynamicTypeSymbol)
             {
-                return "Dynamic";
+                return "any";
             }
 
             if (type is ITypeParameterSymbol)
@@ -53,12 +81,17 @@ namespace Phase.Translator.TypeScript
 
             if (type.SpecialType == SpecialType.System_Void)
             {
-                return "Void";
+                return "void";
+            }
+
+            if (type.OriginalDefinition.SpecialType == SpecialType.System_Nullable_T)
+            {
+                return GetTypeName(((INamedTypeSymbol) type).TypeArguments[0], simple, noTypeArguments);
             }
 
             var nsAndName = GetNamespaceAndTypeName(type);
             var fullName = nsAndName.Item1 + "." + nsAndName.Item2;
-            var name = simple || string.IsNullOrEmpty(nsAndName.Item1) ? nsAndName.Item2 : fullName;
+            var name = nsAndName.Item2;
 
             if (type is INamedTypeSymbol named && named.IsGenericType)
             {
@@ -93,17 +126,6 @@ namespace Phase.Translator.TypeScript
             return name;
         }
 
-        protected override bool IsKeyWord(string name)
-        {
-            switch (name)
-            {
-                case "dynamic":
-                    return true;
-            }
-
-            return false;
-        }
-
         protected override string GetMethodNameInternal(IMethodSymbol method, BaseEmitterContext context)
         {
             method = method.OriginalDefinition;
@@ -135,7 +157,7 @@ namespace Phase.Translator.TypeScript
             {
                 if (HasNativeConstructors(method.ContainingType) || !HasConstructorOverloads(method.ContainingType))
                 {
-                    return "new";
+                    return "constructor";
                 }
                 else
                 {
@@ -151,7 +173,7 @@ namespace Phase.Translator.TypeScript
                 }
                 else
                 {
-                    x.Append("get_" + GetSymbolName(method.AssociatedSymbol, context));
+                    x.Append(GetSymbolName(method.AssociatedSymbol, context));
                 }
             }
             else if (method.MethodKind == MethodKind.PropertySet)
@@ -163,7 +185,7 @@ namespace Phase.Translator.TypeScript
                 }
                 else
                 {
-                    x.Append("set_" + GetSymbolName(method.AssociatedSymbol, context));
+                    x.Append(GetSymbolName(method.AssociatedSymbol, context));
                 }
             }
             else if (method.MethodKind == MethodKind.EventAdd)
@@ -244,17 +266,17 @@ namespace Phase.Translator.TypeScript
         {
             return new Dictionary<SpecialType, string>
             {
-                [SpecialType.System_SByte] = "system.SByteArray",
-                [SpecialType.System_Byte] = "system.ByteArray",
-                [SpecialType.System_Int16] = "system.Int16Array",
-                [SpecialType.System_UInt16] = "system.UInt16Array",
-                [SpecialType.System_Int32] = "system.Int32Array",
-                [SpecialType.System_UInt32] = "system.UInt32Array",
-                [SpecialType.System_Int64] = "system.Int64Array",
-                [SpecialType.System_UInt64] = "system.UInt64Array",
-                [SpecialType.System_Decimal] = "system.DecimalArray",
-                [SpecialType.System_Single] = "system.SingleArray",
-                [SpecialType.System_Double] = "system.DoubleArray"
+                [SpecialType.System_SByte] = "Int8Array",
+                [SpecialType.System_Byte] = "Uint8Array",
+                [SpecialType.System_Int16] = "Int16Array",
+                [SpecialType.System_UInt16] = "Uint16Array",
+                [SpecialType.System_Int32] = "Int32Array",
+                [SpecialType.System_UInt32] = "Uint32Array",
+                [SpecialType.System_Int64] = "Int64Array",
+                [SpecialType.System_UInt64] = "Uint64Array",
+                [SpecialType.System_Decimal] = "Float64Array",
+                [SpecialType.System_Single] = "Float32Array",
+                [SpecialType.System_Double] = "Float64Array"
             };
         }
 
@@ -344,6 +366,44 @@ namespace Phase.Translator.TypeScript
                     return AreTypesEqual(aat.ElementType, bat.ElementType);
                 default:
                     return SymbolEquivalenceComparer.Instance.Equals(a, b);
+            }
+        }
+
+        public override string GetDefaultValue(ITypeSymbol type)
+        {
+            switch (type.SpecialType)
+            {
+                case SpecialType.System_Enum:
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                case SpecialType.System_IntPtr:
+                case SpecialType.System_UIntPtr:
+                    return "0";
+                case SpecialType.System_Boolean:
+                    return "false";
+                case SpecialType.System_Char:
+                    return "0";
+                case SpecialType.System_Decimal:
+                case SpecialType.System_Single:
+                case SpecialType.System_Double:
+                    return "0.0";
+                default:
+                    if (type.TypeKind == TypeKind.Enum)
+                    {
+                        var field = GetDefaultEnumField(type);
+                        if (field != null)
+                        {
+                            return GetTypeName(type) + "." + GetFieldName(field);
+                        }
+                    }
+
+                    return "null";
             }
         }
     }

@@ -25,18 +25,16 @@ namespace Phase.Translator.TypeScript
                 var sectionHasDefault = section.Labels.Any(l => l.Kind() == SyntaxKind.DefaultSwitchLabel);
                 if (sectionHasDefault)
                 {
-                    Write("default");
+                    Write("default:");
+                    WriteNewLine();
                     hasDefault = true;
                 }
                 else
                 {
-                    for (var i = 0; i < section.Labels.Count; i++)
+                    foreach (var label in section.Labels)
                     {
-                        if (i == 0) Write("case ");
-                        else Write(", ");
-
+                        Write("case ");
                         EmitterContext.IsCaseLabel = true;
-                        var label = section.Labels[i];
                         switch (label.Kind())
                         {
                             case SyntaxKind.CaseSwitchLabel:
@@ -47,11 +45,11 @@ namespace Phase.Translator.TypeScript
                                 Debugger.Break();
                                 break;
                         }
+                        WriteColon();
+                        WriteNewLine();
                         EmitterContext.IsCaseLabel = false;
                     }
                 }
-                WriteColon();
-                WriteNewLine();
 
                 Indent();
                 foreach (var statement in section.Statements)

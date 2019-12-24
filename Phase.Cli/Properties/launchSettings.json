@@ -2,7 +2,7 @@
   "profiles": {
     "Phase.Cli": {
       "commandName": "Project",
-      "commandLineArgs": "\"D:\\Dev\\AlphaTab\\AlphaTab2\\Source\\AlphaTab.Test.Js\\AlphaTab.Test.Js.csproj\" Debug \"Any CPU\""
+      "commandLineArgs": "\"D:\\Dev\\AlphaTab\\AlphaTab2\\Source\\AlphaTab.TypeScript\\AlphaTab.TypeScript.csproj\" Debug \"Any CPU\""
     }
   }
 }

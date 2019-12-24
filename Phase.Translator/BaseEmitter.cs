@@ -161,6 +161,17 @@ namespace Phase.Translator
             }
             return symbol.IsExtern;
         }
+        
+        public bool ShouldOmitImport(ISymbol symbol)
+        {
+            if (GetAttributes(symbol)
+                .Any(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.OmitImportAttribute"))))
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         public CodeTemplate GetTemplate(ISymbol symbol)
         {
@@ -179,6 +190,18 @@ namespace Phase.Translator
         public virtual bool IsMethodRedirected(IMethodSymbol methodSymbol, out string typeName)
         {
             var attribute = GetAttributes(methodSymbol.ContainingType).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.RedirectMethodsToAttribute")));
+            if (attribute == null)
+            {
+                typeName = null;
+                return false;
+            }
+
+            typeName = attribute.ConstructorArguments[0].Value.ToString();
+            return true;
+        }
+        public virtual bool AreTypeMethodsRedirected(ITypeSymbol typeSymbol, out string typeName)
+        {
+            var attribute = GetAttributes(typeSymbol).FirstOrDefault(a => a.AttributeClass.Equals(GetPhaseType("Phase.Attributes.RedirectMethodsToAttribute")));
             if (attribute == null)
             {
                 typeName = null;
@@ -533,7 +556,7 @@ namespace Phase.Translator
                         var field = GetDefaultEnumField(type);
                         if (field != null)
                         {
-                            return field.Name;
+                            return GetFieldName(field);
                         }
                     }
                     return "null";

@@ -18,11 +18,10 @@ namespace Phase.Translator.TypeScript
         {
             WriteComments(_field, cancellationToken);
 
-            WriteVar();
             Write(_field.Name);
             Write(" = ");
             Write(_field.ConstantValue);
-            WriteSemiColon(true);
+            WriteComma(true);
 
             WriteComments(_field, false, cancellationToken);
         }
