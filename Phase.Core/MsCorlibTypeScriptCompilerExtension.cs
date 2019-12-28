@@ -20,10 +20,20 @@ namespace Phase
                 .Add(new TemplateAttribute("{this}.charCodeAt({index})"));
             context.Attributes.Member((string s) => s.Substring(0,1))
                 .Add(new TemplateAttribute("{this}.substr({startIndex}, {length})"));
+            context.Attributes.Member((string s) => s.Substring(0))
+                .Add(new TemplateAttribute("{this}.substr({startIndex})"));
+            context.Attributes.Member((string s) => s.IndexOf('c'))
+                .Add(new TemplateAttribute("{this}.indexOf({value})"));
             context.Attributes.Member((string s) => s.Replace("a", "b"))
                 .Add(new TemplateAttribute("{this}.replace({oldValue}, {newValue})"));
             context.Attributes.Member((string s) => s.ToLower())
                 .Add(new TemplateAttribute("{this}.toLowerCase()"));
+            context.Attributes.Member((string s) => s.StartsWith(""))
+                .Add(new TemplateAttribute("{this}.startsWith({value})"));
+            context.Attributes.Member((string s) => s.EndsWith(""))
+                .Add(new TemplateAttribute("{this}.endsWith({value})"));
+            context.Attributes.Member((string s) => s.LastIndexOf(""))
+                .Add(new TemplateAttribute("{this}.lastIndexOf({value})"));
             context.Attributes.Type<bool>()
                 .Add(new NameAttribute("boolean"), new RedirectMethodsToAttribute("phase.BooleanExtensions"));
             context.Attributes.Type<byte>()

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -30,7 +31,25 @@ namespace Phase.Translator.TypeScript.Expressions
                         }
                         else
                         {
-                            EmitTree(Node.Left, cancellationToken);
+                            if (prop.IsIndexer)
+                            {
+                                switch (Node.Left)
+                                {
+                                    case ElementAccessExpressionSyntax elementAccess:
+                                        EmitTree(elementAccess.Expression);
+
+                                        var arguments = elementAccess.ArgumentList.Arguments.Select(a => new ParameterInvocationInfo(a)).ToList();
+                                        var invocation = BuildMethodInvocation(prop.Parameters, arguments);
+                                        ApplyExpressions(template,prop.Parameters, invocation, cancellationToken);
+                                        break;
+                                    default:
+                                        throw new PhaseCompilerException("Unknown node on indexer assignment: " + Node.Left.Kind());
+                                }                                
+                            }
+                            else
+                            {
+                                EmitTree(Node.Left, cancellationToken);
+                            }
                         }
 
                         thisVar.RawValue = PopWriter();

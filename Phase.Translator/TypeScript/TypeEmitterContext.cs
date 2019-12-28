@@ -15,6 +15,7 @@ namespace Phase.Translator.TypeScript
         public ConcurrentDictionary<ITypeSymbol, ImportInfo> ImportedTypes { get; }
 
         public override string FileName => Emitter.GetFileName(CurrentType.TypeSymbol, true);
+        public bool NeedsPhaseImport { get; set; }
 
         public class ImportInfo
         {

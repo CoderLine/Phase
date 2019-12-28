@@ -124,6 +124,10 @@ namespace Phase.Translator.TypeScript.Expressions
                     Write(targetType);
                     WriteDot();
                     Write(EmitterContext.GetMethodName(methodSymbol));
+                    if (targetType.StartsWith("phase."))
+                    {
+                        EmitterContext.NeedsPhaseImport = true;
+                    }
                     if (methodSymbol.IsStatic)
                     {
                         WriteMethodInvocation(methodSymbol, arguments, Node, cancellationToken);

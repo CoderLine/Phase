@@ -34,8 +34,10 @@ namespace Phase.Translator.TypeScript
             }
 
             if (!_method.ExplicitInterfaceImplementations.IsEmpty
-                || (_method.MethodKind == MethodKind.PropertyGet && !((IPropertySymbol)_method.AssociatedSymbol).ExplicitInterfaceImplementations.IsEmpty)
-                || (_method.MethodKind == MethodKind.PropertySet && !((IPropertySymbol)_method.AssociatedSymbol).ExplicitInterfaceImplementations.IsEmpty)
+                || (_method.MethodKind == MethodKind.PropertyGet && !((IPropertySymbol) _method.AssociatedSymbol)
+                        .ExplicitInterfaceImplementations.IsEmpty)
+                || (_method.MethodKind == MethodKind.PropertySet && !((IPropertySymbol) _method.AssociatedSymbol)
+                        .ExplicitInterfaceImplementations.IsEmpty)
             )
             {
                 return;
@@ -45,16 +47,18 @@ namespace Phase.Translator.TypeScript
             {
                 case MethodKind.PropertyGet:
                 case MethodKind.PropertySet:
-                    if (Emitter.IsAutoProperty((IPropertySymbol)_method.AssociatedSymbol))
+                    if (Emitter.IsAutoProperty((IPropertySymbol) _method.AssociatedSymbol))
                     {
                         return;
                     }
+
                     break;
                 case MethodKind.EventRaise:
-                    if (Emitter.IsEventField((IEventSymbol)_method.AssociatedSymbol))
+                    if (Emitter.IsEventField((IEventSymbol) _method.AssociatedSymbol))
                     {
                         return;
                     }
+
                     break;
             }
 
@@ -71,7 +75,8 @@ namespace Phase.Translator.TypeScript
                 return;
             }
 
-            if (_method.ContainingType.TypeKind == TypeKind.Struct && Emitter.IsAbstract(_method.ContainingType) && _method.MethodKind == MethodKind.Constructor && _method.DeclaringSyntaxReferences.Length == 0)
+            if (_method.ContainingType.TypeKind == TypeKind.Struct && Emitter.IsAbstract(_method.ContainingType) &&
+                _method.MethodKind == MethodKind.Constructor && _method.DeclaringSyntaxReferences.Length == 0)
             {
                 // implicit constructor for structs
                 return;
@@ -80,7 +85,8 @@ namespace Phase.Translator.TypeScript
             WriteComments(_method, cancellationToken);
             WriteMeta(_method, cancellationToken);
 
-            if (_method.MethodKind == MethodKind.StaticConstructor || _method.ContainingType.TypeKind == TypeKind.Interface)
+            if (_method.MethodKind == MethodKind.StaticConstructor ||
+                _method.ContainingType.TypeKind == TypeKind.Interface)
             {
                 WriteAccessibility(Accessibility.Public);
             }
@@ -129,8 +135,10 @@ namespace Phase.Translator.TypeScript
                     {
                         WriteComma();
                     }
+
                     Write(typeParameters[i].Name);
                 }
+
                 Write(">");
             }
 
@@ -144,8 +152,8 @@ namespace Phase.Translator.TypeScript
                 case MethodKind.PropertyGet:
                 case MethodKind.PropertySet:
                     WriteColon();
-                    Write(Emitter.GetTypeNameWithNullability(((IPropertySymbol)_method.AssociatedSymbol).Type));
-                    EmitterContext.ImportType(((IPropertySymbol)_method.AssociatedSymbol).Type);
+                    Write(Emitter.GetTypeNameWithNullability(((IPropertySymbol) _method.AssociatedSymbol).Type));
+                    EmitterContext.ImportType(((IPropertySymbol) _method.AssociatedSymbol).Type);
                     break;
                 case MethodKind.EventAdd:
                 case MethodKind.EventRemove:
@@ -160,7 +168,7 @@ namespace Phase.Translator.TypeScript
                     if (Emitter.IsGetEnumeratorAsIterator(_method))
                     {
                         Write("Iterable<");
-                        var generic = ((INamedTypeSymbol)_method.ReturnType).TypeArguments[0];
+                        var generic = ((INamedTypeSymbol) _method.ReturnType).TypeArguments[0];
                         WriteType(generic);
                         EmitterContext.ImportType(generic);
                         Write(">");
@@ -175,7 +183,8 @@ namespace Phase.Translator.TypeScript
                     break;
             }
 
-            if (_method.ContainingType.TypeKind == TypeKind.Interface || (Emitter.IsNative(_method.ContainingType) && _method.IsExtern))
+            if (_method.ContainingType.TypeKind == TypeKind.Interface ||
+                (Emitter.IsNative(_method.ContainingType) && _method.IsExtern))
             {
                 WriteSemiColon(true);
             }
@@ -183,7 +192,9 @@ namespace Phase.Translator.TypeScript
             {
                 BeginBlock();
 
-                if (_method.DeclaringSyntaxReferences.IsEmpty && _method.MethodKind == MethodKind.Constructor && !_method.IsStatic && _method.ContainingType.BaseType != null && _method.ContainingType.BaseType.SpecialType != SpecialType.System_Object)
+                if (_method.DeclaringSyntaxReferences.IsEmpty && _method.MethodKind == MethodKind.Constructor &&
+                    !_method.IsStatic && _method.ContainingType.BaseType != null &&
+                    _method.ContainingType.BaseType.SpecialType != SpecialType.System_Object)
                 {
                     // default constructor 
                     var x = EmitterContext.GetMethodName(_method);
@@ -198,7 +209,7 @@ namespace Phase.Translator.TypeScript
                     }
                     else
                     {
-                        Write(x);
+                        Write("this.", x);
                         WriteOpenCloseParentheses();
                         WriteSemiColon(true);
                     }
@@ -222,6 +233,7 @@ namespace Phase.Translator.TypeScript
                                 {
                                     WriteReturn(true);
                                 }
+
                                 EmitTree(methodDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
                                 WriteSemiColon(true);
@@ -247,6 +259,7 @@ namespace Phase.Translator.TypeScript
                                 {
                                     WriteReturn(true);
                                 }
+
                                 EmitTree(conversionOperatorDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
                                 WriteSemiColon(true);
@@ -272,6 +285,7 @@ namespace Phase.Translator.TypeScript
                                 {
                                     WriteReturn(true);
                                 }
+
                                 EmitTree(operatorDeclarationSyntax.ExpressionBody.Expression,
                                     cancellationToken);
                                 WriteSemiColon(true);
@@ -295,6 +309,7 @@ namespace Phase.Translator.TypeScript
                             {
                                 WriteReturn(true);
                             }
+
                             EmitTree(arrowExpressionClauseSyntax.Expression,
                                 cancellationToken);
                             WriteSemiColon(true);
@@ -305,7 +320,7 @@ namespace Phase.Translator.TypeScript
                             {
                                 if (constructorDeclarationSyntax.Initializer != null)
                                 {
-                                    var ctor = (IMethodSymbol)Emitter
+                                    var ctor = (IMethodSymbol) Emitter
                                         .GetSymbolInfo(constructorDeclarationSyntax.Initializer)
                                         .Symbol;
 
@@ -316,7 +331,7 @@ namespace Phase.Translator.TypeScript
                                     }
                                     else
                                     {
-                                        Write(x);
+                                        Write("this.", x);
                                     }
 
                                     WriteMethodInvocation(ctor,
@@ -368,6 +383,7 @@ namespace Phase.Translator.TypeScript
                                 EmitTree(constructorDeclarationSyntax.ExpressionBody);
                                 WriteSemiColon(true);
                             }
+
                             if (constructorDeclarationSyntax.Body != null)
                             {
                                 foreach (var statement in constructorDeclarationSyntax.Body.Statements)
@@ -387,9 +403,9 @@ namespace Phase.Translator.TypeScript
                                         cancellationToken);
                                     WriteSemiColon(true);
                                 }
-                                else if(_method.MethodKind == MethodKind.PropertySet)
+                                else if (_method.MethodKind == MethodKind.PropertySet)
                                 {
-                                    var property = (IPropertySymbol)_method.AssociatedSymbol;
+                                    var property = (IPropertySymbol) _method.AssociatedSymbol;
                                     if (property.GetMethod != null)
                                     {
                                         var typeInfo =
@@ -414,10 +430,11 @@ namespace Phase.Translator.TypeScript
                                             {
                                                 Write(EmitterContext.GetSymbolName(_method.Parameters[i]));
                                             }
+
                                             WriteCloseParentheses();
                                             WriteSemiColon(true);
                                         }
-                                    }                                    
+                                    }
                                 }
                                 else
                                 {
@@ -440,7 +457,7 @@ namespace Phase.Translator.TypeScript
                                 if (_method.MethodKind == MethodKind.PropertySet)
                                 {
                                     WriteReturn(true);
-                                    var property = (IPropertySymbol)_method.AssociatedSymbol;
+                                    var property = (IPropertySymbol) _method.AssociatedSymbol;
                                     if (property.GetMethod != null)
                                     {
                                         Write(EmitterContext.GetMethodName(property.GetMethod));
@@ -453,22 +470,24 @@ namespace Phase.Translator.TypeScript
                                                 {
                                                     WriteComma();
                                                 }
+
                                                 Write(property.GetMethod.Parameters[i].Name);
                                             }
                                         }
+
                                         WriteCloseParentheses();
                                     }
                                     else
                                     {
                                         Write(_method.Parameters.Last().Name);
                                     }
+
                                     WriteSemiColon(true);
                                 }
                             }
                             else
                             {
                                 WriteDefaultImplementation(cancellationToken);
-
                             }
                         }
                         else
@@ -482,7 +501,9 @@ namespace Phase.Translator.TypeScript
                     WriteDefaultImplementation(cancellationToken);
                 }
 
-                if (_method.MethodKind == MethodKind.Constructor && !Emitter.HasNativeConstructors(_method.ContainingType) && Emitter.HasConstructorOverloads(_method.ContainingType))
+                if (_method.MethodKind == MethodKind.Constructor &&
+                    !Emitter.HasNativeConstructors(_method.ContainingType) &&
+                    Emitter.HasConstructorOverloads(_method.ContainingType))
                 {
                     WriteReturn(true);
                     WriteThis();
@@ -506,6 +527,7 @@ namespace Phase.Translator.TypeScript
             {
                 WriteAutoPropertySetter();
             }
+
             if (_method.MethodKind == MethodKind.EventAdd)
             {
                 WriteDefaultEventAdder();
@@ -522,7 +544,7 @@ namespace Phase.Translator.TypeScript
 
         private void WriteDefaultEventRemover()
         {
-            var property = (IEventSymbol)_method.AssociatedSymbol;
+            var property = (IEventSymbol) _method.AssociatedSymbol;
             if (property.IsAbstract)
             {
                 Write("throw \"abstract\";");
@@ -530,18 +552,19 @@ namespace Phase.Translator.TypeScript
             }
             else
             {
-                Write(Emitter.GetEventName(property));
-                Write(" -= ");
-                Write(_method.Parameters[0].Name);
+                Write("this.", Emitter.GetEventName(property));
+                Write(" = ");
+                WriteEventType((INamedTypeSymbol) property.Type, false);
+                Write(".remove(this.", Emitter.GetEventName(property), ", ", _method.Parameters[0].Name, ")");
                 WriteSemiColon();
             }
-            WriteNewLine();
 
+            WriteNewLine();
         }
 
         private void WriteDefaultEventAdder()
         {
-            var property = (IEventSymbol)_method.AssociatedSymbol;
+            var property = (IEventSymbol) _method.AssociatedSymbol;
             if (property.IsAbstract)
             {
                 Write("throw \"abstract\";");
@@ -549,11 +572,13 @@ namespace Phase.Translator.TypeScript
             }
             else
             {
-                Write(Emitter.GetEventName(property));
-                Write(" += ");
-                Write(_method.Parameters[0].Name);
+                Write("this.", Emitter.GetEventName(property));
+                Write(" = ");
+                WriteEventType((INamedTypeSymbol) property.Type, false);
+                Write(".combine(this.", Emitter.GetEventName(property), ", ", _method.Parameters[0].Name, ")");
                 WriteSemiColon();
             }
+
             WriteNewLine();
         }
 
@@ -568,7 +593,7 @@ namespace Phase.Translator.TypeScript
             }
             else if (type is INamedTypeSymbol)
             {
-                var named = (INamedTypeSymbol)type;
+                var named = (INamedTypeSymbol) type;
                 foreach (var argument in named.TypeArguments)
                 {
                     CollectTypeParameters(typeParameters, argument);
@@ -579,10 +604,10 @@ namespace Phase.Translator.TypeScript
         private void WriteAutoPropertySetter()
         {
             var backingField = _method.ContainingType
-                                .GetMembers()
-                                .OfType<IFieldSymbol>()
-                                .FirstOrDefault(f => f.AssociatedSymbol == _method.AssociatedSymbol);
-            var property = (IPropertySymbol)_method.AssociatedSymbol;
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .FirstOrDefault(f => f.AssociatedSymbol == _method.AssociatedSymbol);
+            var property = (IPropertySymbol) _method.AssociatedSymbol;
             if (property.IsAbstract)
             {
                 Write("throw \"abstract\";");
@@ -600,16 +625,17 @@ namespace Phase.Translator.TypeScript
                 Write(_method.Parameters[0].Name);
                 WriteSemiColon();
             }
+
             WriteNewLine();
         }
 
         private void WriteAutoPropertyGetter()
         {
             var backingField = _method.ContainingType
-                    .GetMembers()
-                    .OfType<IFieldSymbol>()
-                    .FirstOrDefault(f => f.AssociatedSymbol == _method.AssociatedSymbol);
-            var property = (IPropertySymbol)_method.AssociatedSymbol;
+                .GetMembers()
+                .OfType<IFieldSymbol>()
+                .FirstOrDefault(f => f.AssociatedSymbol == _method.AssociatedSymbol);
+            var property = (IPropertySymbol) _method.AssociatedSymbol;
             if (property.IsAbstract)
             {
                 Write("throw \"abstract\";");
@@ -625,6 +651,7 @@ namespace Phase.Translator.TypeScript
                 Write(Emitter.GetFieldName(backingField));
                 WriteSemiColon();
             }
+
             WriteNewLine();
         }
     }

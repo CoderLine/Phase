@@ -35,6 +35,10 @@ namespace Phase.Translator.TypeScript.Expressions
                     {
                         if(Emitter.AreTypeMethodsRedirected(sourceType.Type, out var redirect))
                         {
+                            if (redirect.StartsWith("phase."))
+                            {
+                                EmitterContext.NeedsPhaseImport = true;
+                            }
                             Write(redirect);
                             WriteDot();
                             Write("to" + targetType.Type.Name);
@@ -86,6 +90,7 @@ namespace Phase.Translator.TypeScript.Expressions
                         EmitTree(Node.Expression, cancellationToken);
                         Write(" as ");
                         WriteType(targetType.Type);
+                        EmitterContext.ImportType(targetType.Type);
                         WriteCloseParentheses();
                         break;
                     case CastMode.Ignore:

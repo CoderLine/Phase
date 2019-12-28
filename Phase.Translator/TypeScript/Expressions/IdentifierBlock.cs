@@ -10,7 +10,8 @@ namespace Phase.Translator.TypeScript.Expressions
 {
     public class IdentifierBlock : AutoCastBlockBase<IdentifierNameSyntax>
     {
-        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
+        protected override AutoCastMode DoEmitWithoutCast(
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var resolve = Emitter.GetSymbolInfo(Node);
             if (resolve.Symbol == null)
@@ -27,9 +28,10 @@ namespace Phase.Translator.TypeScript.Expressions
                 {
                     return WriteConstant(constField);
                 }
+
                 if (resolve.Symbol is ITypeSymbol)
                 {
-                    WriteType((ITypeSymbol)resolve.Symbol);
+                    WriteType((ITypeSymbol) resolve.Symbol);
                 }
                 else
                 {
@@ -39,21 +41,22 @@ namespace Phase.Translator.TypeScript.Expressions
                         WriteDot();
                     }
 
-                    if(EmitterContext.InitializerCount == 0 && !resolve.Symbol.IsStatic)
+                    if (EmitterContext.InitializerCount == 0 && !resolve.Symbol.IsStatic)
                     {
                         switch (resolve.Symbol.Kind)
                         {
                             case SymbolKind.Field:
                             case SymbolKind.Property:
                             case SymbolKind.Method:
+                            case SymbolKind.Event:
                                 Write("this.");
                                 break;
                         }
                     }
 
                     if (EmitterContext.IsAssignmentLeftHand && resolve.Symbol.Kind == SymbolKind.Property
-                        && !Emitter.IsAutoProperty((IPropertySymbol)resolve.Symbol)
-                        && ((IPropertySymbol)resolve.Symbol).SetMethod == null
+                                                            && !Emitter.IsAutoProperty((IPropertySymbol) resolve.Symbol)
+                                                            && ((IPropertySymbol) resolve.Symbol).SetMethod == null
                     )
                     {
                         var backingField = resolve.Symbol.ContainingType
@@ -67,12 +70,31 @@ namespace Phase.Translator.TypeScript.Expressions
                     {
                         Write(EmitterContext.GetSymbolName(resolve.Symbol));
                     }
+
+
+                    if (EmitterContext.InitializerCount == 0 && !resolve.Symbol.IsStatic)
+                    {
+                        switch (resolve.Symbol.Kind)
+                        {
+                            case SymbolKind.Event:
+                                switch (Node.Parent)
+                                {
+                                    case EqualsValueClauseSyntax initializer when initializer.Value == Node:
+                                    case AssignmentExpressionSyntax assignment when assignment.Right == Node:
+                                        Write("?.invoke");
+                                        break;
+                                }
+                                break;
+                        }
+                    }
                 }
 
                 if (!EmitterContext.IsMethodInvocation && (
-                    (resolve.Symbol.Kind == SymbolKind.Local && Emitter.IsRefVariable((ILocalSymbol)resolve.Symbol)) ||
-                    (resolve.Symbol.Kind == SymbolKind.Parameter && ((IParameterSymbol)resolve.Symbol).RefKind != RefKind.None)
-                ))
+                        (resolve.Symbol.Kind == SymbolKind.Local &&
+                         Emitter.IsRefVariable((ILocalSymbol) resolve.Symbol)) ||
+                        (resolve.Symbol.Kind == SymbolKind.Parameter &&
+                         ((IParameterSymbol) resolve.Symbol).RefKind != RefKind.None)
+                    ))
                 {
                     WriteDot();
                     Write("Value");

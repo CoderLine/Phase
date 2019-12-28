@@ -34,8 +34,11 @@ namespace Phase.Translator.TypeScript
             EmitClass(cancellationToken);
 
             var result = PopWriter();
-            
-            Write("import * as phase from '@mscorlib/phase'");
+
+            if (EmitterContext.NeedsPhaseImport)
+            {
+                Write("import * as phase from '@mscorlib/phase'");
+            }
             WriteNewLine();
 
             foreach (var importedType in EmitterContext.ImportedTypes.Values)

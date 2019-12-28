@@ -70,7 +70,7 @@ namespace Phase.Translator.TypeScript.Expressions
                         }
                     }
 
-                    Write("system.Char.fromCode(");
+                    Write("String.fromCharCode(");
                     Write((int)(char)value);
                     WriteCloseParentheses();
                     break;

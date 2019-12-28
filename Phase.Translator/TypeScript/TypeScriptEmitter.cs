@@ -97,8 +97,8 @@ namespace Phase.Translator.TypeScript
             {
                 var typeArgs = GetTypeArguments(named);
 
-                if (name == "system.Action" || name == "system.Func" ||
-                    TypeLookup.ContainsKey(fullName) && TypeLookup[fullName].Count > 1)
+                if (fullName == "system.Action" || fullName == "system.Func" ||
+                    TypeLookup.TryGetValue(fullName, out var types) && types.Count(t => !IsExternal(t)) > 1)
                 {
                     name += typeArgs.Length;
                 }

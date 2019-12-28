@@ -51,8 +51,6 @@ namespace Phase.Translator.TypeScript
                                 EmitterContext.CurrentExceptionName.Push(catchClauseSyntax.Declaration.Identifier.ValueText);
                                 Write(catchClauseSyntax.Declaration.Identifier.ValueText);
                             }
-                            WriteColon();
-                            WriteType(catchClauseSyntax.Declaration.Type);
                             WriteCloseParentheses();
                         }
                         else
@@ -60,8 +58,6 @@ namespace Phase.Translator.TypeScript
                             WriteOpenParentheses();
                             Write(variable);
                             EmitterContext.CurrentExceptionName.Push(variable);
-                            WriteColon();
-                            Write("Dynamic");
                             WriteCloseParentheses();
                         }
                         WriteNewLine();

@@ -93,7 +93,7 @@ namespace Phase.Translator.TypeScript
 
                     if (!string.IsNullOrWhiteSpace(s))
                     {
-                        var lines = NewLine.Split(s.Trim());
+                        var lines = NewLine.Split(s.Trim(' ', '\t', '\r', '\n'));
                         foreach (var line in lines)
                         {
                             var trimmed = line.Trim();
@@ -689,6 +689,10 @@ namespace Phase.Translator.TypeScript
 
                         if(Emitter.IsIConvertible(type) && Emitter.AreTypeMethodsRedirected(type, out var redirect))
                         {
+                            if (redirect.StartsWith("phase."))
+                            {
+                                EmitterContext.NeedsPhaseImport = true;
+                            }
                             Write(redirect);
                             WriteDot();
                             Write("to" + convertedType.Name);
@@ -868,11 +872,12 @@ namespace Phase.Translator.TypeScript
             Write(Emitter.GetTypeName(type));
         }
 
-        protected void WriteEventType(INamedTypeSymbol delegateType)
+        protected void WriteEventType(INamedTypeSymbol delegateType, bool includeGenerics = true)
         {
             var delegateMethod = delegateType.DelegateInvokeMethod;
 
-            Write("system.Event");
+            EmitterContext.NeedsPhaseImport = true;
+            Write("phase.Event");
             if (delegateMethod.ReturnsVoid)
             {
                 Write("Action");
@@ -884,21 +889,25 @@ namespace Phase.Translator.TypeScript
 
             if (delegateMethod.Parameters.Length > 0 || !delegateMethod.ReturnsVoid)
             {
-                Write(delegateMethod.Parameters.Length, "<");
+                Write(delegateMethod.Parameters.Length);
 
-                for (int i = 0; i < delegateMethod.Parameters.Length; i++)
+                if (includeGenerics)
                 {
-                    if (i > 0) WriteComma();
-                    WriteType(delegateMethod.Parameters[i].Type);
-                }
+                    Write("<");
+                    for (int i = 0; i < delegateMethod.Parameters.Length; i++)
+                    {
+                        if (i > 0) WriteComma();
+                        WriteType(delegateMethod.Parameters[i].Type);
+                    }
 
-                if (!delegateMethod.ReturnsVoid)
-                {
-                    if (delegateMethod.Parameters.Length > 0) WriteComma();
-                    WriteType(delegateMethod.ReturnType);
-                }
+                    if (!delegateMethod.ReturnsVoid)
+                    {
+                        if (delegateMethod.Parameters.Length > 0) WriteComma();
+                        WriteType(delegateMethod.ReturnType);
+                    }
 
-                Write(">");
+                    Write(">");     
+                }
             }
         }
 

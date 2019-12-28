@@ -10,8 +10,12 @@ namespace Phase.Translator.TypeScript.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            var info = Emitter.GetDeclaredSymbol(Node.Parameter);
             Write(Node.Parameter.Identifier.Text);
-            
+            if (info.Type.SpecialType == SpecialType.System_Object)
+            {
+                Write(": any");   
+            }
             Write(" => ");
 
             if (Node.Body.Kind() == SyntaxKind.Block)

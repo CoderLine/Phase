@@ -15,5 +15,20 @@ namespace System.Collections.Generic
         {
             return GetEnumerator();
         }
+    } 
+    
+    [External]
+    [NativeConstructors]
+    public class IterableEnumerator<T> : IEnumerator<T>
+    {
+        public IterableEnumerator()
+        {
+             
+        }
+        public extern void Dispose();
+        public extern bool MoveNext();
+        public extern void Reset();
+        public extern T Current { get; }
+        object IEnumerator.Current => Current;
     }
 }

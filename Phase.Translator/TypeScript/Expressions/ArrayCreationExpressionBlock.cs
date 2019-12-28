@@ -42,6 +42,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 }
                 else
                 {
+                    EmitterContext.NeedsPhaseImport = true;
                     Write("phase.FixedArray");
                     WriteDot();
                     Write("empty");

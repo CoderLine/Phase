@@ -27,7 +27,7 @@ namespace Phase.Translator.TypeScript
             }
 
             var propertyName = Emitter.GetEventName(_eventSymbol);
-            Write("var ", propertyName);
+            Write(propertyName);
 
             WriteSpace();
             WriteColon();
