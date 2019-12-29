@@ -37,7 +37,10 @@ namespace Phase.Translator.TypeScript
                 {
                     WriteComments(_property, cancellationToken);
                     WriteMeta(_property, cancellationToken);
-                    WriteAccessibility(_property.DeclaredAccessibility);
+                    if (_property.ContainingType.TypeKind != TypeKind.Interface)
+                    {
+                        WriteAccessibility(_property.DeclaredAccessibility);
+                    }
 
                     if (_property.IsStatic)
                     {

@@ -70,9 +70,7 @@ namespace Phase.Translator.TypeScript.Expressions
                         }
                     }
 
-                    Write("String.fromCharCode(");
                     Write((int)(char)value);
-                    WriteCloseParentheses();
                     break;
                 case SyntaxKind.TrueLiteralExpression:
                     Write("true");

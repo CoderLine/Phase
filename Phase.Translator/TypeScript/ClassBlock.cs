@@ -101,9 +101,17 @@ namespace Phase.Translator.TypeScript
                     EmitterContext.ImportType(_type.TypeSymbol.BaseType);
                 }
 
-                foreach (var type in _type.TypeSymbol.Interfaces)
+                for (var i = 0; i < _type.TypeSymbol.Interfaces.Length; i++)
                 {
-                    Write(" implements ");
+                    if (i > 0)
+                    {
+                        WriteComma();
+                    }
+                    else
+                    {
+                        Write(" implements ");
+                    }
+                    var type = _type.TypeSymbol.Interfaces[i];
                     WriteType(type);
                     EmitterContext.ImportType(type);
                 }

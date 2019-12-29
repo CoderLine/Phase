@@ -11,7 +11,7 @@ namespace Phase
         public void Run(ICompilerContext context)
         {
             context.Attributes.Type<object>()
-                .Add(new RedirectMethodsToAttribute("phase.ObjectExtensions"));
+                .Add(new NameAttribute("unknown"), new RedirectMethodsToAttribute("phase.ObjectExtensions"));
             context.Attributes.Type<Type>()
                 .Add(new NameAttribute("CsType"));
             context.Attributes.Type<string>()
@@ -23,7 +23,7 @@ namespace Phase
             context.Attributes.Member((string s) => s.Substring(0))
                 .Add(new TemplateAttribute("{this}.substr({startIndex})"));
             context.Attributes.Member((string s) => s.IndexOf('c'))
-                .Add(new TemplateAttribute("{this}.indexOf({value})"));
+                .Add(new TemplateAttribute("{this}.indexOf(String.fromCharCode({value}))"));
             context.Attributes.Member((string s) => s.Replace("a", "b"))
                 .Add(new TemplateAttribute("{this}.replace({oldValue}, {newValue})"));
             context.Attributes.Member((string s) => s.ToLower())
@@ -55,7 +55,9 @@ namespace Phase
             context.Attributes.Type<ulong>()
                 .Add(new NameAttribute("number"), new RedirectMethodsToAttribute("phase.Uint64Extensions"));
             context.Attributes.Type(typeof(Math))
-                .Add(new NameAttribute("CsMath"));
+                .Add(new NameAttribute("system.CsMath"));
+            context.Attributes.Member(()=> Math.Min(0,0))
+                .Add(new TemplateAttribute("Math.min({val1}, {val2})"));
             context.Attributes.Type<float>()
                 .Add(new NameAttribute("number"), new RedirectMethodsToAttribute("phase.Float32Extensions"));
             context.Attributes.Type<double>()

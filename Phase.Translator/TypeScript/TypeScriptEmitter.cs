@@ -173,7 +173,7 @@ namespace Phase.Translator.TypeScript
                 }
                 else
                 {
-                    x.Append(GetSymbolName(method.AssociatedSymbol, context));
+                    return GetPropertyName(prop);
                 }
             }
             else if (method.MethodKind == MethodKind.PropertySet)
@@ -185,7 +185,7 @@ namespace Phase.Translator.TypeScript
                 }
                 else
                 {
-                    x.Append(GetSymbolName(method.AssociatedSymbol, context));
+                    return GetPropertyName(prop);
                 }
             }
             else if (method.MethodKind == MethodKind.EventAdd)

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
@@ -11,6 +12,22 @@ namespace Phase.Translator.TypeScript.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
+            var methodSymbol = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
+            if (methodSymbol != null)
+            {
+                var template = Emitter.GetTemplate(methodSymbol);
+                if (template != null)
+                {
+                    var arguments = Node.ArgumentList?.Arguments
+                                        .Select(a => new ParameterInvocationInfo(a)).ToList()
+                                    ?? new List<ParameterInvocationInfo>();
+                    var methodInvocation = BuildMethodInvocation(methodSymbol, arguments);
+                    ApplyExpressions(template, methodSymbol.Parameters, methodInvocation, cancellationToken);
+                    Write(template.ToString());
+                    return;
+                }
+            }
+
             string tmpvar = null;
             if (Node.Initializer != null)
             {
@@ -26,13 +43,14 @@ namespace Phase.Translator.TypeScript.Expressions
                 {
                     tmpvar += EmitterContext.RecursiveObjectCreation;
                 }
+
                 EmitterContext.RecursiveObjectCreation++;
 
                 Write(tmpvar);
                 Write(" = ");
             }
 
-            var type = (ITypeSymbol)Emitter.GetSymbolInfo(Node.Type).Symbol;
+            var type = (ITypeSymbol) Emitter.GetSymbolInfo(Node.Type).Symbol;
             if (type.TypeKind == TypeKind.Delegate)
             {
                 if (Node.ArgumentList.Arguments.Count == 1)
@@ -45,7 +63,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 WriteNew();
                 WriteType(type);
                 EmitterContext.ImportType(type);
-                var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
+                var ctor = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
                 WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
             }
             else
@@ -55,7 +73,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 EmitterContext.ImportType(type);
                 WriteOpenCloseParentheses();
                 WriteDot();
-                var ctor = (IMethodSymbol)Emitter.GetSymbolInfo(Node).Symbol;
+                var ctor = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
                 Write(EmitterContext.GetMethodName(ctor));
                 WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
             }
@@ -82,7 +100,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 {
                     if (expression.Kind() == SyntaxKind.SimpleAssignmentExpression)
                     {
-                        var assignment = (AssignmentExpressionSyntax)expression;
+                        var assignment = (AssignmentExpressionSyntax) expression;
                         var left = Emitter.GetSymbolInfo(assignment.Left);
 
                         Write(tmpvar);

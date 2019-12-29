@@ -9,18 +9,6 @@ namespace Phase.Translator.TypeScript
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            if (Node.Finally != null)
-            {
-                Write(PhaseConstants.Phase);
-                WriteDot();
-                Write("Finally");
-                WriteOpenParentheses();
-
-                WriteFunction();
-                WriteOpenCloseParentheses();
-                BeginBlock();
-            }
-
             if (Node.Catches.Count == 0)
             {
                 EmitTree(Node.Block, cancellationToken);
@@ -31,55 +19,83 @@ namespace Phase.Translator.TypeScript
                 WriteNewLine();
                 EmitTree(Node.Block, cancellationToken);
 
-                foreach (var catchClauseSyntax in Node.Catches)
+                if (Node.Catches.Count > 0)
                 {
                     var variable = "__e" + ((EmitterContext.RecursiveCatch > 0) ? EmitterContext.RecursiveCatch.ToString() : "");
-                    try
+                    EmitterContext.RecursiveCatch++;
+                    Write("catch(", variable, ") ");
+                    BeginBlock();
+
+                    for (var i = 0; i < Node.Catches.Count; i++)
                     {
-                        EmitterContext.RecursiveCatch++;
-                        Write("catch");
+                        var catchClauseSyntax = Node.Catches[i];
                         if (catchClauseSyntax.Declaration != null)
                         {
+                            if (i > 0)
+                            {
+                                WriteElse();
+                            }
+                            WriteIf();
                             WriteOpenParentheses();
+                            Write(variable, " instanceof ");
+                            var type = Emitter.GetTypeSymbol(catchClauseSyntax.Declaration.Type);
+                            WriteType(type);
+                            EmitterContext.ImportType(type);
+                            WriteCloseParentheses();
+                            BeginBlock();
+
                             if (string.IsNullOrEmpty(catchClauseSyntax.Declaration.Identifier.Text))
                             {
                                 EmitterContext.CurrentExceptionName.Push(variable);
-                                Write(variable);
                             }
                             else
                             {
                                 EmitterContext.CurrentExceptionName.Push(catchClauseSyntax.Declaration.Identifier.ValueText);
-                                Write(catchClauseSyntax.Declaration.Identifier.ValueText);
+                                Write("const ", catchClauseSyntax.Declaration.Identifier.ValueText, " = ", variable,
+                                    " as ");
+                                WriteType(type);
+                                WriteSemiColon(true);
                             }
-                            WriteCloseParentheses();
+
+                            foreach (var statement in catchClauseSyntax.Block.Statements)
+                            {
+                                EmitTree(statement, cancellationToken);
+                            }
+                            
+                            EndBlock();
                         }
                         else
                         {
-                            WriteOpenParentheses();
-                            Write(variable);
                             EmitterContext.CurrentExceptionName.Push(variable);
-                            WriteCloseParentheses();
+                            if (i > 0)
+                            {
+                                WriteElse();
+                                BeginBlock();
+                            }
+
+                            foreach (var statement in catchClauseSyntax.Block.Statements)
+                            {
+                                EmitTree(statement, cancellationToken);
+                            }
+                            
+                            if (i > 0)
+                            {
+                                EndBlock();
+                            }
                         }
-                        WriteNewLine();
-                        EmitTree(catchClauseSyntax.Block, cancellationToken);
+
                         EmitterContext.CurrentExceptionName.Pop();
                     }
-                    finally
-                    {
-                        EmitterContext.RecursiveCatch--;
-                    }
+
+                    EmitterContext.RecursiveCatch--;
+                    EndBlock();
                 }
             }
 
             if (Node.Finally != null)
             {
-                EndBlock();
-                WriteComma();
-                WriteFunction();
-                WriteOpenCloseParentheses();
+                WriteFinally();
                 EmitTree(Node.Finally.Block, cancellationToken);
-                WriteCloseParentheses();
-                WriteSemiColon(true);
             }
         }
     }

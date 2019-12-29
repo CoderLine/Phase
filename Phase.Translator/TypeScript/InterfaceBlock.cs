@@ -25,19 +25,9 @@ namespace Phase.Translator.TypeScript
             var fullName = Emitter.GetTypeName(_type.TypeSymbol, noTypeArguments: true);
             var index = fullName.LastIndexOf('.');
 
-            var package = index >= 0 ? fullName.Substring(0, index) : null;
             var name = index >= 0 ? fullName.Substring(index + 1) : fullName;
 
             WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken));
-
-            if (!string.IsNullOrEmpty(package))
-            {
-                Write("package ");
-                Write(package);
-                WriteSemiColon(true);
-                WriteNewLine();
-            }
-
             WriteComments(_type.TypeSymbol, cancellationToken);
 
             if (_type.TypeSymbol.DeclaredAccessibility == Accessibility.Public)
@@ -45,7 +35,7 @@ namespace Phase.Translator.TypeScript
                 WriteNewLine();
             }
 
-            Write("interface ", name);
+            Write("export interface ", name);
 
             if (_type.TypeSymbol.IsGenericType)
             {

@@ -87,6 +87,9 @@ namespace Phase.Translator.TypeScript
 
             if (trivia.Any())
             {
+                var isCodeComment = false;
+                var codeCommentIndent = "";
+
                 foreach (var t in trivia)
                 {
                     var s = t.ToFullString();
@@ -97,13 +100,32 @@ namespace Phase.Translator.TypeScript
                         foreach (var line in lines)
                         {
                             var trimmed = line.Trim();
-                            if (trimmed.StartsWith("///"))
+                            if (trimmed.StartsWith("// </code>"))
+                            {
+                                isCodeComment = false;
+                            }
+                            else if (isCodeComment && trimmed.StartsWith("// "))
+                            {
+                                Write(codeCommentIndent, trimmed.Substring(3));
+                                WriteNewLine();
+                            }
+                            else if (isCodeComment && trimmed.StartsWith("//"))
+                            {
+                                Write(codeCommentIndent, trimmed.Substring(2));
+                                WriteNewLine();
+                            }
+                            else if (trimmed.StartsWith("///"))
                             {
                                 if (!documentationWritten)
                                 {
                                     WriteDocumentation(node, documentation);
                                     documentationWritten = true;
                                 }
+                            }
+                            else if (trimmed.StartsWith("// <code>"))
+                            {
+                                isCodeComment = true;
+                                codeCommentIndent = trimmed.Substring(0, trimmed.IndexOf("//", StringComparison.Ordinal));
                             }
                             else if (trimmed.StartsWith("//"))
                             {

@@ -88,17 +88,6 @@ namespace Phase.Translator.TypeScript.Expressions
                         }
                     }
                 }
-
-                if (!EmitterContext.IsMethodInvocation && (
-                        (resolve.Symbol.Kind == SymbolKind.Local &&
-                         Emitter.IsRefVariable((ILocalSymbol) resolve.Symbol)) ||
-                        (resolve.Symbol.Kind == SymbolKind.Parameter &&
-                         ((IParameterSymbol) resolve.Symbol).RefKind != RefKind.None)
-                    ))
-                {
-                    WriteDot();
-                    Write("Value");
-                }
             }
 
             return AutoCastMode.Default;

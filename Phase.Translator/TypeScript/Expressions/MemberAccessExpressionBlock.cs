@@ -61,7 +61,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 && constField.IsConst 
                 && (constField.ContainingType.SpecialType != SpecialType.System_Single || constField.Name != "NaN")
                 && (constField.ContainingType.SpecialType != SpecialType.System_Double || constField.Name != "NaN")
-                && (constField.DeclaringSyntaxReferences.Length == 0 || EmitterContext.IsCaseLabel))
+                && (constField.DeclaringSyntaxReferences.Length == 0 || EmitterContext.IsCaseLabel || Emitter.IsExternal(constField.ContainingType)))
             {
                 return WriteConstant(constField);
             }
@@ -92,8 +92,15 @@ namespace Phase.Translator.TypeScript.Expressions
             }
             else
             {
-                WriteDot();
-                Write(EmitterContext.GetSymbolName(member.Symbol));
+                if (member.Symbol.Name == "Value" && member.Symbol.ContainingType.OriginalDefinition.SpecialType ==
+                         SpecialType.System_Nullable_T)
+                {
+                }
+                else
+                {
+                    WriteDot();
+                    Write(EmitterContext.GetSymbolName(member.Symbol));
+                }
             }
 
             return AutoCastMode.Default;

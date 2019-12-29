@@ -68,8 +68,9 @@ namespace Phase.Translator.TypeScript.Expressions
                     }
                     else
                     {
-                        Write("untyped ");
                         EmitTree(Node.Expression, cancellationToken);
+                        Write(" as ");
+                        WriteType(targetType.Type);
                     }
                     return;
             }

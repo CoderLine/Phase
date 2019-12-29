@@ -2,7 +2,7 @@
 
 namespace Phase.Attributes
 {
-    [AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor, Inherited = false, AllowMultiple = true)]
     public sealed class TemplateAttribute : Attribute
     {
         public string Template { get; }

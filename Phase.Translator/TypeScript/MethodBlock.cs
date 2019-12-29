@@ -81,18 +81,40 @@ namespace Phase.Translator.TypeScript
                 // implicit constructor for structs
                 return;
             }
+            if (_method.ContainingType.TypeKind == TypeKind.Interface)
+            {
+                switch (_method.MethodKind)
+                {
+                    case MethodKind.EventAdd:
+                    case MethodKind.EventRemove:
+                    case MethodKind.EventRaise:
+                    case MethodKind.PropertyGet:
+                    case MethodKind.PropertySet:
+                        return;
+                }
+            }
 
             WriteComments(_method, cancellationToken);
             WriteMeta(_method, cancellationToken);
 
-            if (_method.MethodKind == MethodKind.StaticConstructor ||
-                _method.ContainingType.TypeKind == TypeKind.Interface)
+            if (_method.ContainingType.TypeKind != TypeKind.Interface)
             {
-                WriteAccessibility(Accessibility.Public);
-            }
-            else
-            {
-                WriteAccessibility(_method.DeclaredAccessibility);
+                if (_method.MethodKind == MethodKind.StaticConstructor)
+                {
+                    WriteAccessibility(Accessibility.Public);
+                }
+                else
+                {
+                    switch (_method.MethodKind)
+                    {
+                        case MethodKind.PropertySet:
+                            WriteAccessibility(((IPropertySymbol)_method.AssociatedSymbol).GetMethod.DeclaredAccessibility);
+                            break;
+                        default:
+                            WriteAccessibility(_method.DeclaredAccessibility);
+                            break;
+                    }
+                }
             }
 
             if (_method.AssociatedSymbol is IPropertySymbol prop && !prop.IsIndexer)
@@ -150,10 +172,11 @@ namespace Phase.Translator.TypeScript
             switch (_method.MethodKind)
             {
                 case MethodKind.PropertyGet:
-                case MethodKind.PropertySet:
                     WriteColon();
                     Write(Emitter.GetTypeNameWithNullability(((IPropertySymbol) _method.AssociatedSymbol).Type));
                     EmitterContext.ImportType(((IPropertySymbol) _method.AssociatedSymbol).Type);
+                    break;
+                case MethodKind.PropertySet:
                     break;
                 case MethodKind.EventAdd:
                 case MethodKind.EventRemove:
@@ -412,7 +435,6 @@ namespace Phase.Translator.TypeScript
                                             Emitter.GetTypeInfo(accessorDeclarationSyntax.ExpressionBody.Expression);
                                         if (SymbolEquivalenceComparer.Instance.Equals(typeInfo.Type, property.Type))
                                         {
-                                            WriteReturn(true);
                                             EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
                                                 cancellationToken);
                                             WriteSemiColon(true);
@@ -421,17 +443,6 @@ namespace Phase.Translator.TypeScript
                                         {
                                             EmitTree(accessorDeclarationSyntax.ExpressionBody.Expression,
                                                 cancellationToken);
-                                            WriteSemiColon(true);
-
-                                            WriteReturn(true);
-                                            Write(EmitterContext.GetSymbolName(property.GetMethod));
-                                            WriteOpenParentheses();
-                                            for (int i = 0; i < _method.Parameters.Length - 1; i++)
-                                            {
-                                                Write(EmitterContext.GetSymbolName(_method.Parameters[i]));
-                                            }
-
-                                            WriteCloseParentheses();
                                             WriteSemiColon(true);
                                         }
                                     }
@@ -453,37 +464,6 @@ namespace Phase.Translator.TypeScript
                                 }
 
                                 EmitterContext.SetterMethod = null;
-
-                                if (_method.MethodKind == MethodKind.PropertySet)
-                                {
-                                    WriteReturn(true);
-                                    var property = (IPropertySymbol) _method.AssociatedSymbol;
-                                    if (property.GetMethod != null)
-                                    {
-                                        Write(EmitterContext.GetMethodName(property.GetMethod));
-                                        WriteOpenParentheses();
-                                        if (property.IsIndexer)
-                                        {
-                                            for (int i = 0; i < property.GetMethod.Parameters.Length; i++)
-                                            {
-                                                if (i > 0)
-                                                {
-                                                    WriteComma();
-                                                }
-
-                                                Write(property.GetMethod.Parameters[i].Name);
-                                            }
-                                        }
-
-                                        WriteCloseParentheses();
-                                    }
-                                    else
-                                    {
-                                        Write(_method.Parameters.Last().Name);
-                                    }
-
-                                    WriteSemiColon(true);
-                                }
                             }
                             else
                             {
@@ -619,7 +599,7 @@ namespace Phase.Translator.TypeScript
             }
             else
             {
-                Write("return ");
+                Write("this.");
                 Write(Emitter.GetFieldName(backingField));
                 Write(" = ");
                 Write(_method.Parameters[0].Name);
@@ -647,7 +627,7 @@ namespace Phase.Translator.TypeScript
             }
             else
             {
-                Write("return ");
+                Write("return this.");
                 Write(Emitter.GetFieldName(backingField));
                 WriteSemiColon();
             }
