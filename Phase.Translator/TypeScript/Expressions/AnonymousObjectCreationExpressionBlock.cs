@@ -11,7 +11,6 @@ namespace Phase.Translator.TypeScript.Expressions
         {
             WriteOpenBrace();
             WriteNewLine();
-            EmitterContext.InitializerCount++;
             for (int i = 0; i < Node.Initializers.Count; i++)
             {
                 if (i > 0)
@@ -20,6 +19,7 @@ namespace Phase.Translator.TypeScript.Expressions
                     WriteNewLine();
                 }
 
+                EmitterContext.InitializerCount++;
                 var init = Node.Initializers[i];
                 if (init.NameEquals != null)
                 {
@@ -56,10 +56,10 @@ namespace Phase.Translator.TypeScript.Expressions
                 }
                 WriteColon();
                 WriteSpace();
+                EmitterContext.InitializerCount--;
 
                 EmitTree(init.Expression, cancellationToken);
             }
-            EmitterContext.InitializerCount--;
             WriteCloseBrace();
         }
     }

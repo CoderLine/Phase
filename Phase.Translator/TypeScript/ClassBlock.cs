@@ -37,7 +37,7 @@ namespace Phase.Translator.TypeScript
 
             if (EmitterContext.NeedsPhaseImport)
             {
-                Write("import * as phase from '@mscorlib/phase'");
+                Write("import * as ph from '@mscorlib/phase'");
             }
             WriteNewLine();
 

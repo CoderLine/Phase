@@ -12,18 +12,7 @@ namespace Phase.Translator.TypeScript.Expressions
         {
             if (Node.Initializer != null)
             {
-                WriteOpenBracket();
-
-                for (int i = 0; i < Node.Initializer.Expressions.Count; i++)
-                {
-                    if (i > 0)
-                    {
-                        WriteComma();
-                    }
-                    EmitTree(Node.Initializer.Expressions[i], cancellationToken);
-                }
-
-                WriteCloseBracket();
+                EmitTree(Node.Initializer);
             }
             else
             {
@@ -43,7 +32,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 else
                 {
                     EmitterContext.NeedsPhaseImport = true;
-                    Write("phase.FixedArray");
+                    Write("ph.FixedArray");
                     WriteDot();
                     Write("empty");
                     if (Node.Type.RankSpecifiers.Count > 1)

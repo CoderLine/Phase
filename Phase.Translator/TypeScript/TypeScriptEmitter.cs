@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Xml;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using NLog;
 using Phase.Translator.Utils;
 
@@ -30,7 +31,9 @@ namespace Phase.Translator.TypeScript
         public string GetFileName(ITypeSymbol type, bool includeExtension, char directorySeparator)
         {
             var nsAndName = GetNamespaceAndTypeName(type);
-            var name = nsAndName.Item1 + "." + nsAndName.Item2;
+            var name = string.IsNullOrEmpty(nsAndName.Item1)
+                ? nsAndName.Item2
+                : nsAndName.Item1 + "." + nsAndName.Item2;
             var p = name.IndexOf("<");
             if (p >= 0) name = name.Substring(0, p);
             return name.Replace('.', directorySeparator) + (includeExtension ? ".ts" : "");
@@ -41,6 +44,22 @@ namespace Phase.Translator.TypeScript
             return new[] {new TypeScriptEmitterContext(this, type)};
         }
 
+        protected override bool InternalIsEventField(IEventSymbol evt)
+        {
+            if (evt.IsAbstract || evt.IsExtern)
+            {
+                return false;
+            }
+
+            var declaration = evt.DeclaringSyntaxReferences.FirstOrDefault()?.GetSyntax();
+            if (declaration.Kind() == SyntaxKind.EventFieldDeclaration ||
+                declaration.Kind() == SyntaxKind.VariableDeclarator)
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         public string GetTypeNameWithNullability(ITypeSymbol type, bool simple = false, bool noTypeArguments = false)
         {
@@ -405,6 +424,13 @@ namespace Phase.Translator.TypeScript
 
                     return "null";
             }
+        }
+
+        protected override void ComputeConstructorOverloads(ITypeSymbol type, SymbolMetaData meta)
+        {
+            meta.ConstructorCount = type.GetMembers().Count(t =>
+                t.Kind == SymbolKind.Method && ((IMethodSymbol) t).MethodKind == MethodKind.Constructor && !t.IsStatic);
+            meta.HasConstructorOverloads = meta.ConstructorCount > 1;
         }
     }
 }

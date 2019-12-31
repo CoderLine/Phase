@@ -74,9 +74,11 @@ namespace Phase.Translator.TypeScript.Expressions
 
                         if (leftIsInt && rightIsInt)
                         {
-                            Write("Std.int");
+                            WriteOpenParentheses();
                             WriteOpenParentheses();
                             DoEmit("/", cancellationToken);
+                            WriteCloseParentheses();
+                            Write(" | 0");
                             WriteCloseParentheses();
                         }
                         else
@@ -134,15 +136,14 @@ namespace Phase.Translator.TypeScript.Expressions
                 case SyntaxKind.AsExpression:
                     WriteOpenParentheses();
 
-                    Write("Std.is(");
+                    Write("(");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(",");
+                    Write(" instanceof ");
                     EmitTree(Node.Right, cancellationToken);
                     Write(")");
 
                     Write("?");
 
-                    Write(" cast ");
                     EmitTree(Node.Left, cancellationToken);
 
                     Write(": null");
@@ -150,18 +151,16 @@ namespace Phase.Translator.TypeScript.Expressions
                     WriteCloseParentheses();
                     break;
                 case SyntaxKind.IsExpression:
-                    Write("Std.is(");
+                    Write("(");
                     EmitTree(Node.Left, cancellationToken);
-                    Write(",");
+                    Write(" instanceof ");
                     EmitTree(Node.Right, cancellationToken);
                     Write(")");
                     break;
                 case SyntaxKind.CoalesceExpression:
-                    // TODO: this way the left expression is executed twice, 
                     EmitTree(Node.Left, cancellationToken);
-                    Write(".Coalesce(");
+                    Write(" ?? ");
                     EmitTree(Node.Right, cancellationToken);
-                    Write(")");
                     break;
                 case SyntaxKind.SimpleMemberAccessExpression:
                 case SyntaxKind.PointerMemberAccessExpression:
@@ -196,33 +195,13 @@ namespace Phase.Translator.TypeScript.Expressions
 
         protected void DoEmit(string op, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (!EmitterContext.IsConstInitializer && _leftType != null && _leftType.SpecialType == SpecialType.System_Single && Node.Left.Kind() == SyntaxKind.NumericLiteralExpression)
-            {
-                Write("new system.Single");
-                WriteOpenParentheses();
-                EmitTree(Node.Left, cancellationToken);
-                WriteCloseParentheses();
-            }
-            else
-            {
-                EmitTree(Node.Left, cancellationToken);
-            }
+            EmitTree(Node.Left, cancellationToken);
 
             Write(" ");
             Write(op);
             Write(" ");
 
-            if (!EmitterContext.IsConstInitializer && _rightType != null && _rightType.SpecialType == SpecialType.System_Single && Node.Right.Kind() == SyntaxKind.NumericLiteralExpression)
-            {
-                Write("new system.Single");
-                WriteOpenParentheses();
-                EmitTree(Node.Right, cancellationToken);
-                WriteCloseParentheses();
-            }
-            else
-            {
-                EmitTree(Node.Right, cancellationToken);
-            }
+            EmitTree(Node.Right, cancellationToken);
         }
     }
 }

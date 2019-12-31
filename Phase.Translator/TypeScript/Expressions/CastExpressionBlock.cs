@@ -35,7 +35,7 @@ namespace Phase.Translator.TypeScript.Expressions
                     {
                         if(Emitter.AreTypeMethodsRedirected(sourceType.Type, out var redirect))
                         {
-                            if (redirect.StartsWith("phase."))
+                            if (redirect.StartsWith("ph."))
                             {
                                 EmitterContext.NeedsPhaseImport = true;
                             }
@@ -49,6 +49,7 @@ namespace Phase.Translator.TypeScript.Expressions
                         else if(sourceType.Type.TypeKind == TypeKind.Enum)
                         {
                             WriteType(sourceType.Type);
+                            EmitterContext.ImportType(sourceType.Type);
                             WriteDot();
                             Write("to" + targetType.Type.Name);
                             WriteOpenParentheses();
@@ -71,6 +72,7 @@ namespace Phase.Translator.TypeScript.Expressions
                         EmitTree(Node.Expression, cancellationToken);
                         Write(" as ");
                         WriteType(targetType.Type);
+                        EmitterContext.ImportType(targetType.Type);
                     }
                     return;
             }

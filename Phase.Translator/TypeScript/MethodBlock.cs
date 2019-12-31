@@ -85,9 +85,6 @@ namespace Phase.Translator.TypeScript
             {
                 switch (_method.MethodKind)
                 {
-                    case MethodKind.EventAdd:
-                    case MethodKind.EventRemove:
-                    case MethodKind.EventRaise:
                     case MethodKind.PropertyGet:
                     case MethodKind.PropertySet:
                         return;
@@ -117,6 +114,11 @@ namespace Phase.Translator.TypeScript
                 }
             }
 
+            if (_method.IsStatic)
+            {
+                Write("static ");
+            }
+            
             if (_method.AssociatedSymbol is IPropertySymbol prop && !prop.IsIndexer)
             {
                 switch (_method.MethodKind)
@@ -128,11 +130,6 @@ namespace Phase.Translator.TypeScript
                         Write("set ");
                         break;
                 }
-            }
-
-            if (_method.IsStatic)
-            {
-                Write("static ");
             }
 
             var methodName = EmitterContext.GetMethodName(_method);
@@ -354,6 +351,11 @@ namespace Phase.Translator.TypeScript
                                     }
                                     else
                                     {
+                                        if (Emitter.HasConstructorOverloads(_method.ContainingType.BaseType))
+                                        {
+                                            Write("super()");
+                                            WriteSemiColon(true);
+                                        }
                                         Write("this.", x);
                                     }
 

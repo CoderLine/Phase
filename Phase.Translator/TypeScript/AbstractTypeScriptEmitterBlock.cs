@@ -711,7 +711,7 @@ namespace Phase.Translator.TypeScript
 
                         if(Emitter.IsIConvertible(type) && Emitter.AreTypeMethodsRedirected(type, out var redirect))
                         {
-                            if (redirect.StartsWith("phase."))
+                            if (redirect.StartsWith("ph."))
                             {
                                 EmitterContext.NeedsPhaseImport = true;
                             }
@@ -899,7 +899,7 @@ namespace Phase.Translator.TypeScript
             var delegateMethod = delegateType.DelegateInvokeMethod;
 
             EmitterContext.NeedsPhaseImport = true;
-            Write("phase.Event");
+            Write("ph.Event");
             if (delegateMethod.ReturnsVoid)
             {
                 Write("Action");
@@ -1200,7 +1200,7 @@ namespace Phase.Translator.TypeScript
                     Write(">");
                 }
 
-                if (param.IsOptional)
+                if (param.IsOptional && param.ContainingType.TypeKind != TypeKind.Interface)
                 {
                     Write(" = ");
 

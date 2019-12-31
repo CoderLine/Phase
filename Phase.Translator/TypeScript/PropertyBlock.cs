@@ -33,7 +33,7 @@ namespace Phase.Translator.TypeScript
             if (!_property.IsIndexer && _property.OverriddenProperty == null)
             {
                 var isAutoProperty = Emitter.IsAutoProperty(_property);
-                if (isAutoProperty)
+                if (isAutoProperty || _property.ContainingType.TypeKind == TypeKind.Interface)
                 {
                     WriteComments(_property, cancellationToken);
                     WriteMeta(_property, cancellationToken);

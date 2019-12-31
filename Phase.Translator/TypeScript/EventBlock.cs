@@ -16,6 +16,11 @@ namespace Phase.Translator.TypeScript
 
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            if (!Emitter.IsEventField(_eventSymbol))
+            {
+                return;
+            }
+            
             WriteComments(_eventSymbol, cancellationToken);
             WriteMeta(_eventSymbol, cancellationToken);
 

@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace Phase.Translator.TypeScript.Expressions
@@ -9,10 +10,15 @@ namespace Phase.Translator.TypeScript.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
+            Write("let ");
             for (int i = 0; i < Node.Variables.Count; i++)
             {
+                if (i > 0)
+                {
+                    WriteComma();
+                }
                 var variable = Node.Variables[i];
-                Write("let ", variable.Identifier.Text);
+                Write(variable.Identifier.Text);
 
                 WriteColon();
                 var type = Emitter.GetTypeSymbol(Node.Type);
@@ -25,14 +31,20 @@ namespace Phase.Translator.TypeScript.Expressions
                     EmitTree(variable.Initializer.Value, cancellationToken);
                 }
 
-                WriteSemiColon();
+                if (Node.Parent.Kind() != SyntaxKind.ForStatement)
+                {
+                    WriteSemiColon();
+                }
             }
         }
 
         protected override void EndEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
             base.EndEmit(cancellationToken);
-            WriteNewLine();
+            if (Node.Parent.Kind() != SyntaxKind.ForStatement)
+            {
+                WriteNewLine();
+            }
         }
     }
 }

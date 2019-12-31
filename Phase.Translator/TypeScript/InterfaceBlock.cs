@@ -15,8 +15,36 @@ namespace Phase.Translator.TypeScript
         {
             _type = (PhaseInterface)context.CurrentType;
         }
-
+        
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
+        {
+            if (Emitter.IsExternal(_type.TypeSymbol))
+            {
+                return;
+            }
+
+            PushWriter();
+            EmitInterface(cancellationToken);
+
+            var result = PopWriter();
+
+            if (EmitterContext.NeedsPhaseImport)
+            {
+                Write("import * as ph from '@mscorlib/phase'");
+            }
+            WriteNewLine();
+
+            foreach (var importedType in EmitterContext.ImportedTypes.Values)
+            {
+                WriteImport(importedType.Type);
+            }
+
+            WriteNewLine();
+
+            Write(result);
+        }
+
+        protected void EmitInterface(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Emitter.IsExternal(_type.TypeSymbol))
             {
@@ -82,8 +110,11 @@ namespace Phase.Translator.TypeScript
                         methodBlock.Emit(cancellationToken);
                         break;
                     case SymbolKind.Event:
-                        var eventBlock = new EventBlock(EmitterContext, (IEventSymbol)member);
-                        eventBlock.Emit(cancellationToken);
+                        var addMethodBlock = new MethodBlock(EmitterContext, ((IEventSymbol)member).AddMethod);
+                        addMethodBlock.Emit(cancellationToken);
+
+                        var removeMethodBlock = new MethodBlock(EmitterContext, ((IEventSymbol)member).RemoveMethod);
+                        removeMethodBlock.Emit(cancellationToken);
                         break;
                 }
             }

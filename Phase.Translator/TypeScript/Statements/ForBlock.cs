@@ -9,7 +9,8 @@ namespace Phase.Translator.TypeScript
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            BeginBlock();
+            WriteFor();
+            WriteOpenParentheses();
 
             if (Node.Declaration != null)
             {
@@ -17,46 +18,34 @@ namespace Phase.Translator.TypeScript
             }
             else if (Node.Initializers.Count > 0)
             {
-                foreach (var initializer in Node.Initializers)
+                for (var i = 0; i < Node.Initializers.Count; i++)
                 {
+                    if (i > 0) WriteComma();
+                    var initializer = Node.Initializers[i];
                     EmitTree(initializer, cancellationToken);
-                    WriteSemiColon(true);
                 }
             }
 
+            WriteSemiColon(false);
 
-            WriteWhile();
-            WriteOpenParentheses();
             EmitTree(Node.Condition, cancellationToken);
-            WriteCloseParentheses();
 
-            WriteNewLine();
-            BeginBlock();
+            WriteSemiColon();
 
             EmitterContext.CurrentForIncrementors.Push(Node.Incrementors);
 
-            if (Node.Statement.Kind() == SyntaxKind.Block)
+            for (var i = 0; i < Node.Incrementors.Count; i++)
             {
-                foreach (var statement in ((BlockSyntax)Node.Statement).Statements)
-                {
-                    EmitTree(statement, cancellationToken);
-                }
-            }
-            else
-            {
-                EmitTree(Node.Statement, cancellationToken);
+                if (i > 0) WriteComma();
+                var incrementor = Node.Incrementors[i];
+                EmitTree(incrementor, cancellationToken);
             }
 
-            foreach (var incrementor in Node.Incrementors)
-            {
-                EmitTree(incrementor, cancellationToken);
-                WriteSemiColon(true);
-            }
+            WriteCloseParentheses();
+
+            EmitTree(Node.Statement, cancellationToken);
 
             EmitterContext.CurrentForIncrementors.Pop();
-
-            EndBlock();
-            EndBlock();
         }
     }
 }

@@ -32,8 +32,6 @@ namespace Phase.Translator.TypeScript
         {
             if (baseType.TypeKind == TypeKind.TypeParameter) return;
             if (baseType.OriginalDefinition.Equals(CurrentType.TypeSymbol)) return;
-            if (Emitter.ShouldOmitImport(baseType)) return;            
-
             switch (baseType.SpecialType)
             {
                 case SpecialType.System_Object:
@@ -66,7 +64,7 @@ namespace Phase.Translator.TypeScript
                 return;
             }
 
-            if (baseType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
+            if (!Emitter.ShouldOmitImport(baseType) && baseType.OriginalDefinition.SpecialType != SpecialType.System_Nullable_T)
             {
                 if (!ImportedTypes.ContainsKey(baseType.OriginalDefinition))
                 {

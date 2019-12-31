@@ -12,7 +12,7 @@ namespace Phase.Translator.TypeScript.Expressions
         {
             var num = 0;
             var formatArguments = new List<ExpressionSyntax>();
-            Write("system.CsString.format(");
+            Write("phase.format(");
             Write("\"");
             foreach (var content in Node.Contents)
             {

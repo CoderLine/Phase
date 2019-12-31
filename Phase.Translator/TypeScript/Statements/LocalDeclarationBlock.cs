@@ -10,13 +10,19 @@ namespace Phase.Translator.TypeScript
     {
         protected override void DoEmit(CancellationToken cancellationToken = new CancellationToken())
         {
-            foreach (var var in Node.Declaration.Variables)
+            Write("let ");
+            for (var i = 0; i < Node.Declaration.Variables.Count; i++)
             {
+                if (i > 0)
+                {
+                    WriteComma();
+                }
+                var var = Node.Declaration.Variables[i];
                 var isRef = Emitter.IsRefVariable(var);
                 var type = Emitter.GetTypeSymbol(Node.Declaration.Type);
                 EmitterContext.ImportType(type);
 
-                Write("let ", var.Identifier.ValueText);
+                Write(var.Identifier.ValueText);
                 WriteColon();
                 if (isRef)
                 {
@@ -36,19 +42,24 @@ namespace Phase.Translator.TypeScript
                     {
                         Write("new CsRef(");
                     }
+
                     EmitTree(var.Initializer, cancellationToken);
                     if (isRef)
                     {
                         Write(")");
                     }
                 }
-                else if(isRef)
+                else if (isRef)
                 {
                     Write(" = new CsRef(");
                     Write(Emitter.GetDefaultValue(type));
                     Write(")");
                 }
+            }
+            
 
+            if (Node.Parent.Kind() != SyntaxKind.ForStatement)
+            {
                 WriteSemiColon(true);
             }
         }

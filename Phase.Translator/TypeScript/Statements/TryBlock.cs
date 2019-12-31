@@ -87,6 +87,9 @@ namespace Phase.Translator.TypeScript
                         EmitterContext.CurrentExceptionName.Pop();
                     }
 
+                    Write("throw ", variable);
+                    WriteSemiColon(true);
+
                     EmitterContext.RecursiveCatch--;
                     EndBlock();
                 }

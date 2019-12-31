@@ -38,13 +38,15 @@ namespace Phase.Translator.TypeScript.Expressions
                                     case ElementAccessExpressionSyntax elementAccess:
                                         EmitTree(elementAccess.Expression);
 
-                                        var arguments = elementAccess.ArgumentList.Arguments.Select(a => new ParameterInvocationInfo(a)).ToList();
+                                        var arguments = elementAccess.ArgumentList.Arguments
+                                            .Select(a => new ParameterInvocationInfo(a)).ToList();
                                         var invocation = BuildMethodInvocation(prop.Parameters, arguments);
-                                        ApplyExpressions(template,prop.Parameters, invocation, cancellationToken);
+                                        ApplyExpressions(template, prop.Parameters, invocation, cancellationToken);
                                         break;
                                     default:
-                                        throw new PhaseCompilerException("Unknown node on indexer assignment: " + Node.Left.Kind());
-                                }                                
+                                        throw new PhaseCompilerException(
+                                            "Unknown node on indexer assignment: " + Node.Left.Kind());
+                                }
                             }
                             else
                             {
@@ -69,7 +71,8 @@ namespace Phase.Translator.TypeScript.Expressions
 
 
             var op = GetOperator();
-            if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property && ((IPropertySymbol)leftSymbol.Symbol).IsIndexer &&
+            if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Property &&
+                ((IPropertySymbol) leftSymbol.Symbol).IsIndexer &&
                 !Emitter.IsNativeIndexer(leftSymbol.Symbol))
             {
                 EmitTree(Node.Left, cancellationToken);
@@ -78,7 +81,7 @@ namespace Phase.Translator.TypeScript.Expressions
 
                 if (!string.IsNullOrEmpty(op))
                 {
-                    var property = ((IPropertySymbol)leftSymbol.Symbol);
+                    var property = ((IPropertySymbol) leftSymbol.Symbol);
                     if (Node.Left is ElementAccessExpressionSyntax elementAccess)
                     {
                         EmitTree(elementAccess.Expression, cancellationToken);
@@ -92,6 +95,7 @@ namespace Phase.Translator.TypeScript.Expressions
                             {
                                 WriteComma();
                             }
+
                             EmitTree(elementAccess.ArgumentList.Arguments[i], cancellationToken);
                         }
 
@@ -109,7 +113,7 @@ namespace Phase.Translator.TypeScript.Expressions
             }
             else if (leftSymbol.Symbol != null && leftSymbol.Symbol.Kind == SymbolKind.Event)
             {
-                IEventSymbol evt = (IEventSymbol)leftSymbol.Symbol;
+                IEventSymbol evt = (IEventSymbol) leftSymbol.Symbol;
                 IMethodSymbol method;
                 switch (Node.Kind())
                 {
@@ -131,6 +135,12 @@ namespace Phase.Translator.TypeScript.Expressions
                         EmitTree(member.Expression, cancellationToken);
                         WriteDot();
                     }
+
+                    if (Node.Left is IdentifierNameSyntax)
+                    {
+                        Write("this.");
+                    }
+                    
                     Write(EmitterContext.GetMethodName(method));
                     WriteMethodInvocation(method, new[]
                     {
@@ -143,40 +153,8 @@ namespace Phase.Translator.TypeScript.Expressions
                 EmitterContext.IsAssignmentLeftHand = true;
                 EmitTree(Node.Left, cancellationToken);
                 EmitterContext.IsAssignmentLeftHand = false;
-                Write(" = ");
-
-                var needsConversion = NeedsConversion(leftType, rightType, op);
-
-                if (needsConversion)
-                {
-                    WriteOpenParentheses();
-                }
-
-                if (!string.IsNullOrEmpty(op))
-                {
-                    EmitTree(Node.Left, cancellationToken);
-                    WriteSpace();
-                    Write(op);
-                    WriteSpace();
-                    WriteOpenParentheses();
-                }
-                EmitValue(leftType.Type, rightType.Type, cancellationToken);
-                if (!string.IsNullOrEmpty(op))
-                {
-                    WriteCloseParentheses();
-                }
-                if (needsConversion)
-                {
-                    WriteCloseParentheses();
-                    if (Emitter.IsIConvertible(rightType.Type))
-                    {
-                        WriteDot();
-                        Write("to" + leftType.Type.Name + "_IFormatProvider");
-                        WriteOpenParentheses();
-                        Write("null");
-                        WriteCloseParentheses();
-                    }
-                }
+                Write(" ", Node.OperatorToken.Text, " ");
+                EmitTree(Node.Right, cancellationToken);
             }
         }
 

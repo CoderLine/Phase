@@ -75,6 +75,9 @@ namespace Phase.Translator.TypeScript
             Write("export namespace ", name, " ");
             BeginBlock();
             
+            Write("export function toByte(v: ", name, ") : number { return v as number; }");
+            WriteNewLine();
+            
             Write("export function toInt32(v: ", name, ") : number { return v as number; }");
             WriteNewLine();
             

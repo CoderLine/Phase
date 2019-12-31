@@ -32,8 +32,8 @@ namespace Phase.Translator.TypeScript.Expressions
             if (Node.Initializer != null)
             {
                 WriteOpenParentheses();
-                WriteFunction();
                 WriteOpenCloseParentheses();
+                Write(" => ");
                 BeginBlock();
 
                 Write("let ");
@@ -81,7 +81,6 @@ namespace Phase.Translator.TypeScript.Expressions
             if (Node.Initializer != null)
             {
                 WriteSemiColon(true);
-                EmitterContext.InitializerCount++;
 
                 IMethodSymbol addMethod = null;
                 if (Node.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
@@ -102,6 +101,7 @@ namespace Phase.Translator.TypeScript.Expressions
                     {
                         var assignment = (AssignmentExpressionSyntax) expression;
                         var left = Emitter.GetSymbolInfo(assignment.Left);
+                        EmitterContext.InitializerCount++;
 
                         Write(tmpvar);
                         WriteDot();
@@ -109,6 +109,7 @@ namespace Phase.Translator.TypeScript.Expressions
 
                         Write(" = ");
 
+                        EmitterContext.InitializerCount--;
                         EmitTree(assignment.Right);
 
                         WriteSemiColon(true);
@@ -127,7 +128,6 @@ namespace Phase.Translator.TypeScript.Expressions
                 }
 
                 EmitterContext.RecursiveObjectCreation--;
-                EmitterContext.InitializerCount--;
 
                 WriteReturn(true);
                 Write(tmpvar);
