@@ -23,8 +23,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 if (resolve.Symbol != null
                     && resolve.Symbol is IFieldSymbol constField
                     && constField.ContainingType.TypeKind != TypeKind.Enum
-                    && constField.IsConst
-                    && (constField.DeclaringSyntaxReferences.Length == 0 || EmitterContext.IsCaseLabel))
+                    && constField.IsConst)
                 {
                     return WriteConstant(constField);
                 }

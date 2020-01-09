@@ -34,6 +34,10 @@ namespace Phase.Translator
             public Optional<string> Native { get; set; }
             public bool? IsRawParams { get; set; }
             public string Meta { get; set; }
+            public bool? IsTestClass { get; set; }
+            public bool? IsTestMethod { get; set; }
+            public bool? IsAsyncTestMethod { get; set; }
+            public bool? IsTestIgnore { get; set; }
         }
 
         private ConcurrentDictionary<ISymbol, SymbolMetaData> _symbolMetaCache;
@@ -267,6 +271,54 @@ namespace Phase.Translator
 
                 return meta.OutputName = GetMethodNameInternal(method, context);
             }
+        }
+
+        public bool IsTestClass(ITypeSymbol type)
+        {
+            var meta = GetOrCreateMeta(type);
+            if (meta.IsTestClass == null)
+            {
+                meta.IsTestClass = GetAttributes(type).Any(a =>
+                    a.AttributeClass.BaseType.Equals(GetPhaseType("Phase.Test.TestClassAttribute")));
+            }
+
+            return meta.IsTestClass.Value;
+        }
+
+        public bool IsTestMethod(IMethodSymbol type)
+        {
+            var meta = GetOrCreateMeta(type);
+            if (meta.IsTestMethod == null)
+            {
+                meta.IsTestMethod = GetAttributes(type).Any(a =>
+                    a.AttributeClass.BaseType.Equals(GetPhaseType("Phase.Test.TestMethodAttribute")));
+            }
+
+            return meta.IsTestMethod.Value;
+        }
+
+        public bool IsAsyncTestMethod(IMethodSymbol type)
+        {
+            var meta = GetOrCreateMeta(type);
+            if (meta.IsAsyncTestMethod == null)
+            {
+                meta.IsAsyncTestMethod = GetAttributes(type).Any(a =>
+                    a.AttributeClass.BaseType.Equals(GetPhaseType("Phase.Test.AsyncTestMethodAttribute")));
+            }
+
+            return meta.IsAsyncTestMethod.Value;
+        }
+
+        public bool IsTestIgnore(ISymbol typeOrMethod)
+        {
+            var meta = GetOrCreateMeta(typeOrMethod);
+            if (meta.IsTestIgnore == null)
+            {
+                meta.IsTestIgnore = GetAttributes(typeOrMethod).Any(a =>
+                    a.AttributeClass.BaseType.Equals(GetPhaseType("Phase.Test.IgnoreAttribute")));
+            }
+
+            return meta.IsTestIgnore.Value;
         }
 
         public bool HasConstructorOverloads(ITypeSymbol type)

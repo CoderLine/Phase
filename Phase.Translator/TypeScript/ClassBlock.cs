@@ -37,8 +37,9 @@ namespace Phase.Translator.TypeScript
 
             if (EmitterContext.NeedsPhaseImport)
             {
-                Write("import * as ph from '@mscorlib/phase'");
+                Write("import * as ph from '@root/phase'");
             }
+
             WriteNewLine();
 
             foreach (var importedType in EmitterContext.ImportedTypes.Values)
@@ -50,7 +51,7 @@ namespace Phase.Translator.TypeScript
 
             Write(result);
         }
-        
+
         protected void EmitClass(CancellationToken cancellationToken = new CancellationToken())
         {
             if (Emitter.IsExternal(_type.TypeSymbol))
@@ -111,6 +112,7 @@ namespace Phase.Translator.TypeScript
                     {
                         Write(" implements ");
                     }
+
                     var type = _type.TypeSymbol.Interfaces[i];
                     WriteType(type);
                     EmitterContext.ImportType(type);
@@ -120,6 +122,7 @@ namespace Phase.Translator.TypeScript
             WriteNewLine();
             BeginBlock();
 
+            var hasStaticConstructor = false;
             foreach (var member in _type.TypeSymbol.GetMembers())
             {
                 EmitterContext.CurrentMember = member;
@@ -137,6 +140,11 @@ namespace Phase.Translator.TypeScript
                 {
                     var methodBlock = new MethodBlock(EmitterContext, (IMethodSymbol) member);
                     methodBlock.Emit(cancellationToken);
+                    if (((IMethodSymbol) member).MethodKind == MethodKind.StaticConstructor &&
+                        member.DeclaringSyntaxReferences.Length > 0)
+                    {
+                        hasStaticConstructor = true;
+                    }
                 }
                 else if (member.Kind == SymbolKind.Event)
                 {
@@ -169,6 +177,56 @@ namespace Phase.Translator.TypeScript
             EndBlock();
 
             WriteComments(_type.RootNode.SyntaxTree.GetRoot(cancellationToken), false);
+            
+            if (hasStaticConstructor)
+            {
+                Write(name, ".__init()");
+                WriteSemiColon(true);
+            }
+
+            if (Emitter.IsTestClass(_type.TypeSymbol))
+            {
+                EmitTestClass(name);
+            }
+        }
+
+        private void EmitTestClass(string name)
+        {
+            Write("describe( \"", name, "\", () => ");
+            BeginBlock();
+
+            Write("let __testclass = new ", name, "()");
+            WriteSemiColon(true);
+
+            foreach (var testMethod in _type.TypeSymbol.GetMembers().OfType<IMethodSymbol>()
+                .Where(m => Emitter.IsTestMethod(m) || Emitter.IsAsyncTestMethod(m)))
+            {
+                EmitTestMethod(testMethod);
+            }
+
+            EndBlock();
+            WriteCloseParentheses();
+            WriteSemiColon(true);
+        }
+
+        private void EmitTestMethod(IMethodSymbol testMethod)
+        {
+            var name = EmitterContext.GetMethodName(testMethod);
+            Write("it(\"", name, "\", (");
+            if (Emitter.IsAsyncTestMethod(testMethod))
+            {
+                Write("done: () => void");
+            }
+
+            Write(") => ");
+            BeginBlock();
+
+            Write("__testclass.", name, "()");
+            WriteSemiColon(true);
+            
+            EndBlock();
+            WriteCloseParentheses();
+            WriteSemiColon(true);
         }
     }
 }

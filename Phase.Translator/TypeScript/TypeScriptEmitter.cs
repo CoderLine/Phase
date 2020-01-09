@@ -151,7 +151,7 @@ namespace Phase.Translator.TypeScript
 
             if (method.MethodKind == MethodKind.StaticConstructor)
             {
-                return "__init__";
+                return "__init";
             }
 
             if (!method.ExplicitInterfaceImplementations.IsEmpty)

@@ -49,7 +49,7 @@ namespace Phase.Translator.TypeScript
 
         protected void WriteImport(ITypeSymbol type)
         {
-            var prefix = IsBuiltInType(type) ? "@mscorlib/" : "@root/";
+            var prefix = "@root/";
             Write("import { ", Emitter.GetTypeName(type, true, true), " } from '", prefix,
                 Emitter.GetFileName(type, false, '/'),
                 "';");
@@ -1219,15 +1219,31 @@ namespace Phase.Translator.TypeScript
                     Write((bool) constField.ConstantValue ? "true" : "false");
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Char:
+                    Write((int)(char)constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
                 case SpecialType.System_SByte:
+                    Write((sbyte) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
                 case SpecialType.System_Byte:
+                    Write((byte) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
                 case SpecialType.System_Int16:
+                    Write((short) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
                 case SpecialType.System_UInt16:
+                    Write((ushort) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
                 case SpecialType.System_Int32:
-                case SpecialType.System_UInt32:
-                case SpecialType.System_Int64:
-                case SpecialType.System_UInt64:
                     Write((int) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_UInt32:
+                    Write((uint) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_Int64:
+                    Write((long) constField.ConstantValue);
+                    return AutoCastMode.SkipCast;
+                case SpecialType.System_UInt64:
+                    Write((ulong) constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Decimal:
                     Write((decimal) constField.ConstantValue);

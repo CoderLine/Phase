@@ -12,10 +12,20 @@ namespace Phase
         {
             context.Attributes.Type<object>()
                 .Add(new NameAttribute("unknown"), new RedirectMethodsToAttribute("ph.ObjectExtensions"));
+            context.Attributes.Member(() => new object().Equals(2))
+                .Add(new NameAttribute("equals"));
             context.Attributes.Type<Type>()
                 .Add(new NameAttribute("CsType"));
             context.Attributes.Type<string>()
                 .Add(new NameAttribute("string"), new RedirectMethodsToAttribute("ph.StringExtensions"));
+            context.Attributes.Member(() => string.Format("{0}", 1))
+                .Add(new NameAttribute("format"));
+            context.Attributes.Member(() => string.Format("{0}{1}", 1, 2))
+                .Add(new NameAttribute("format"));
+            context.Attributes.Member(() => string.Format("{0}{1}{2}", 1, 2, 3))
+                .Add(new NameAttribute("format"));
+            context.Attributes.Member(() => string.Format("{0}{1}{2}{3}", new object[]{1, 2, 3, 4}))
+                .Add(new NameAttribute("format"));
             context.Attributes.Member((string s) => s[0])
                 .Add(new TemplateAttribute("{this}.charCodeAt({index})"));
             context.Attributes.Member((string s) => s.Substring(0,1))
@@ -68,6 +78,8 @@ namespace Phase
                 .Add(new TemplateAttribute("({this} - {value})"));
             context.Attributes.Member(()=> 0.0.CompareTo(0.0))
                 .Add(new TemplateAttribute("({this} - {value})"));
+            context.Attributes.Member(()=> Math.PI)
+                .Add(new TemplateAttribute("Math.PI"));
             context.Attributes.Member(()=> Math.Abs(0.0))
                 .Add(new TemplateAttribute("Math.abs({value})"));
             context.Attributes.Member(()=> Math.Abs(0.0f))
