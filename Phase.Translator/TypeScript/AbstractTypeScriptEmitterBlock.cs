@@ -46,10 +46,26 @@ namespace Phase.Translator.TypeScript
             base.BeginEmit(cancellationToken);
         }
 
-
         protected void WriteImport(ITypeSymbol type)
         {
-            var prefix = "@root/";
+            string prefix;
+            if (type.ContainingAssembly.Equals(Emitter.GetPhaseType("System.String").ContainingAssembly) ||
+                type.ContainingAssembly.Equals(Emitter.GetPhaseType("System.Action").ContainingAssembly))
+            {
+                prefix = Emitter.Compiler.Options.CoreImportAlias;
+            }
+            else if (type.DeclaringSyntaxReferences.IsEmpty || Emitter.IsExternal(type) ||
+                     !type.ContainingAssembly.Equals(Emitter.Compiler.Translator.Compilation.Assembly))
+            {
+                prefix = Emitter.Compiler.Options.ExternImportAlias;
+            }
+            else
+            {
+                prefix = Emitter.Compiler.Options.AssemblyImportAlias;
+            }
+
+            prefix += "/";
+            
             Write("import { ", Emitter.GetTypeName(type, true, true), " } from '", prefix,
                 Emitter.GetFileName(type, false, '/'),
                 "';");
@@ -125,7 +141,8 @@ namespace Phase.Translator.TypeScript
                             else if (trimmed.StartsWith("// <code>"))
                             {
                                 isCodeComment = true;
-                                codeCommentIndent = trimmed.Substring(0, trimmed.IndexOf("//", StringComparison.Ordinal));
+                                codeCommentIndent =
+                                    trimmed.Substring(0, trimmed.IndexOf("//", StringComparison.Ordinal));
                             }
                             else if (trimmed.StartsWith("//"))
                             {
@@ -709,12 +726,13 @@ namespace Phase.Translator.TypeScript
                     case SpecialType.System_Int64:
                     case SpecialType.System_UInt64:
 
-                        if(Emitter.IsIConvertible(type) && Emitter.AreTypeMethodsRedirected(type, out var redirect))
+                        if (Emitter.IsIConvertible(type) && Emitter.AreTypeMethodsRedirected(type, out var redirect))
                         {
                             if (redirect.StartsWith("ph."))
                             {
                                 EmitterContext.NeedsPhaseImport = true;
                             }
+
                             Write(redirect);
                             WriteDot();
                             Write("to" + convertedType.Name);
@@ -722,7 +740,7 @@ namespace Phase.Translator.TypeScript
                             Write(result);
                             WriteCloseParentheses();
                         }
-                        else if(type.TypeKind == TypeKind.Enum)
+                        else if (type.TypeKind == TypeKind.Enum)
                         {
                             WriteType(type);
                             WriteDot();
@@ -928,7 +946,7 @@ namespace Phase.Translator.TypeScript
                         WriteType(delegateMethod.ReturnType);
                     }
 
-                    Write(">");     
+                    Write(">");
                 }
             }
         }
@@ -1219,7 +1237,7 @@ namespace Phase.Translator.TypeScript
                     Write((bool) constField.ConstantValue ? "true" : "false");
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_Char:
-                    Write((int)(char)constField.ConstantValue);
+                    Write((int) (char) constField.ConstantValue);
                     return AutoCastMode.SkipCast;
                 case SpecialType.System_SByte:
                     Write((sbyte) constField.ConstantValue);

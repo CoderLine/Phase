@@ -12,7 +12,8 @@ namespace Phase.Translator.TypeScript.Expressions
         {
             var num = 0;
             var formatArguments = new List<ExpressionSyntax>();
-            Write("phase.format(");
+            EmitterContext.NeedsPhaseImport = true;
+            Write(" ph.StringExtensions.format(");
             Write("\"");
             foreach (var content in Node.Contents)
             {

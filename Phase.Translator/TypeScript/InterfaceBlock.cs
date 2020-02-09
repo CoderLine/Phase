@@ -30,7 +30,7 @@ namespace Phase.Translator.TypeScript
 
             if (EmitterContext.NeedsPhaseImport)
             {
-                Write("import * as ph from '@root/phase'");
+                Write($"import * as ph from '{Emitter.Compiler.Options.CoreImportAlias}/phase'");
             }
             WriteNewLine();
 

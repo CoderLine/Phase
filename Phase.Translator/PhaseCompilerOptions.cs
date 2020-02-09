@@ -16,6 +16,10 @@ namespace Phase.Translator
         public PostBuildStep[] PostBuild { get; set; }
         public int ProcessorCount { get; set; }
 
+        public string AssemblyImportAlias { get; set; }
+        public string CoreImportAlias { get; set; }
+        public string ExternImportAlias { get; set; }
+        
         public PhaseCompilerOptions()
         {
             Language = PhaseLanguage.Haxe;
@@ -31,6 +35,10 @@ namespace Phase.Translator
                 var fileDirectory = new FileInfo(fileName).Directory.FullName;
                 var currentWorkingDirectory = Environment.CurrentDirectory;
                 Environment.CurrentDirectory = fileDirectory;
+
+                config.CoreImportAlias = config.CoreImportAlias ?? "@core";
+                config.AssemblyImportAlias = config.AssemblyImportAlias ?? "@src";
+                config.ExternImportAlias = config.ExternImportAlias ?? "@lib";
 
                 var dir = new DirectoryInfo(config.Output);
                 config.Output = dir.FullName;
