@@ -41,7 +41,11 @@ namespace Phase.Translator.TypeScript.Expressions
                                         var arguments = elementAccess.ArgumentList.Arguments
                                             .Select(a => new ParameterInvocationInfo(a)).ToList();
                                         var invocation = BuildMethodInvocation(prop.Parameters, arguments);
-                                        ApplyExpressions(template, prop.Parameters, invocation, cancellationToken);
+                                        ApplyExpressions(template, 
+                                            prop.Parameters, 
+                                            invocation,
+                                            prop.ContainingType,
+                                            cancellationToken);
                                         break;
                                     default:
                                         throw new PhaseCompilerException(

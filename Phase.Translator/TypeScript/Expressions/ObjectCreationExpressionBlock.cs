@@ -12,22 +12,6 @@ namespace Phase.Translator.TypeScript.Expressions
     {
         protected override void DoEmit(CancellationToken cancellationToken = default(CancellationToken))
         {
-            var methodSymbol = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
-            if (methodSymbol != null)
-            {
-                var template = Emitter.GetTemplate(methodSymbol);
-                if (template != null)
-                {
-                    var arguments = Node.ArgumentList?.Arguments
-                                        .Select(a => new ParameterInvocationInfo(a)).ToList()
-                                    ?? new List<ParameterInvocationInfo>();
-                    var methodInvocation = BuildMethodInvocation(methodSymbol, arguments);
-                    ApplyExpressions(template, methodSymbol.Parameters, methodInvocation, cancellationToken);
-                    Write(template.ToString());
-                    return;
-                }
-            }
-
             string tmpvar = null;
             if (Node.Initializer != null)
             {
@@ -50,34 +34,54 @@ namespace Phase.Translator.TypeScript.Expressions
                 Write(" = ");
             }
 
-            var type = (ITypeSymbol) Emitter.GetSymbolInfo(Node.Type).Symbol;
-            if (type.TypeKind == TypeKind.Delegate)
+            var methodSymbol = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
+            var wroteTemplate = false;
+            if (methodSymbol != null)
             {
-                if (Node.ArgumentList.Arguments.Count == 1)
+                var template = Emitter.GetTemplate(methodSymbol);
+                if (template != null)
                 {
-                    EmitTree(Node.ArgumentList.Arguments[0], cancellationToken);
+                    var arguments = Node.ArgumentList?.Arguments
+                                        .Select(a => new ParameterInvocationInfo(a)).ToList()
+                                    ?? new List<ParameterInvocationInfo>();
+                    var methodInvocation = BuildMethodInvocation(methodSymbol, arguments);
+                    ApplyExpressions(template, methodSymbol.Parameters, methodInvocation, methodSymbol.ContainingType, cancellationToken);
+                    Write(template.ToString());
+                    wroteTemplate = true;
                 }
             }
-            else if (Emitter.HasNativeConstructors(type) || !Emitter.HasConstructorOverloads(type))
-            {
-                WriteNew();
-                WriteType(type);
-                EmitterContext.ImportType(type);
-                var ctor = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
-                WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
-            }
-            else
-            {
-                WriteNew();
-                WriteType(Node.Type);
-                EmitterContext.ImportType(type);
-                WriteOpenCloseParentheses();
-                WriteDot();
-                var ctor = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
-                Write(EmitterContext.GetMethodName(ctor));
-                WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
-            }
 
+            var type = (ITypeSymbol) Emitter.GetSymbolInfo(Node.Type).Symbol;
+            if (!wroteTemplate)
+            {
+                if (type.TypeKind == TypeKind.Delegate)
+                {
+                    if (Node.ArgumentList.Arguments.Count == 1)
+                    {
+                        EmitTree(Node.ArgumentList.Arguments[0], cancellationToken);
+                    }
+                }
+                else if (Emitter.HasNativeConstructors(type) || !Emitter.HasConstructorOverloads(type))
+                {
+                    WriteNew();
+                    WriteType(type);
+                    EmitterContext.ImportType(type);
+                    var ctor = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
+                    WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
+                }
+                else
+                {
+                    WriteNew();
+                    WriteType(Node.Type);
+                    EmitterContext.ImportType(type);
+                    WriteOpenCloseParentheses();
+                    WriteDot();
+                    var ctor = (IMethodSymbol) Emitter.GetSymbolInfo(Node).Symbol;
+                    Write(EmitterContext.GetMethodName(ctor));
+                    WriteMethodInvocation(ctor, Node.ArgumentList, Node, cancellationToken);
+                }
+            }
+          
             if (Node.Initializer != null)
             {
                 WriteSemiColon(true);
@@ -116,13 +120,31 @@ namespace Phase.Translator.TypeScript.Expressions
                     }
                     else if (Node.Initializer.Kind() == SyntaxKind.CollectionInitializerExpression)
                     {
-                        Write(tmpvar);
-                        WriteDot();
-                        Write(EmitterContext.GetSymbolName(addMethod));
-                        WriteMethodInvocation(addMethod, new[]
+                        var template = Emitter.GetTemplate(addMethod);
+                        if (template != null)
                         {
-                            new ParameterInvocationInfo(expression)
-                        }, null, cancellationToken);
+                            if (template.Variables.TryGetValue("this", out var thisVar))
+                            {
+                                thisVar.RawValue = tmpvar;
+                            }
+
+                            var methodInvocation = BuildMethodInvocation(addMethod, new[]
+                            {
+                                new ParameterInvocationInfo(expression)
+                            });
+                            ApplyExpressions(template, addMethod.Parameters, methodInvocation, addMethod.ContainingType, cancellationToken);
+                            Write(template.ToString());
+                        }
+                        else
+                        {
+                            Write(tmpvar);
+                            WriteDot();
+                            Write(EmitterContext.GetSymbolName(addMethod));
+                            WriteMethodInvocation(addMethod, new[]
+                            {
+                                new ParameterInvocationInfo(expression)
+                            }, null, cancellationToken);
+                        }
                         WriteSemiColon(true);
                     }
                 }

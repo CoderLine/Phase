@@ -30,7 +30,7 @@ namespace Phase.Translator.TypeScript.Expressions
                     break;
                 case SyntaxKind.DivideExpression:
                     // integer division? 
-                    if (IsNumberLiteralOrInlinedConst(Node.Left) && IsNumberLiteralOrInlinedConst(Node.Right))
+                    // if (IsNumberLiteralOrInlinedConst(Node.Left) && IsNumberLiteralOrInlinedConst(Node.Right))
                     {
                         var leftIsInt = false;
                         var rightIsInt = false;
@@ -86,10 +86,10 @@ namespace Phase.Translator.TypeScript.Expressions
                             DoEmit("/", cancellationToken);
                         }
                     }
-                    else
-                    {
-                        DoEmit("/", cancellationToken);
-                    }
+                    // else
+                    // {
+                    //     DoEmit("/", cancellationToken);
+                    // }
                     break;
                 case SyntaxKind.ModuloExpression:
                     DoEmit("%", cancellationToken);

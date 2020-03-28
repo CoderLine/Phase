@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Phase.Translator.Utils;
 
 namespace Phase.Translator.TypeScript
 {
@@ -26,6 +27,7 @@ namespace Phase.Translator.TypeScript
                     Write("catch(", variable, ") ");
                     BeginBlock();
 
+                    var hasCatchAllExceptions = false;
                     for (var i = 0; i < Node.Catches.Count; i++)
                     {
                         var catchClauseSyntax = Node.Catches[i];
@@ -39,6 +41,10 @@ namespace Phase.Translator.TypeScript
                             WriteOpenParentheses();
                             Write(variable, " instanceof ");
                             var type = Emitter.GetTypeSymbol(catchClauseSyntax.Declaration.Type);
+                            if(SymbolEquivalenceComparer.Instance.Equals(type, Emitter.GetPhaseType("System.Exception")))
+                            {
+                                hasCatchAllExceptions = true;
+                            }
                             WriteType(type);
                             EmitterContext.ImportType(type);
                             WriteCloseParentheses();
@@ -66,6 +72,7 @@ namespace Phase.Translator.TypeScript
                         }
                         else
                         {
+                            hasCatchAllExceptions = true;
                             EmitterContext.CurrentExceptionName.Push(variable);
                             if (i > 0)
                             {
@@ -87,9 +94,21 @@ namespace Phase.Translator.TypeScript
                         EmitterContext.CurrentExceptionName.Pop();
                     }
 
-                    Write("throw ", variable);
-                    WriteSemiColon(true);
-
+                    if (!hasCatchAllExceptions)
+                    {
+                        if (Node.Catches.Count > 0)
+                        {
+                            WriteElse();
+                            BeginBlock();
+                        }
+                        Write("throw ", variable);
+                        WriteSemiColon(true);
+                        if (Node.Catches.Count > 0)
+                        {
+                            EndBlock();
+                        }
+                    }
+                    
                     EmitterContext.RecursiveCatch--;
                     EndBlock();
                 }

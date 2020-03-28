@@ -18,6 +18,10 @@ namespace Phase
                 .Add(new NameAttribute("CsType"));
             context.Attributes.Type<string>()
                 .Add(new NameAttribute("string"), new RedirectMethodsToAttribute("ph.StringExtensions"));
+            context.Attributes.Member(() => float.IsNaN(0.0f))
+                .Add(new TemplateAttribute("isNaN({f})"));
+            context.Attributes.Member(() => double.IsNaN(0.0))
+                .Add(new TemplateAttribute("isNaN({d})"));
             context.Attributes.Member(() => string.Format("{0}", 1))
                 .Add(new NameAttribute("format"));
             context.Attributes.Member(() => string.Format("{0}{1}", 1, 2))
@@ -35,7 +39,7 @@ namespace Phase
             context.Attributes.Member((string s) => s.IndexOf('c'))
                 .Add(new TemplateAttribute("{this}.indexOf(String.fromCharCode({value}))"));
             context.Attributes.Member((string s) => s.Replace("a", "b"))
-                .Add(new TemplateAttribute("{this}.replace({oldValue}, {newValue})"));
+                .Add(new TemplateAttribute("{this}.split({oldValue}).join({newValue})"));
             context.Attributes.Member((string s) => s.ToLower())
                 .Add(new TemplateAttribute("{this}.toLowerCase()"));
             context.Attributes.Member((string s) => s.ToUpper())

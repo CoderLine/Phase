@@ -221,6 +221,11 @@ namespace Phase.Translator.TypeScript
             Write(") => ");
             BeginBlock();
 
+            if (Emitter.IsAsyncTestMethod(testMethod))
+            {
+                Write("(<any>globalThis).done = done;");
+            }
+
             Write("__testclass.", name, "()");
             WriteSemiColon(true);
             

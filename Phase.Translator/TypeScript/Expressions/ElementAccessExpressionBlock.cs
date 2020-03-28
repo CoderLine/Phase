@@ -59,7 +59,7 @@ namespace Phase.Translator.TypeScript.Expressions
                     {
                         var arguments = Node.ArgumentList.Arguments.Select(a => new ParameterInvocationInfo(a)).ToList();
                         var invocation = BuildMethodInvocation(indexer.Parameters, arguments);
-                        ApplyExpressions(template,indexer.Parameters, invocation, cancellationToken);
+                        ApplyExpressions(template,indexer.Parameters, invocation, indexer.ContainingType, cancellationToken);
                     }
 
 

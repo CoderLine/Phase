@@ -105,7 +105,7 @@ namespace Phase.Translator.TypeScript.Expressions
                     }
 
                     var methodInvocation = BuildMethodInvocation(methodSymbol, arguments);
-                    ApplyExpressions(template,methodSymbol.Parameters, methodInvocation, cancellationToken);
+                    ApplyExpressions(template,methodSymbol.Parameters, methodInvocation, methodSymbol.ContainingType, cancellationToken);
                     
                     for (int i = 0; i < methodSymbol.TypeArguments.Length; i++)
                     {

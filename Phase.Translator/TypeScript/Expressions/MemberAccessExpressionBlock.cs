@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.VisualBasic;
 using Phase.Translator.Utils;
 
 namespace Phase.Translator.TypeScript.Expressions
@@ -14,7 +13,8 @@ namespace Phase.Translator.TypeScript.Expressions
     {
         public bool SkipSemicolonOnStatement { get; set; }
 
-        protected override AutoCastMode DoEmitWithoutCast(CancellationToken cancellationToken = default(CancellationToken))
+        protected override AutoCastMode DoEmitWithoutCast(
+            CancellationToken cancellationToken = default(CancellationToken))
         {
             var member = Emitter.GetSymbolInfo(Node);
 
@@ -55,8 +55,8 @@ namespace Phase.Translator.TypeScript.Expressions
 
             var expression = Node.Expression;
             var leftHandSide = Emitter.GetSymbolInfo(expression);
-            if (member.Symbol != null 
-                && member.Symbol is IFieldSymbol constField 
+            if (member.Symbol != null
+                && member.Symbol is IFieldSymbol constField
                 && constField.ContainingType.TypeKind != TypeKind.Enum
                 && constField.IsConst
                 && (constField.ContainingType.SpecialType != SpecialType.System_Single || constField.Name != "NaN")
@@ -64,6 +64,8 @@ namespace Phase.Translator.TypeScript.Expressions
             {
                 return WriteConstant(constField);
             }
+
+            PushWriter();
 
             if (leftHandSide.Symbol == null)
             {
@@ -75,14 +77,17 @@ namespace Phase.Translator.TypeScript.Expressions
                 switch (kind)
                 {
                     case SymbolKind.NamedType:
-                        Write(Emitter.GetTypeName((INamedTypeSymbol)leftHandSide.Symbol, false, true));
-                        EmitterContext.ImportType((INamedTypeSymbol)leftHandSide.Symbol);
+                        Write(Emitter.GetTypeName((INamedTypeSymbol) leftHandSide.Symbol, false, true));
+                        EmitterContext.ImportType((INamedTypeSymbol) leftHandSide.Symbol);
                         break;
                     default:
                         EmitTree(expression, cancellationToken);
                         break;
                 }
             }
+
+            var leftHandSideOutput = PopWriter();
+            Write(leftHandSideOutput);
 
             if (member.Symbol == null)
             {
@@ -92,13 +97,21 @@ namespace Phase.Translator.TypeScript.Expressions
             else
             {
                 if (member.Symbol.Name == "Value" && member.Symbol.ContainingType.OriginalDefinition.SpecialType ==
-                         SpecialType.System_Nullable_T)
+                    SpecialType.System_Nullable_T)
                 {
                 }
                 else
                 {
                     WriteDot();
                     Write(EmitterContext.GetSymbolName(member.Symbol));
+                    if (member.Symbol.Kind == SymbolKind.Method)
+                    {
+                        var parentKind = Node.Parent.Kind();
+                        if (parentKind != SyntaxKind.InvocationExpression)
+                        {
+                            Write(".bind(", leftHandSideOutput, ")");
+                        }
+                    }
                 }
             }
 

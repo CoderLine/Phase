@@ -387,8 +387,11 @@ namespace Phase.Translator.TypeScript
             }
         }
 
-        protected void ApplyExpressions(CodeTemplate template, IEnumerable<IParameterSymbol> parameters,
-            Dictionary<string, IEnumerable<ExpressionSyntax>> methodInvocation, CancellationToken cancellationToken)
+        protected void ApplyExpressions(CodeTemplate template, 
+            IEnumerable<IParameterSymbol> parameters,
+            Dictionary<string, IEnumerable<ExpressionSyntax>> methodInvocation, 
+            INamedTypeSymbol containedType,
+            CancellationToken cancellationToken)
         {
             foreach (var param in parameters)
             {
@@ -461,6 +464,22 @@ namespace Phase.Translator.TypeScript
 
                     var paramOutput = PopWriter();
                     variable.RawValue = paramOutput;
+                }
+            }
+
+            if (containedType.IsGenericType)
+            {
+                for (int i = 0; i < containedType.TypeParameters.Length; i++)
+                {
+                    if (template.Variables.TryGetValue(containedType.TypeParameters[i].Name, out var variable))
+                    {
+                        var typeArgument = containedType.TypeArguments[i];
+                        EmitterContext.ImportType(typeArgument);
+                        PushWriter();
+                        WriteType(typeArgument);
+                        var typeName = PopWriter();
+                        variable.RawValue = typeName;
+                    }
                 }
             }
         }

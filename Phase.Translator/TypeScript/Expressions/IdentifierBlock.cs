@@ -34,6 +34,7 @@ namespace Phase.Translator.TypeScript.Expressions
                 }
                 else
                 {
+                    PushWriter();
                     if (resolve.Symbol.IsStatic)
                     {
                         WriteType(resolve.Symbol.ContainingType);
@@ -70,17 +71,26 @@ namespace Phase.Translator.TypeScript.Expressions
                         Write(EmitterContext.GetSymbolName(resolve.Symbol));
                     }
 
-
+                    var result = PopWriter();
+                    Write(result);
+                    
                     if (EmitterContext.InitializerCount == 0 && !resolve.Symbol.IsStatic)
                     {
                         switch (resolve.Symbol.Kind)
                         {
+                            case SymbolKind.Method:
+                                var parentKind = Node.Parent.Kind();
+                                if (parentKind != SyntaxKind.InvocationExpression)
+                                {
+                                    Write(".bind(this)");
+                                }
+                                break;
                             case SymbolKind.Event:
                                 switch (Node.Parent)
                                 {
                                     case EqualsValueClauseSyntax initializer when initializer.Value == Node:
                                     case AssignmentExpressionSyntax assignment when assignment.Right == Node:
-                                        Write("?.invoke");
+                                        Write("?.invoke.bind(", result, ")");
                                         break;
                                 }
                                 break;
