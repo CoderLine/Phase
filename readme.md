@@ -1,6 +1,8 @@
-# Phase 
+# With the migration to TypeScript for alphaTab this project is discontinued. 
 
-Phase is an open source C#-to-Haxe Compiler. This allows you to write any C# code and compile it to 
+## Phase 
+
+Phase ~~is~~ was an open source C#-to-Haxe Compiler. This allows you to write any C# code and compile it to 
 
 * JavaScript
 * Neko
@@ -17,5 +19,5 @@ Phase is an open source C#-to-Haxe Compiler. This allows you to write any C# cod
 Phase is strongly focusing on being the compiler for [alphaTab](https://github.com/CoderLine/alphaTab/). If you would like
 to use Phase in your project feel free to open an issue in this repository asking for assistence. 
 
-# CoreLib
+### CoreLib
 Phase comes with its own typesystem for Haxe trying to rebuild the C# type system. 
